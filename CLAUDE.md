@@ -53,7 +53,7 @@ All workflow commands accept an optional scope to limit context usage:
 /workflow:feature "add retry logic" --scope="omega-providers"
 /workflow:audit --scope="milestone 3: omega-core"
 /workflow:sync --scope="omega-memory"
-/workflow:bugfix "scheduler crash" --scope="src/gateway/scheduler.rs"
+/workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
 ```
 
 When no scope is provided, the analyst determines the minimal scope needed based on the task description.
@@ -63,6 +63,21 @@ If an agent notices it's consuming too much context:
 1. **Summarize** what has been learned so far into a temporary file at `docs/.workflow/[agent]-[task]-summary.md`
 2. **Delegate** remaining work by spawning a continuation subagent that reads the summary
 3. **Never silently degrade** — if you can't do a thorough job, say so and suggest splitting the task
+
+## Project Layout
+
+```
+root-project/
+├── backend/              ← Backend source code (Rust or preferred language)
+├── frontend/             ← Frontend source code (if applicable)
+├── specs/                ← Technical specifications (at project root)
+├── docs/                 ← Documentation (at project root)
+├── CLAUDE.md             ← Workflow rules
+└── .claude/              ← Agents and commands
+```
+
+Code lives in `backend/` (and optionally `frontend/`). Specs and docs remain at the project root.
+Agents must be aware of this structure when scoping reads and writes.
 
 ## Documentation Structure
 
@@ -139,6 +154,6 @@ Architect only: reads the codebase, compares against specs/ and docs/, flags dri
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)
-- Tests: alongside code or in `tests/` folder
+- Tests: alongside code or in `backend/tests/` (or `frontend/tests/`) folder
 - Commits: conventional (feat:, fix:, docs:, refactor:, test:)
 - Branches: feature/, bugfix/, hotfix/
