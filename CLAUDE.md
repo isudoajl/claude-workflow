@@ -13,7 +13,7 @@ There is no build system, test suite, or runtime. To test changes:
 2. Copy them to a target project: `bash scripts/setup.sh` (run from the target project directory)
 3. Run the workflow commands in the target project via Claude Code
 
-The setup script (`scripts/setup.sh`) copies agents, commands, and CLAUDE.md into the current directory. It creates `specs/` and `docs/` scaffolding if missing and never overwrites existing files (except agents and commands which are always overwritten).
+The setup script (`scripts/setup.sh`) copies agents and commands into the current directory. It creates `specs/` and `docs/` scaffolding if missing and never overwrites existing files (except agents and commands which are always overwritten). It does **not** copy CLAUDE.md — each target project maintains its own.
 
 ### Architecture
 
@@ -40,6 +40,17 @@ The setup script (`scripts/setup.sh`) copies agents, commands, and CLAUDE.md int
 - `workflow-understand.md` — codebase-expert only (deep project comprehension)
 
 All commands accept `--scope="area"` to limit context window usage. Agent model assignments are set in the YAML frontmatter.
+
+### Maintaining README.md
+**Always update `README.md`** when any of the following change:
+- An agent is added, removed, or modified (`.claude/agents/*.md`)
+- A command is added, removed, or modified (`.claude/commands/*.md`)
+- The setup script behavior changes (`scripts/setup.sh`)
+
+The README must stay in sync with the actual agents, commands, and project structure at all times.
+
+### Git After Every Change
+**Always commit and push** after completing any modification to the toolkit (agents, commands, setup script, CLAUDE.md, README.md). Use conventional commit messages (`feat:`, `fix:`, `docs:`, `refactor:`) and push to the remote immediately.
 
 ---
 

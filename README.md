@@ -228,6 +228,7 @@ your-project/
 │   └── understanding/        ← Deep codebase comprehension documents
 ├── .claude/
 │   ├── agents/                ← Subagent definitions
+│   │   ├── discovery.md
 │   │   ├── analyst.md
 │   │   ├── architect.md
 │   │   ├── test-writer.md
