@@ -72,9 +72,9 @@ The codebase always wins. When specs or docs are outdated, agents flag the discr
 ### 💡 Discovery (`discovery.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
 
-The idea validator. The only agent that engages in extended back-and-forth with the user. Takes a raw idea, explores the vision, challenges assumptions, identifies risks, and produces a clear Idea Brief for the Analyst. Ensures the concept is well-understood before the pipeline invests effort in requirements and architecture.
+The idea validator. The only agent that engages in extended back-and-forth with the user. Takes a raw idea, explores the vision, challenges assumptions, identifies risks, and produces a clear Idea Brief for the Analyst. Uses web search to research patterns and inform challenges. Adapts its approach based on context — full exploration for new projects, anchored exploration for features on existing codebases. Requires explicit user approval before saving the Idea Brief to ensure the pipeline builds from a validated concept.
 
-**Output:** `docs/.workflow/idea-brief.md`
+**Output:** `docs/.workflow/idea-brief.md` (full or lightweight template based on discovery depth)
 
 ### 🔍 Analyst (`analyst.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
