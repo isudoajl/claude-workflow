@@ -215,4 +215,4 @@ ACTIVATION
     -> Do not skip steps
     -> Do not merge steps
     -> Output each step block before proceeding to the next
-    -> Save the complete patch report to `C2C-protocol/patches/`
+    -> Save the complete patch report to `c2c-protocol/patches/`

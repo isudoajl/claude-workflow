@@ -139,14 +139,14 @@ The comprehension engine. Goes beyond cataloging to build a deep understanding o
 
 The protocol auditor. Audits protocol specifications across 12 dimensions (self-reference integrity, trust model soundness, confidence claim validity, escalation & deadlock, quorum & partition, adversarial resistance, specification completeness, enforcement realism, temporal integrity, composability, information leakage, self-audit) at 3 levels (L1: protocol, L2: enforcement, L3: self). Operates with an adversarial stance — assumes broken until proven safe. Produces structured `audit()` blocks per dimension and a `final_report()` with severity stacking and back-propagation checks.
 
-**Output:** `C2C-protocol/audits/audit-[protocol]-[date].md`
+**Output:** `c2c-protocol/audits/audit-[protocol]-[date].md`
 
 ### 🔧 Proto-Architect (`proto-architect.md`)
 **Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob
 
 The protocol improver. Consumes audit reports from Proto-Auditor and generates structured patches to close findings. Runs a 6-step pipeline: triage, root cause isolation, patch generation, self-audit, version increment, and regression check. Patches are classified into quality tiers (Tier 1: closes root cause with no new surface, down to Tier 4: rejected). Never adds complexity without closing a finding. Never patches symptoms when root causes are reachable.
 
-**Output:** `C2C-protocol/patches/patches-[protocol]-[date].md`
+**Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
 
 ## Commands
 
@@ -396,7 +396,7 @@ D6:  Adversarial Agent Resistance   D12: Self-Audit (Auditor Integrity)
 
 Levels: L1 (protocol spec), L2 (enforcement layer), L3 (self-audit). Outputs structured `audit()` blocks per dimension and a `final_report()` with severity stacking, back-propagation, and deployment conditions. Findings are classified as CRITICAL, MAJOR, or MINOR. The overall verdict scale is: broken → degraded → hardened → production-ready.
 
-**Output:** `C2C-protocol/audits/audit-[protocol]-[date].md`
+**Output:** `c2c-protocol/audits/audit-[protocol]-[date].md`
 
 ### `/workflow:proto-improve` — Protocol Improvement from Audit
 
@@ -413,7 +413,7 @@ P6: Regression     → verify patches don't break interacting rules
 
 Patches are quality-tiered: Tier 1 (closes root cause, no new surface) through Tier 4 (rejected). Structural changes require operator approval. CRITICAL findings cannot be closed with symptom-only patches without sign-off. Patch batches are atomic — all pass or none apply.
 
-**Output:** `C2C-protocol/patches/patches-[protocol]-[date].md`
+**Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
 
 ### `/workflow:c2c` — Multi-Round C2C Protocol
 

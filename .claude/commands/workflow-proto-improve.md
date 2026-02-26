@@ -1,24 +1,25 @@
 ---
 name: workflow:proto-improve
-description: Improve a protocol specification based on PROTO-AUDITOR findings. Generates structured patches via PROTO-ARCHITECT. Accepts protocol + audit report paths.
+description: Improve a protocol specification based on PROTO-AUDITOR findings. Generates structured patches via PROTO-ARCHITECT. Accepts protocol + audit report paths and optional --scope to limit to specific findings.
 ---
 
 # Workflow: Protocol Improvement (PROTO-ARCHITECT)
 
 Generate structured improvement patches for a protocol specification based on audit findings from PROTO-AUDITOR. Uses the `proto-architect` subagent.
 
-**Input:** Protocol file path(s) + audit report path. If no audit report path provided, look for the latest in `C2C-protocol/audits/`.
+**Input:** Protocol file path(s) + audit report path. If no audit report path provided, look for the latest in `c2c-protocol/audits/`.
+**Optional:** `--scope="D1,D2,D6"` to patch only specific dimension findings, or `--scope="critical"` to patch only CRITICAL severity findings.
 
 ## Step 0: Locate Files
 
-1. Parse the user's input for protocol file paths and audit report path
+1. Parse the user's input for protocol file paths, audit report path, and `--scope` parameter
 2. If no audit report path provided:
-   - Search `C2C-protocol/audits/` for the most recent audit report
+   - Search `c2c-protocol/audits/` for the most recent audit report
    - If none found, STOP and instruct the user to run `/workflow:proto-audit` first
 3. Read all protocol files completely
 4. Read the audit report completely
 5. Verify the audit report contains valid `audit()` blocks with finding IDs
-6. Create output directory: `C2C-protocol/patches/` (if it doesn't exist)
+6. Create output directory: `c2c-protocol/patches/` (if it doesn't exist)
 
 ## Step 1: Launch PROTO-ARCHITECT
 
@@ -58,11 +59,16 @@ Execute the full improvement pipeline:
 Do not skip steps. Do not merge steps.
 Output each step block before proceeding to the next.
 Output structured patch() blocks only — no prose outside rule_text fields.
+
+{IF SCOPE PROVIDED}
+SCOPE RESTRICTION: Only process findings matching: [SCOPE]
+Skip all other findings but list them as "out of scope — not patched" in the triage output.
+{/IF}
 ```
 
 ## Step 2: Save Patch Report
 
-1. Save the complete patch output to `C2C-protocol/patches/patches-[protocol-name]-[date].md`
+1. Save the complete patch output to `c2c-protocol/patches/patches-[protocol-name]-[date].md`
 2. Display a summary to the user:
    - Findings triaged (count by classification)
    - Patches generated (count by type: amend/extend/add/deprecate/axiom/define)
@@ -89,7 +95,7 @@ To validate the patches, re-audit the patched protocol:
 /workflow:proto-audit
 
 To apply patches to the protocol, review the patch report at:
-C2C-protocol/patches/patches-[protocol-name]-[date].md
+c2c-protocol/patches/patches-[protocol-name]-[date].md
 ```
 
 ## Important Notes

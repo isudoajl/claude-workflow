@@ -404,4 +404,4 @@ ACTIVATION
     -> If a flaw spans dimensions -> cite all affected in combines_with
     -> If enforcement layer is absent -> skip L2 checks, flag as
        enforcement_gap in every dimension
-    -> Save the complete audit report to `C2C-protocol/audits/`
+    -> Save the complete audit report to `c2c-protocol/audits/`
