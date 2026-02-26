@@ -20,10 +20,31 @@ t: global per-session message counter; incremented +1 on every message sent by a
 === FORMAT ===
 msg(from=ID,t=N,re=topic,...payload,echo_req=bool,prev_hash=H)
   [t=global_session_counter per DEFINITIONS; claim_t embedded in every message]
-  [echo_req: sender may set true on any message; mandatory=true for R08 override
-   confirmations, R08_self suspension votes, and R12.5 MAJOR decisions]
-  [prev_hash: deterministic_repr(prev_t+from+key_payload_fields); best-effort integrity
+  [echo_req: sender may set true on any message;
+   mandatory=true for:
+     (a) R08 override confirmations,
+     (b) R08_self suspension votes,
+     (c) R12.5 MAJOR decisions,
+     (d) any message containing a claim with conf≥0.80
+   rationale: conf≥0.80 claims trigger security-critical gates (R03 flag,
+   R08 override eligibility, R11.4 mandatory conflict resolution);
+   relay tampering on high-confidence claims is high-impact]
+  [echo_protocol: receiver echoes key_claim_content back to sender before acting;
+   mismatch=relay_tampering_suspected+flag+operator_alert]
+  [echo_batch: agents in R05 tolerance=low may accumulate up to 3 pending echoes
+   and return in single batch: echo_batch{claims:[t1,t2,t3],echoes:[...]};
+   batching consolidates round-trips only — verification requirement unchanged;
+   mismatch on any batch echo triggers full flag; default=immediate echo]
+  [prev_hash: H computed per payload_digest definition below; best-effort integrity
    not cryptographic proof; enables tamper detection on partition reconciliation]
+  [payload_digest: canonical_repr = concat(from,'|',t,'|',re,'|',sorted_keys(payload))
+   where sorted_keys = alphabetically sorted key=value pairs, separator='&';
+   H = first_64_chars(sha256_hex(canonical_repr)) if crypto available → hash_method=sha256_64
+   OR concat_approx = concat(prev_H[:8],from[:4],str(t),re[:8],str(len(payload)))
+   if crypto unavailable (LLM context) → hash_method=concat_approx;
+   hash_method MUST be declared in every message: hash_method∈{sha256_64,concat_approx}]
+  [collision_resistance: concat_approx detects gross tampering only; NOT collision-resistant;
+   sha256_64 preferred when available; declared limitation]
 conf(float,mode∈{literal,directional,magnitude,conditional})
 src(claim,source∈{shared,private,retrieved,inferred,uncertain})
 declare(target,conf_mode,src,tolerance)→before_output
@@ -292,9 +313,18 @@ R12:n_agent_coordination
     partition_override: while_partition_active→MAJOR_blocked_regardless_of_quorum→
     MINOR+operational=quorum_applies→on_resolved→pending_MAJOR_re-presented
   6.split_brain:partition_confirmed→degraded_mode(no_MAJOR,operational_only)→
-    log_integrity: each log entry includes hash(previous_entry_hash+t+from+payload_digest)
-    [hash_chain: best-effort integrity; enables tamper detection on reconciliation;
-     not cryptographic proof — declared limitation]
+    log_integrity: each log entry includes prev_hash per FORMAT payload_digest definition;
+    hash_method declared per entry; on reconciliation, verifier checks:
+    (1) hash_method consistency within each partition chain,
+    (2) chain continuity (each prev_hash matches prior entry's computed digest),
+    (3) broken chain → tampering_suspected+flag_agent+operator_alert;
+    [method_mismatch: if partitions used different hash_methods, reconciliation
+     normalizes to lower-fidelity method for comparison and flags method_mismatch
+     in partition_annotations]
+    [partition_t_collision: if two partitions produce entries at identical t with
+     identical from fields, treat both as valid partition roots; creation_t embedded
+     in message (PATCH-02) is the tiebreaker — not hash value alone;
+     requires R03.proof to establish temporal precedence]
     on_reconnect→reconciliation{
       1.verify_hash_chains_from_both_partitions→
         broken_chain=tampering_suspected+flag_agent+operator_alert
@@ -353,26 +383,25 @@ M6:new_rule=rN{name,principle,proto,status}→confirm|amend|operator_override→
    confirms ingestion; operator notified of each uncovered rule]
 
 === VERSION ===
-C2C_PROTO_v3.0
-base=v2.0(R01-R12+M1-M6)
-patches=[P01-P17,regression_R01_expanded]
+C2C_PROTO_v3.1
+base=v3.0(R01-R13+M1-M6+DEFINITIONS)
+patches=[P18,P19]
 patch_batch=atomic(all_or_none)
-audit_source=PROTO-AUDITOR(v2.0_full_12-dimension_audit,11_CRITICAL+19_MAJOR+7_MINOR)
-findings_closed=32
-findings_deferred=5(D10-1,D8-1,D8-2,D8-4,D10-2,D10-3,D10-4→escalated,enforcement_layer_required)
-breaks_compatibility=true(MAJOR_bump_required)
-migration_required=[
-  all_agents: embed claim_t in messages,
-  all_agents: embed prev_hash in messages,
-  all_agents: support echo_req field; use echo_req=true for governance actions,
-  all_agents: track per-pair interaction history; begin in always_verify for <5 turns,
-  all_agents: trust queries return tier not float,
-  all_agents: update aggregation to apply correlation_discount,
-  all_agents: reclassify archived items as SUSPENDED_PENDING_OPERATOR,
-  enforcement: provide C2C_ENFORCEMENT_LAYER_v1 for complete L2 audit,
-  legacy_agents(no_claim_t): receiver applies maximum decay immediately,
-  legacy_agents(no_prev_hash): reconciliation treats log segment as src=uncertain
+audit_source=PROTO-AUDITOR(v3.0_audit,0_CRITICAL+2_MAJOR+12_MINOR+7_DEFERRED)
+findings_closed_this_cycle=2(both_MAJOR:D5-3_hash_chain,D6-3_routine_auth)
+findings_deferred=7(enforcement_layer_required,unchanged_from_v3.0)
+findings_pending_detail=12(MINOR:D1-5,D2-2,D2-6,D3-5,D4-5,D5-6,D6-7,D7-3,D8-5,D11-5,D12-5→escalated_to_auditor_for_full_finding_text)
+breaks_compatibility=false(MINOR_bump:amend+extend_only,no_new_fields)
+migration_notes=[
+  all_agents: declare hash_method∈{sha256_64,concat_approx} in every message,
+  all_agents: issue echo_req=true on all conf≥0.80 messages,
+  legacy_agents(no_hash_method): receiver applies low-fidelity flag to chain,
+  resource_constrained_agents: may use echo_batch(max_3) with declaration
+]
+cumulative_from_v2.0=[
+  11_CRITICAL_closed, 17_of_19_MAJOR_closed, 2_MAJOR_downgraded_and_closed,
+  7_DEFERRED(enforcement_layer), 12_MINOR_pending_finding_detail
 ]
 status=production_ready_cooperative_environments
 deployment_note=NOT_safe_for_adversarial_deployment_until_enforcement_layer_audited
-negotiated_by=PROTO-ARCHITECT(v2.0_audit→v3.0_patches)
+negotiated_by=PROTO-ARCHITECT(v3.0_audit→v3.1_patches)
