@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Twelve specialized agents execute in chain or standalone, each with a single responsibility:
+Thirteen specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -157,6 +157,13 @@ The meta-agent. The only agent specialized in designing other agents. Analyzes t
 
 **Output:** `.claude/agents/[name].md` (and optionally `.claude/commands/workflow-[name].md`)
 
+### 🔒 Role Auditor (`role-auditor.md`)
+**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
+
+The enforcement layer for roles. Modeled directly on the C2C enforcement layer's adversarial principles and the proto-auditor's structured rigor. Assumes every role definition is broken until proven safe. Audits across 12 dimensions — identity integrity, boundary soundness, prerequisite gate completeness, process determinism, output predictability, failure mode coverage, context management soundness, rule enforceability, anti-pattern coverage, tool & permission analysis, integration & pipeline fit, and self-audit — at 2 levels (L1: role definition, L2: self-audit). Produces structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14), severity stacking, back-propagation, and deployment conditions. Blocking rules enforce verdict thresholds: any critical finding or 3+ major findings = broken (must not deploy). The auditor's failure mode is being too agreeable — it fights this by design.
+
+**Output:** `docs/.workflow/role-audit-[name].md`
+
 ## Commands
 
 | Command | Description | Agents Used |
@@ -174,6 +181,7 @@ The meta-agent. The only agent specialized in designing other agents. Analyzes t
 | `/workflow:proto-audit` | Audit a protocol specification (12 dimensions, 3 levels) | Proto-Auditor only |
 | `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
 | `/workflow:create-role` | Design a new agent role definition | Role Creator only |
+| `/workflow:audit-role` | Adversarial audit of role definitions (12 dimensions) | Role Auditor only |
 
 ### Scope Parameter
 
@@ -292,7 +300,8 @@ your-project/
 │   │   ├── codebase-expert.md
 │   │   ├── proto-auditor.md
 │   │   ├── proto-architect.md
-│   │   └── role-creator.md
+│   │   ├── role-creator.md
+│   │   └── role-auditor.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
@@ -305,7 +314,8 @@ your-project/
 │       ├── workflow-understand.md
 │       ├── workflow-proto-audit.md
 │       ├── workflow-proto-improve.md
-│       └── workflow-create-role.md
+│       ├── workflow-create-role.md
+│       └── workflow-audit-role.md
 └── .gitignore
 ```
 
@@ -489,6 +499,29 @@ Step 8: Save       → write agent file + optional companion command
 Every role produced includes: identity, boundaries, prerequisite gate, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, and failure handling. The Role Creator validates against existing agents to prevent overlap and ensures consistency with CLAUDE.md workflow rules.
 
 **Output:** `.claude/agents/[name].md` and optionally `.claude/commands/workflow-[name].md`
+
+### `/workflow:audit-role` — Adversarial Role Audit
+
+Role Auditor performs a full adversarial audit of agent role definitions, modeled on the C2C enforcement layer principles. Assumes every role is broken until proven safe.
+
+```
+D1:  Identity Integrity              D7:  Context Management Soundness
+D2:  Boundary Soundness              D8:  Rule Enforceability
+D3:  Prerequisite Gate Completeness  D9:  Anti-Pattern Coverage
+D4:  Process Determinism             D10: Tool & Permission Analysis
+D5:  Output Predictability           D11: Integration & Pipeline Fit
+D6:  Failure Mode Coverage           D12: Self-Audit (Auditor Integrity)
+```
+
+Levels: L1 (role definition), L2 (self-audit). Outputs structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14 items), severity stacking, back-propagation, and deployment conditions.
+
+Severity: CRITICAL (role will malfunction, silent degradation, privilege escalation), MAJOR (aspirational rules, missing failure handling, implicit boundaries), MINOR (redundant rules, generic anti-patterns).
+
+Verdict scale: broken → degraded → hardened → deployable. Any critical finding = broken. The auditor's failure mode is being too agreeable — it fights this actively.
+
+Can audit a single role or all roles at once, with cross-role comparative analysis for the "all" mode.
+
+**Output:** `docs/.workflow/role-audit-[name].md`
 
 ## Philosophy
 

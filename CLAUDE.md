@@ -30,6 +30,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `proto-auditor.md` (claude-opus-4-6, read-only) — audits protocol specifications across 12 dimensions at 3 levels (protocol, enforcement, self). Adversarial stance. Outputs structured audit findings to `c2c-protocol/audits/`
 - `proto-architect.md` (claude-opus-4-6) — protocol improvement specialist. Consumes audit reports from proto-auditor, generates structured patches through a 6-step pipeline. Outputs patch reports to `c2c-protocol/patches/`
 - `role-creator.md` (claude-opus-4-6) — meta-agent specialized in designing other agents. Researches the role's domain, studies existing agents for consistency, and produces comprehensive role definitions with sharp boundaries, detailed processes, and complete failure handling. Outputs `.claude/agents/[name].md`
+- `role-auditor.md` (claude-opus-4-6, read-only) — adversarial auditor for role definitions. Audits across 12 dimensions at 2 levels (role definition, self-audit). Assumes every role is broken until proven safe. Outputs structured findings with severity classification and deployment verdicts to `docs/.workflow/role-audit-[name].md`
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
@@ -45,6 +46,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-proto-audit.md` — proto-auditor only (protocol specification audit, 12 dimensions, 3 levels)
 - `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
 - `workflow-create-role.md` — role-creator only (designs comprehensive agent role definitions)
+- `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -293,6 +295,13 @@ Codebase-expert only: deep comprehension of a project of any size. Progressively
 /workflow:create-role "description of the desired role"
 ```
 Role-creator only: designs comprehensive agent role definitions with sharp boundaries, detailed processes, output formats, and complete failure handling. Researches the role's domain and validates against existing agents.
+
+### Audit an agent role definition
+```
+/workflow:audit-role ".claude/agents/[name].md"
+/workflow:audit-role "all"
+```
+Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Verdicts: broken → degraded → hardened → deployable.
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

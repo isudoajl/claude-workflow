@@ -38,6 +38,7 @@ echo "   ✓ qa.md"
 echo "   ✓ functionality-analyst.md"
 echo "   ✓ codebase-expert.md"
 echo "   ✓ role-creator.md"
+echo "   ✓ role-auditor.md"
 
 # Copy commands
 echo ""
@@ -54,6 +55,7 @@ echo "   ✓ workflow:improve-functionality"
 echo "   ✓ workflow:functionalities"
 echo "   ✓ workflow:understand"
 echo "   ✓ workflow:create-role"
+echo "   ✓ workflow:audit-role"
 
 # Create specs/ and docs/ structure if they don't exist
 echo ""
@@ -119,6 +121,7 @@ echo "  /workflow:sync                        → Sync specs/docs with codebase"
 echo "  /workflow:functionalities             → Map codebase functionalities"
 echo "  /workflow:understand                  → Deep codebase comprehension"
 echo "  /workflow:create-role \"desc\"          → Design a new agent role"
+echo "  /workflow:audit-role \"path\"          → Adversarial audit of a role"
 echo ""
 echo "  Source of truth: codebase → specs/ → docs/"
 echo ""
