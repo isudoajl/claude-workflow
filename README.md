@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Eleven specialized agents execute in chain or standalone, each with a single responsibility:
+Twelve specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -150,6 +150,13 @@ The protocol improver. Consumes audit reports from Proto-Auditor and generates s
 
 **Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
 
+### 🎭 Role Creator (`role-creator.md`)
+**Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
+
+The meta-agent. The only agent specialized in designing other agents. Analyzes the desired role's domain, researches best practices and pitfalls, studies existing agents for pattern consistency and overlap detection, and produces complete agent definitions that cover every base: identity, boundaries, prerequisites, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, and failure handling. Walks through a Role Anatomy Checklist and validates completeness, consistency, clarity, boundary sharpness, and failure coverage before presenting the result. Gets user approval before saving. Can also create companion command files.
+
+**Output:** `.claude/agents/[name].md` (and optionally `.claude/commands/workflow-[name].md`)
+
 ## Commands
 
 | Command | Description | Agents Used |
@@ -166,6 +173,7 @@ The protocol improver. Consumes audit reports from Proto-Auditor and generates s
 | `/workflow:c2c` | Multi-round C2C protocol (writer ↔ auditor) | Writer + Auditor (up to 5 rounds) |
 | `/workflow:proto-audit` | Audit a protocol specification (12 dimensions, 3 levels) | Proto-Auditor only |
 | `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
+| `/workflow:create-role` | Design a new agent role definition | Role Creator only |
 
 ### Scope Parameter
 
@@ -283,7 +291,8 @@ your-project/
 │   │   ├── functionality-analyst.md
 │   │   ├── codebase-expert.md
 │   │   ├── proto-auditor.md
-│   │   └── proto-architect.md
+│   │   ├── proto-architect.md
+│   │   └── role-creator.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
@@ -295,7 +304,8 @@ your-project/
 │       ├── workflow-functionalities.md
 │       ├── workflow-understand.md
 │       ├── workflow-proto-audit.md
-│       └── workflow-proto-improve.md
+│       ├── workflow-proto-improve.md
+│       └── workflow-create-role.md
 └── .gitignore
 ```
 
@@ -460,6 +470,25 @@ Round 3: ...continues until certification or max 5 rounds
 Both agents communicate exclusively through structured `msg()` blocks with mandatory `conf()` and `src()` tags on every claim. The orchestrator manages turn numbering, conversation history, and context compression across rounds.
 
 **Output:** Per-round transcripts in `poc/c2c-protocol/rounds/` and a `RESULTS.md` summarizing bugs found/fixed, defenses, concessions, and certification status.
+
+### `/workflow:create-role` — Agent Role Design
+
+Role Creator designs comprehensive agent role definitions through a structured process:
+
+```
+Step 1: Analyze    → read the role request, study existing agents for overlap/patterns
+Step 2: Clarify    → ask targeted questions if the description is vague (skip if clear)
+Step 3: Research   → WebSearch for domain best practices, methodologies, pitfalls
+Step 4: Design     → walk the Role Anatomy Checklist, select tools and model
+Step 5: Write      → produce the complete agent definition
+Step 6: Validate   → completeness, consistency, clarity, boundary, failure checks
+Step 7: Confirm    → present to user, get explicit approval before saving
+Step 8: Save       → write agent file + optional companion command
+```
+
+Every role produced includes: identity, boundaries, prerequisite gate, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, and failure handling. The Role Creator validates against existing agents to prevent overlap and ensures consistency with CLAUDE.md workflow rules.
+
+**Output:** `.claude/agents/[name].md` and optionally `.claude/commands/workflow-[name].md`
 
 ## Philosophy
 

@@ -29,6 +29,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `codebase-expert.md` (claude-opus-4-6, read-only) — deep codebase comprehension: progressively explores projects of any size, builds holistic understanding (architecture, domain, data flows, patterns, risk). Outputs `docs/understanding/PROJECT-UNDERSTANDING.md`
 - `proto-auditor.md` (claude-opus-4-6, read-only) — audits protocol specifications across 12 dimensions at 3 levels (protocol, enforcement, self). Adversarial stance. Outputs structured audit findings to `c2c-protocol/audits/`
 - `proto-architect.md` (claude-opus-4-6) — protocol improvement specialist. Consumes audit reports from proto-auditor, generates structured patches through a 6-step pipeline. Outputs patch reports to `c2c-protocol/patches/`
+- `role-creator.md` (claude-opus-4-6) — meta-agent specialized in designing other agents. Researches the role's domain, studies existing agents for consistency, and produces comprehensive role definitions with sharp boundaries, detailed processes, and complete failure handling. Outputs `.claude/agents/[name].md`
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
@@ -43,6 +44,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-c2c.md` — multi-round C2C protocol POC: writer ↔ auditor iterate until certification (max 5 rounds)
 - `workflow-proto-audit.md` — proto-auditor only (protocol specification audit, 12 dimensions, 3 levels)
 - `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
+- `workflow-create-role.md` — role-creator only (designs comprehensive agent role definitions)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -285,6 +287,12 @@ Functionality-analyst only: reads the codebase and produces a structured invento
 /workflow:understand [--scope="module or area"]
 ```
 Codebase-expert only: deep comprehension of a project of any size. Progressively explores through 6 layers (shape → architecture → domain → data flow → patterns → complexity). Produces a holistic understanding document at `docs/understanding/`.
+
+### Create a new agent role
+```
+/workflow:create-role "description of the desired role"
+```
+Role-creator only: designs comprehensive agent role definitions with sharp boundaries, detailed processes, output formats, and complete failure handling. Researches the role's domain and validates against existing agents.
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)
