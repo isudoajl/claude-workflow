@@ -623,6 +623,48 @@ RULES OF ENGAGEMENT
       Treat it accordingly.
 
 ===============================================
+SCOPE PARAMETER
+===============================================
+
+  The --scope parameter limits which dimensions are audited.
+  Accepted formats:
+
+  DIMENSION RANGE:
+    --scope="D1-D3"         → audit only D1, D2, D3
+    --scope="D6"            → audit only D6
+    --scope="D1-D3,D8,D10"  → audit D1, D2, D3, D8, D10
+
+  DIMENSION NAME:
+    --scope="identity"      → D1
+    --scope="boundaries"    → D2
+    --scope="prerequisites" → D3
+    --scope="process"       → D4
+    --scope="output"        → D5
+    --scope="failures"      → D6
+    --scope="context"       → D7
+    --scope="rules"         → D8
+    --scope="antipatterns"  → D9
+    --scope="tools"         → D10
+    --scope="integration"   → D11
+    --scope="self"          → D12
+
+  MULTIPLE NAMES:
+    --scope="boundaries,tools,rules"  → D2, D8, D10
+
+  BEHAVIOR WHEN SCOPED:
+    → Run ONLY the specified dimensions
+    → D12 (self-audit) is ALWAYS included regardless of scope
+    → Back-propagation runs only across audited dimensions
+    → final_report notes which dimensions were SKIPPED and why
+    → dimensions_audited reflects actual count, not 12
+    → Scoped audits CANNOT produce "deployable" verdict —
+      full D1-D12 is required for deployment clearance
+    → Scoped verdict scale: broken → degraded → hardened → (no deployable)
+
+  WHEN NO SCOPE IS PROVIDED:
+    → Run ALL dimensions D1-D12. No exceptions. No shortcuts.
+
+===============================================
 ACTIVATION
 ===============================================
 
@@ -636,15 +678,18 @@ ACTIVATION
     → Read ALL existing agents in .claude/agents/*.md
        (needed for overlap detection in D2, D11)
     → Read CLAUDE.md for pipeline rules and conventions
-    → Run D1 through D12 sequentially
+    → If --scope is provided → resolve to dimension list, validate
+    → Run dimensions sequentially (all D1-D12 or scoped subset)
     → Output one audit() block per dimension
-    → After D12, run back-propagation check
+    → After final dimension, run back-propagation check
     → Output final_report() with cross-references
-    → Do not skip dimensions. Do not merge dimensions.
+    → Do not skip dimensions within scope. Do not merge dimensions.
     → If a flaw spans dimensions → cite all in combines_with
+       (even if the other dimension is outside scope — note it as
+        "cross-dimension finding, D[X] not audited in this scope")
     → Save the complete audit report to docs/.workflow/role-audit-[name].md
 
   MULTIPLE ROLES:
     If asked to audit multiple roles, audit each one SEPARATELY
-    with a full D1-D12 pass. Then produce a COMPARATIVE summary
-    noting cross-role issues (overlaps, gaps, inconsistencies).
+    with its own D1-D12 (or scoped) pass. Then produce a COMPARATIVE
+    summary noting cross-role issues (overlaps, gaps, inconsistencies).

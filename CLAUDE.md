@@ -46,7 +46,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-proto-audit.md` — proto-auditor only (protocol specification audit, 12 dimensions, 3 levels)
 - `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
 - `workflow-create-role.md` — role-creator only (designs comprehensive agent role definitions)
-- `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels)
+- `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels). Accepts `--scope` to limit to specific dimensions
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -298,10 +298,10 @@ Role-creator only: designs comprehensive agent role definitions with sharp bound
 
 ### Audit an agent role definition
 ```
-/workflow:audit-role ".claude/agents/[name].md"
+/workflow:audit-role ".claude/agents/[name].md" [--scope="dimensions"]
 /workflow:audit-role "all"
 ```
-Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Verdicts: broken → degraded → hardened → deployable.
+Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Scope accepts dimension ranges (`D1-D3`), names (`boundaries,tools`), or both. Verdicts: broken → degraded → hardened → deployable.
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

@@ -1,12 +1,13 @@
 ---
 name: workflow:audit-role
-description: Adversarial audit of an agent role definition. Audits across 12 dimensions at 2 levels. Assumes broken until proven safe. Accepts a role file path or audits all roles.
+description: Adversarial audit of an agent role definition. Audits across 12 dimensions at 2 levels. Assumes broken until proven safe. Accepts a role file path or audits all roles. Accepts optional --scope to limit to specific dimensions.
 ---
 
 # Workflow: Audit Role
 
 Invoke ONLY the `role-auditor` subagent to perform an adversarial audit of agent role definition(s).
 Input: a path to a specific `.claude/agents/*.md` file, or "all" to audit every agent.
+Optional: `--scope="dimensions"` to audit only specific dimensions.
 
 ## Single Role Audit (default)
 
@@ -71,6 +72,34 @@ When input is "all" or no specific file is given:
 - **degraded**: No critical, 1-2 major, anatomy >= 8/14 → deploy with acknowledged limitations
 - **hardened**: No critical, no major, minor only, anatomy >= 11/14 → solid, minor improvements possible
 - **deployable**: No findings, anatomy = 14/14 → meets all quality standards (rare)
+
+## Scope Parameter
+
+The `--scope` parameter limits which dimensions are audited:
+
+```bash
+# By dimension number
+/workflow:audit-role ".claude/agents/analyst.md" --scope="D1-D3"
+/workflow:audit-role ".claude/agents/analyst.md" --scope="D6"
+/workflow:audit-role ".claude/agents/analyst.md" --scope="D1-D3,D8,D10"
+
+# By dimension name
+/workflow:audit-role ".claude/agents/analyst.md" --scope="boundaries,tools,rules"
+
+# Dimension name mapping
+# identity=D1, boundaries=D2, prerequisites=D3, process=D4,
+# output=D5, failures=D6, context=D7, rules=D8,
+# antipatterns=D9, tools=D10, integration=D11, self=D12
+```
+
+When scoped:
+- Only specified dimensions are audited
+- D12 (self-audit) is ALWAYS included regardless of scope
+- Scoped audits CANNOT produce "deployable" verdict — full D1-D12 required
+- Cross-dimension findings outside scope are noted but not fully audited
+
+When no scope is provided:
+- All D1-D12 are audited. No exceptions.
 
 ## What the Auditor Does NOT Do
 - Does not MODIFY role definitions (read-only)
