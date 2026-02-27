@@ -32,8 +32,8 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
-- `workflow-feature.md` — full chain for existing projects (discovery conditional on vague descriptions)
-- `workflow-improve.md` — no architect; analyst → test-writer → developer → QA → reviewer
+- `workflow-new-feature.md` — full chain for existing projects (discovery conditional on vague descriptions)
+- `workflow-improve-functionality.md` — no architect; analyst → test-writer → developer → QA → reviewer
 - `workflow-bugfix.md` — reduced chain with bug reproduction test + QA validation
 - `workflow-audit.md` — reviewer only (read-only analysis)
 - `workflow-docs.md` — architect only (documentation generation)
@@ -172,7 +172,7 @@ Test-writer and reviewer adapt their patterns to the project's language (detecte
 ### Scope Parameter
 All workflow commands accept an optional scope to limit context usage:
 ```
-/workflow:feature "add retry logic" --scope="omega-providers"
+/workflow:new-feature "add retry logic" --scope="omega-providers"
 /workflow:audit --scope="milestone 3: omega-core"
 /workflow:sync --scope="omega-memory"
 /workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
@@ -240,13 +240,13 @@ Full chain: discovery → analyst → architect → test-writer → developer �
 
 ### Add feature to existing project
 ```
-/workflow:feature "description of the feature" [--scope="area"]
+/workflow:new-feature "description of the feature" [--scope="area"]
 ```
 Full chain: (discovery if vague) → analyst → architect → test-writer → developer → QA → reviewer. Discovery is invoked when the feature description is vague; skipped for specific, well-scoped features.
 
 ### Improve existing code
 ```
-/workflow:improve "description of the improvement" [--scope="area"]
+/workflow:improve-functionality "description of the improvement" [--scope="area"]
 ```
 Reduced chain (no architect): analyst → test-writer (regression) → developer (refactor) → QA → reviewer
 

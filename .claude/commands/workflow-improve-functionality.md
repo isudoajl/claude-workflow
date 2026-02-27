@@ -1,5 +1,5 @@
 ---
-name: workflow:improve
+name: workflow:improve-functionality
 description: Improve existing code — refactor, optimize, or enhance without adding new features. Accepts optional --scope to limit context.
 ---
 

@@ -99,8 +99,8 @@ None. This is the first agent in the pipeline.
 
 ### Prerequisite Gates
 
-1. **If invoked after Discovery** (in `/workflow:new` or `/workflow:feature`): verifies `docs/.workflow/idea-brief.md` exists. Stops if missing.
-2. **If invoked directly** (in `/workflow:improve`, `/workflow:bugfix`): no idea brief needed — user's description is input.
+1. **If invoked after Discovery** (in `/workflow:new` or `/workflow:new-feature`): verifies `docs/.workflow/idea-brief.md` exists. Stops if missing.
+2. **If invoked directly** (in `/workflow:improve-functionality`, `/workflow:bugfix`): no idea brief needed — user's description is input.
 
 ### Inputs
 

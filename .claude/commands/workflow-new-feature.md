@@ -1,5 +1,5 @@
 ---
-name: workflow:feature
+name: workflow:new-feature
 description: Add a feature to an existing project. Accepts optional --scope to limit context.
 ---
 

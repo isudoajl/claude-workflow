@@ -155,8 +155,8 @@ The protocol improver. Consumes audit reports from Proto-Auditor and generates s
 | Command | Description | Agents Used |
 |---------|-------------|-------------|
 | `/workflow:new "idea"` | Build something from scratch | discovery → analyst → architect → test-writer → developer → QA → reviewer |
-| `/workflow:feature "feature"` | Add to existing project | (discovery) → analyst → architect → test-writer → developer → QA → reviewer |
-| `/workflow:improve "improvement"` | Refactor, optimize, or enhance | analyst → test-writer → developer → QA → reviewer |
+| `/workflow:new-feature "feature"` | Add to existing project | (discovery) → analyst → architect → test-writer → developer → QA → reviewer |
+| `/workflow:improve-functionality "improvement"` | Refactor, optimize, or enhance | analyst → test-writer → developer → QA → reviewer |
 | `/workflow:bugfix "bug"` | Fix a bug | analyst → test-writer → developer → QA → reviewer |
 | `/workflow:audit` | Full code + specs audit | Reviewer only |
 | `/workflow:docs` | Generate/update specs & docs | Architect only |
@@ -172,7 +172,7 @@ The protocol improver. Consumes audit reports from Proto-Auditor and generates s
 All commands accept `--scope` to limit context usage on large codebases:
 
 ```bash
-/workflow:feature "add retry logic" --scope="omega-providers"
+/workflow:new-feature "add retry logic" --scope="omega-providers"
 /workflow:audit --scope="omega-core"
 /workflow:sync --scope="omega-memory"
 /workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
@@ -286,8 +286,8 @@ your-project/
 │   │   └── proto-architect.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
-│       ├── workflow-feature.md
-│       ├── workflow-improve.md
+│       ├── workflow-new-feature.md
+│       ├── workflow-improve-functionality.md
 │       ├── workflow-bugfix.md
 │       ├── workflow-audit.md
 │       ├── workflow-docs.md
@@ -352,11 +352,11 @@ Step 8: Iteration  → developer fixes → reviewer re-reviews (scoped to fix on
 Step 9: Versioning → final commit, version tag, cleanup temp files
 ```
 
-### `/workflow:feature` — Same as New, Context-Aware
+### `/workflow:new-feature` — Same as New, Context-Aware
 
 Same pipeline but every agent reads existing code first. Discovery is invoked when the feature description is vague; skipped for specific, well-scoped features. The analyst checks for specs drift and performs impact analysis. The test-writer matches existing test conventions. All previous tests must continue passing (regression).
 
-### `/workflow:improve` — Refactor and Optimize
+### `/workflow:improve-functionality` — Refactor and Optimize
 
 ```
 Step 1: Analyst    → reads current code, identifies what to improve (no new requirements)
