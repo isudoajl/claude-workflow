@@ -40,7 +40,7 @@ Your Idea
 📦 Git           → Conventional commits and versioning
 ```
 
-Each agent runs as a Claude Code subagent with its own isolated context window. The analyst's heavy reading doesn't eat into the developer's context. Work is scoped, incremental, and saved to disk at every step.
+Each agent runs as a Claude Code subagent with its own isolated context window. The analyst's heavy reading doesn't eat into the developer's context. Work is scoped, incremental, and saved to disk at every step. Every agent validates its prerequisites before starting, and every multi-step command enforces iteration limits and inter-step output validation to prevent silent failures.
 
 ## Traceability Chain
 
@@ -72,51 +72,51 @@ The codebase always wins. When specs or docs are outdated, agents flag the discr
 ### 💡 Discovery (`discovery.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
 
-The idea validator. The only agent that engages in extended back-and-forth with the user. Takes a raw idea, explores the vision, challenges assumptions, identifies risks, and produces a clear Idea Brief for the Analyst. Uses web search to research patterns and inform challenges. Adapts its approach based on context — full exploration for new projects, anchored exploration for features on existing codebases. Requires explicit user approval before saving the Idea Brief to ensure the pipeline builds from a validated concept.
+The idea validator. The only agent that engages in extended back-and-forth with the user. Takes a raw idea, explores the vision, challenges assumptions, identifies risks, and produces a clear Idea Brief for the Analyst. Uses web search to research patterns and inform challenges. Adapts its approach based on context — full exploration for new projects, anchored exploration for features on existing codebases. Requires explicit user approval before saving the Idea Brief to ensure the pipeline builds from a validated concept. Ensures `docs/.workflow/` exists before writing. Saves partial progress if the user abandons mid-discovery.
 
 **Output:** `docs/.workflow/idea-brief.md` (full or lightweight template based on discovery depth)
 
 ### 🔍 Analyst (`analyst.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
 
-The business analyst. Reads `specs/SPECS.md` to understand the project, scopes to the relevant area, reads the actual code, then questions everything that isn't clear. Never assumes — always asks. Assigns requirement IDs with MoSCoW priorities and explicit acceptance criteria. Performs impact analysis on existing code. Flags any drift between code and specs.
+The business analyst. Validates prerequisites (idea brief must exist when invoked after discovery). Reads `specs/SPECS.md` to understand the project, scopes to the relevant area, reads the actual code, then questions everything that isn't clear. Never assumes — always asks. Assigns requirement IDs with MoSCoW priorities and explicit acceptance criteria. Performs impact analysis on existing code. Flags any drift between code and specs. Ensures output directories exist before writing.
 
 **Output:** `specs/[domain]-requirements.md` with requirement IDs, acceptance criteria, traceability matrix
 
 ### 🏗️ Architect (`architect.md`)
 **Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob
 
-The designer. Takes the analyst's requirements and designs the system architecture before any code is written. Defines modules, interfaces, dependencies, and implementation order. Plans failure modes and recovery strategies. Identifies security considerations and trust boundaries. Sets performance budgets. Creates and updates spec files in `specs/` and documentation in `docs/`.
+The designer. Validates prerequisites (analyst requirements must exist). Takes the analyst's requirements and designs the system architecture before any code is written. Defines modules, interfaces, dependencies, and implementation order. Plans failure modes and recovery strategies. Identifies security considerations and trust boundaries. Sets performance budgets. Creates and updates spec files in `specs/` and documentation in `docs/`. Ensures output directories exist before writing.
 
-Also handles `/workflow:docs` and `/workflow:sync` — reading the codebase and bringing specs/docs back in sync.
+Also handles `/workflow:docs` and `/workflow:sync` — reading the codebase and bringing specs/docs back in sync. Handles missing specs/docs gracefully by creating them from scratch.
 
 **Output:** `specs/[domain]-architecture.md`, updated specs and docs
 
 ### 🧪 Test Writer (`test-writer.md`)
 **Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
 
-The contract writer. Writes all tests BEFORE any implementation exists, driven by requirement priorities — Must requirements first (exhaustive coverage), then Should, then Could. References requirement IDs for full traceability. Covers acceptance criteria, failure modes, security scenarios, and edge cases. Works one module at a time, saving to disk after each.
+The contract writer. Validates prerequisites (architect design and analyst requirements must exist). Detects project language and adapts test structure accordingly — supports Rust, TypeScript, Python, Go, and any language with standard conventions. Writes all tests BEFORE any implementation exists, driven by requirement priorities — Must requirements first (exhaustive coverage), then Should, then Could. References requirement IDs for full traceability. Covers acceptance criteria, failure modes, security scenarios, and edge cases. Works one module at a time, saving to disk after each.
 
 **Output:** Test files that must fail initially (red phase of TDD)
 
 ### 💻 Developer (`developer.md`)
 **Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
 
-The builder. Implements the minimum code needed to pass all tests, one module at a time in the order defined by the architect. Matches existing code conventions by grepping the codebase. Never advances to the next module until the current one's tests all pass. Commits after each module.
+The builder. Validates prerequisites (tests, architect design, and analyst requirements must exist). Reads the analyst's requirements directly for traceability. Implements the minimum code needed to pass all tests, one module at a time in the order defined by the architect. Matches existing code conventions by grepping the codebase. Never advances to the next module until the current one's tests all pass. Updates the traceability matrix's "Implementation Module" column after each module. Has a max retry limit of 5 attempts per test-fix cycle — escalates after that. Handles new project scaffolding. Commits after each module.
 
-**Cycle:** Red → Green → Refactor → Commit → Next
+**Cycle:** Red → Green → Refactor → Update Traceability → Commit → Next
 
 ### ✅ QA (`qa.md`)
 **Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
 
-The validator. Bridges the gap between "tests pass" and "it works as the user expects." Validates acceptance criteria for each requirement. Runs end-to-end flows, not just unit tests. Performs exploratory testing to find issues that scripted tests miss. Verifies failure modes and security scenarios actually behave correctly. Checks traceability matrix completeness.
+The validator. Validates prerequisites (source code and tests must exist). Bridges the gap between "tests pass" and "it works as the user expects." Validates acceptance criteria for each requirement. Runs end-to-end flows, not just unit tests. Performs exploratory testing to find issues that scripted tests miss. Verifies failure modes and security scenarios actually behave correctly. Checks traceability matrix completeness. Has a "system won't start" fallback — if the system can't run, documents the error and validates what it can. Ensures `docs/qa/` exists before writing reports.
 
 **Output:** QA validation report with acceptance criteria results and exploratory findings
 
 ### 👁️ Reviewer (`reviewer.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
 
-The auditor. Reviews all implemented code looking for bugs, security vulnerabilities, performance issues, technical debt, and specs/docs drift. Uses Grep for cross-cutting scans (`unwrap()`, `unsafe`, `TODO`, `HACK`). Works module by module, saving findings incrementally. Brutally honest — doesn't approve out of courtesy.
+The auditor. Validates prerequisites (source code must exist). Reviews all implemented code looking for bugs, security vulnerabilities, performance issues, technical debt, and specs/docs drift. Uses language-adaptive Grep patterns for cross-cutting scans (supports Rust, Python, TypeScript, Go, and others). Works module by module, saving findings incrementally. Brutally honest — doesn't approve out of courtesy. Can escalate architectural issues distinctly from code issues. Ensures output directories exist before writing reports.
 
 **Output:** Review report with critical/minor findings, specs drift, and final verdict
 
@@ -177,6 +177,32 @@ All commands accept `--scope` to limit context usage on large codebases:
 ```
 
 When no scope is provided, the analyst determines the minimal scope needed.
+
+## Fail-Safe Controls
+
+The workflow is reinforced with guardrails at every level to prevent silent failures, infinite loops, and cascading garbage.
+
+### Prerequisite Gates
+Every agent validates its upstream input before starting. If required input is missing, the agent **stops immediately** with a clear error message identifying what's missing and which upstream agent failed.
+
+### Iteration Limits
+Multi-step commands enforce maximum iteration counts:
+- **QA ↔ Developer:** max 3 iterations
+- **Reviewer ↔ Developer:** max 2 iterations
+
+If limits are reached, the workflow stops and reports remaining issues to the user.
+
+### Inter-Step Output Validation
+Before invoking each agent, the command verifies the previous agent produced its expected output file. Missing output halts the chain with a clear report.
+
+### Error Recovery
+If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` — what completed, what failed, what remains. The user can resume from the failed step.
+
+### Directory Safety
+Agents create target directories before writing (e.g., `docs/qa/`, `docs/reviews/`, `specs/`). No silent file-write failures.
+
+### Language-Agnostic
+Test-writer and reviewer adapt to the project's language (Rust, Python, TypeScript, Go, etc.) by detecting config files and existing source. No language is assumed.
 
 ## Context Window Management
 

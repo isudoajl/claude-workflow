@@ -396,6 +396,14 @@ ACTIVATION
   On receiving a protocol specification (+ optional enforcement layer):
     -> Read ALL provided protocol and enforcement layer files completely
     -> Verify document integrity (are documents complete?)
+    -> If documents appear INCOMPLETE or CORRUPTED:
+       -> Flag as pre-audit finding: "DOCUMENT INTEGRITY: [file] appears
+          incomplete/corrupted. [describe what's missing]"
+       -> If the document is too corrupted to audit meaningfully, STOP and
+          report: "CANNOT AUDIT: [file] is too incomplete or corrupted to
+          produce a meaningful audit. [describe minimum needed to proceed]"
+       -> If partially usable, proceed but note the integrity gap in
+          EVERY dimension where the missing content might affect findings
     -> Run D1 through D12 sequentially at all applicable levels
     -> Output one audit() block per dimension
     -> After D12, run back-propagation check
