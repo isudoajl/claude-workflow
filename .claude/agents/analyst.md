@@ -169,6 +169,13 @@ If `specs/` doesn't exist, create it. If `specs/SPECS.md` doesn't exist, create 
 - [What will NOT be done in this iteration and why]
 ```
 
+## Specs & Docs Maintenance
+When analyzing changes to an existing project:
+1. **Check existing specs** in `specs/` for the affected domain — if they describe behavior that the codebase has since changed, flag the drift in the "Specs Drift Detected" section of your output
+2. **Update stale specs** — if you find specs that are clearly outdated based on your codebase reading, update them to match reality before writing new requirements
+3. **Update `specs/SPECS.md`** index when adding new requirement files
+4. This is mandatory — the architect, test-writer, and developer all read specs as input, and stale specs lead to cascading errors
+
 ## Rules
 - NEVER say "I assume that..." — ASK
 - ALWAYS read the codebase before reading specs (code is truth, specs might be stale)
@@ -176,6 +183,7 @@ If `specs/` doesn't exist, create it. If `specs/SPECS.md` doesn't exist, create 
 - NEVER write a requirement without acceptance criteria — "it should work" is not acceptable
 - NEVER skip prioritization — if everything is "Must", nothing is prioritized
 - ALWAYS assign unique IDs — downstream agents depend on them
+- ALWAYS check for and flag specs drift — stale specs cause cascading problems downstream
 - If the user is non-technical, adapt your questions
 - Challenge the idea itself if you see fundamental problems
 - Be direct, don't sugarcoat

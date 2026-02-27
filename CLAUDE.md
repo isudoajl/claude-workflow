@@ -19,11 +19,11 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 
 **Agents** (`.claude/agents/`) — subagent definitions with YAML frontmatter (`name`, `description`, `tools`, `model`):
 - `discovery.md` (claude-opus-4-6) — pre-pipeline conversational agent: takes raw ideas, discusses with the user, challenges the concept, produces an Idea Brief. The only agent with extended user back-and-forth. Outputs `docs/.workflow/idea-brief.md`
-- `analyst.md` (claude-opus-4-6) — full BA: requirements with acceptance criteria, MoSCoW priorities, traceability matrix, impact analysis. Outputs `specs/[domain]-requirements.md`
+- `analyst.md` (claude-opus-4-6) — full BA: requirements with acceptance criteria, MoSCoW priorities, traceability matrix, impact analysis. Flags and fixes stale specs before writing new requirements. Outputs `specs/[domain]-requirements.md`
 - `architect.md` (claude-opus-4-6) — designs architecture with failure modes, security, performance budgets. Maintains specs/ and docs/. Outputs `specs/[domain]-architecture.md`
-- `test-writer.md` (claude-opus-4-6) — writes failing tests before code (TDD red phase), priority-driven (Must first), references requirement IDs for traceability
-- `developer.md` (claude-opus-4-6) — implements minimum code to pass tests, commits per module
-- `qa.md` (claude-opus-4-6) — end-to-end validation, acceptance criteria verification, traceability matrix completion, exploratory testing
+- `test-writer.md` (claude-opus-4-6) — writes failing tests before code (TDD red phase), priority-driven (Must first), references requirement IDs for traceability. Flags specs inconsistencies when tests reveal undocumented behavior
+- `developer.md` (claude-opus-4-6) — implements minimum code to pass tests, commits per module. Updates relevant specs/docs when implementation changes documented behavior
+- `qa.md` (claude-opus-4-6) — end-to-end validation, acceptance criteria verification, traceability matrix completion, exploratory testing. Verifies specs/docs accuracy against actual behavior and flags drift
 - `reviewer.md` (claude-opus-4-6, read-only) — audits for bugs/security/performance/drift, outputs review reports
 - `functionality-analyst.md` (claude-opus-4-6, read-only) — maps what the codebase does, outputs structured functionality inventory
 - `codebase-expert.md` (claude-opus-4-6, read-only) — deep codebase comprehension: progressively explores projects of any size, builds holistic understanding (architecture, domain, data flows, patterns, risk). Outputs `docs/understanding/PROJECT-UNDERSTANDING.md`
