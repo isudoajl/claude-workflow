@@ -32,6 +32,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `role-creator.md` (claude-opus-4-6) — meta-agent specialized in designing other agents. Researches the role's domain, studies existing agents for consistency, and produces comprehensive role definitions with sharp boundaries, detailed processes, and complete failure handling. Outputs `.claude/agents/[name].md`
 - `role-auditor.md` (claude-opus-4-6, read-only) — adversarial auditor for role definitions. Audits across 12 dimensions at 2 levels (role definition, self-audit). Assumes every role is broken until proven safe. Outputs structured findings with severity classification and deployment verdicts to `docs/.workflow/role-audit-[name].md`
 - `feature-evaluator.md` (claude-opus-4-6) — feature gate agent: scores proposed features across 7 dimensions (necessity, impact, complexity cost, alternatives, alignment, risk, timing) and produces a GO/NO-GO/CONDITIONAL verdict. Advisory — user always has final say. Automatically invoked in workflow-new-feature before the Analyst. Outputs `docs/.workflow/feature-evaluation.md`
+- `omega-topology-architect.md` (claude-opus-4-6) — OMEGA solutions architect: maps user business domains to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Proposes minimum viable configurations and executes only after human approval. Outputs `~/.omega/projects/<name>/ROLE.md` and related config files
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
@@ -48,6 +49,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
 - `workflow-create-role.md` — role-creator → role-auditor → auto-remediation (designs agent roles, audits them adversarially, fixes findings automatically; max 2 remediation cycles)
 - `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels). Accepts `--scope` to limit to specific dimensions
+- `workflow-omega-setup.md` — omega-topology-architect only (maps business domains to OMEGA primitives, proposes and executes configurations after human approval)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -304,6 +306,12 @@ Role-creator only: designs comprehensive agent role definitions with sharp bound
 /workflow:audit-role "all"
 ```
 Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Scope accepts dimension ranges (`D1-D3`), names (`boundaries,tools`), or both. Verdicts: broken → degraded → hardened → deployable.
+
+### Configure OMEGA for a business domain
+```
+/workflow:omega-setup "description of business domain"
+```
+Omega-topology-architect only: maps a user's business goals to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Discovers existing infrastructure, designs a minimum viable configuration, presents a proposal for approval, then executes the setup. Writes to `~/.omega/`.
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

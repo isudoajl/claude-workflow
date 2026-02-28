@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Fourteen specialized agents execute in chain or standalone, each with a single responsibility:
+Fifteen specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -166,6 +166,13 @@ The gate. Evaluates whether a proposed feature is worth building before the full
 
 **Output:** `docs/.workflow/feature-evaluation.md`
 
+### 🧩 OMEGA Topology Architect (`omega-topology-architect.md`)
+**Model:** Opus | **Tools:** Read, Write, Grep, Glob
+
+The OMEGA solutions architect. Maps user business domains to OMEGA infrastructure primitives — projects, skills, topologies, schedules, heartbeats, and lessons. When a user describes a business goal ("help me trade stocks", "monitor my servers"), this agent understands the domain, discovers existing OMEGA infrastructure, designs a minimum viable configuration, presents it for approval, and executes the setup. Composes existing primitives only — writes ROLE.md, TOPOLOGY.toml, SKILL.md, and HEARTBEAT.md files but never Rust code. Sequential topologies only. Human always approves before any files are created. Pushes back on over-engineering.
+
+**Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
+
 ### 🔒 Role Auditor (`role-auditor.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
 
@@ -191,6 +198,7 @@ The enforcement layer for roles. Modeled directly on the C2C enforcement layer's
 | `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
 | `/workflow:create-role` | Design a new agent role definition + audit + remediation | Role Creator → Role Auditor → auto-fix |
 | `/workflow:audit-role` | Adversarial audit of role definitions (12 dimensions) | Role Auditor only |
+| `/workflow:omega-setup` | Configure OMEGA for a business domain | OMEGA Topology Architect only |
 
 ### Scope Parameter
 
@@ -311,7 +319,8 @@ your-project/
 │   │   ├── proto-architect.md
 │   │   ├── role-creator.md
 │   │   ├── role-auditor.md
-│   │   └── feature-evaluator.md
+│   │   ├── feature-evaluator.md
+│   │   └── omega-topology-architect.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
@@ -325,7 +334,8 @@ your-project/
 │       ├── workflow-proto-audit.md
 │       ├── workflow-proto-improve.md
 │       ├── workflow-create-role.md
-│       └── workflow-audit-role.md
+│       ├── workflow-audit-role.md
+│       └── workflow-omega-setup.md
 └── .gitignore
 ```
 
@@ -541,6 +551,23 @@ Verdict scale: broken → degraded → hardened → deployable. Any critical fin
 Can audit a single role or all roles at once, with cross-role comparative analysis for the "all" mode.
 
 **Output:** `docs/.workflow/role-audit-[name].md`
+
+### `/workflow:omega-setup` — OMEGA Infrastructure Configuration
+
+OMEGA Topology Architect maps a user's business goals to OMEGA primitives through a 6-phase process:
+
+```
+Phase 1: Understand    → targeted questions to understand the business domain (max 2 rounds)
+Phase 2: Discover      → read existing ~/.omega/ projects, skills, topologies, heartbeats
+Phase 3: Map           → determine which primitives serve the goal (projects, skills, schedules, heartbeats)
+Phase 4: Design        → assemble into a structured proposal with minimum viable setup
+Phase 5: Present       → show proposal, explain decisions, wait for explicit human approval
+Phase 6: Execute       → create approved files (ROLE.md, HEARTBEAT.md, TOPOLOGY.toml, SKILL.md)
+```
+
+Composes existing OMEGA primitives only — never writes Rust code. Sequential topologies only. Pushes back on over-engineering ("you don't need 5 projects for this — one with a good ROLE.md will do"). If context limits are reached, saves progress to `docs/.workflow/topology-architect-progress.md` for resumption.
+
+**Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, scheduling markers, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
 
 ## Philosophy
 
