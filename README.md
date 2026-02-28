@@ -151,9 +151,9 @@ The protocol improver. Consumes audit reports from Proto-Auditor and generates s
 **Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
 
 ### 🎭 Role Creator (`role-creator.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob, WebSearch, WebFetch
+**Model:** Opus | **Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
 
-The meta-agent. The only agent specialized in designing other agents. Analyzes the desired role's domain, researches best practices and pitfalls, studies existing agents for pattern consistency and overlap detection, and produces complete agent definitions that cover every base: identity, boundaries, prerequisites, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, and failure handling. Walks through a Role Anatomy Checklist and validates completeness, consistency, clarity, boundary sharpness, and failure coverage before presenting the result. Gets user approval before saving. Can also create companion command files.
+The meta-agent. The only agent specialized in designing other agents. Analyzes the desired role's domain, researches best practices and pitfalls, studies existing agents for pattern consistency and overlap detection, and produces complete agent definitions that cover every base: identity, boundaries, prerequisites, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, failure handling, and integration. Walks through a Role Anatomy Checklist and validates completeness, consistency, clarity, boundary sharpness, and failure coverage before presenting the result. Gets user approval before saving. Can also create companion command files.
 
 **Output:** `.claude/agents/[name].md` (and optionally `.claude/commands/workflow-[name].md`)
 
