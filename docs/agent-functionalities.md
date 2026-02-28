@@ -1,6 +1,6 @@
 # Agent Functionality Inventory
 
-Complete inventory of every functionality, input, output, and fail-safe control for all 11 agents in the workflow toolkit.
+Complete inventory of every functionality, input, output, and fail-safe control for all 14 agents in the workflow toolkit.
 
 ---
 
@@ -19,6 +19,9 @@ Complete inventory of every functionality, input, output, and fail-safe control 
 | Codebase Expert | Opus | Read, Grep, Glob | Yes | `docs/understanding/PROJECT-UNDERSTANDING.md` |
 | Proto-Auditor | Opus | Read, Grep, Glob | Yes | `c2c-protocol/audits/audit-[protocol]-[date].md` |
 | Proto-Architect | Opus | Read, Write, Edit, Grep, Glob | No | `c2c-protocol/patches/patches-[protocol]-[date].md` |
+| Role Creator | Opus | Read, Write, Grep, Glob, WebSearch, WebFetch | No | `.claude/agents/[name].md` |
+| Role Auditor | Opus | Read, Grep, Glob | Yes | `docs/.workflow/role-audit-[name].md` |
+| Feature Evaluator | Opus | Read, Write, Grep, Glob, WebSearch, WebFetch | No | `docs/.workflow/feature-evaluation.md` |
 
 ---
 
@@ -796,6 +799,197 @@ Contains: `triage()`, individual `patch()` blocks, `self_audit()`, `version()`, 
 | ADVERSARIAL-AUDITOR (Agent C) | Peer check on patches before merge |
 | OPERATOR | Authority on structural changes and TIER 3 escalations |
 | AGENT A/B | Downstream — receive patched protocol, no input authority |
+
+---
+
+## 12. Role Creator Agent
+
+**File:** `.claude/agents/role-creator.md`
+**Model:** claude-opus-4-6
+**Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
+
+### Prerequisite Gates
+
+1. **Role description exists** — the user must provide a non-empty description of the desired role.
+2. **Description is meaningful** — must contain at least a noun (what the agent is) and a verb (what it does). "An agent" alone fails. "An agent that audits security" passes.
+3. **No exact duplicate** — Globs `.claude/agents/*.md` and checks that no existing agent has the same name. Stops if duplicate found.
+
+### Inputs
+
+- Natural-language description of the desired role from user or `workflow-create-role` command.
+- Existing agent definitions (`.claude/agents/*.md`) — for pattern consistency and overlap detection.
+- Existing commands (`.claude/commands/*.md`) — for orchestration patterns.
+- `CLAUDE.md` — for workflow rules and global constraints.
+- Codebase (only if role requires domain-specific understanding).
+
+### Functionalities
+
+| # | Functionality | Description |
+|---|---|---|
+| 1 | Directory safety | Creates `.claude/agents/`, `.claude/commands/`, `docs/.workflow/` if missing. |
+| 2 | Role request analysis (Phase 1) | Reads user description, identifies what's clear vs. vague, checks existing agents for overlap. |
+| 3 | Targeted clarification (Phase 2) | Asks questions when objective criteria are met: missing identity, missing boundary, missing trigger, missing output, ambiguous scope. Skipped when description is clear. Max 2 rounds. |
+| 4 | Domain research (Phase 3) | Studies 2-3 existing agents by proximity (same domain, same stance, same complexity). Uses WebSearch (2-4 searches max) for best practices, pitfalls, quality criteria, edge cases. |
+| 5 | Architecture design (Phase 4) | Walks the 14-item Role Anatomy Checklist. Performs overlap analysis. Selects minimal tool set (least privilege). Selects model (Opus for complex reasoning, Sonnet for procedural tasks). |
+| 6 | Agent definition writing (Phase 5) | Produces complete agent definition file following the mandatory structure: YAML frontmatter, identity, personality, boundaries, prerequisite gate, directory safety, source of truth, context management, process (phases), output format, rules, anti-patterns, failure handling, integration. |
+| 7 | Validation (Phase 6) | 5-point check: completeness (all anatomy checklist items), consistency (no CLAUDE.md contradictions), clarity (another LLM could execute unambiguously), boundary sharpness, failure coverage (5 common scenarios). |
+| 8 | User confirmation (Phase 7) | Presents complete definition, explains key design decisions, waits for explicit approval before saving. |
+| 9 | Companion artifacts (Phase 8) | Creates `.claude/commands/workflow-[name].md` if the agent should be invocable as a slash command. Notes pipeline integration opportunities without modifying existing commands. |
+| 10 | Overlap detection | Cross-references new role against all existing agents to prevent duplicated responsibilities. |
+| 11 | Context limit handling | Saves progress to `docs/.workflow/role-creator-progress.md`. |
+
+### Outputs
+
+| File | Condition |
+|------|-----------|
+| `.claude/agents/[name].md` | Primary output (after user approval) |
+| `.claude/commands/workflow-[name].md` | If companion command requested |
+| `docs/.workflow/role-creator-progress.md` | If context limited or user abandons |
+
+### Fail-Safe Controls
+
+1. Prerequisite gate — stops if no description, vague description, or duplicate name.
+2. Directory safety.
+3. Max 2 rounds of clarification — stops if still vague.
+4. Overlap detection — reports overlap with evidence, asks user for resolution.
+5. Scope-too-broad detection — recommends splitting into multiple agents.
+6. File-exists check — stops if target file already exists.
+7. Contradiction detection — cites exact quotes from user, asks for resolution.
+8. Context limit save.
+9. WebSearch fallback — proceeds without domain research if no results, notes limitation.
+10. User approval required before saving — never writes without explicit consent.
+
+---
+
+## 13. Role Auditor Agent
+
+**File:** `.claude/agents/role-auditor.md`
+**Model:** claude-opus-4-6
+**Tools:** Read, Grep, Glob (READ-ONLY)
+
+### Prerequisite Gates
+
+1. **Role definition file exists** — must be readable.
+2. **YAML frontmatter present** — must contain `name`, `description`, `tools`, `model`.
+3. **Body content present** — must have content after the frontmatter closing `---`.
+
+### Inputs
+
+- Target role definition file (`.claude/agents/[name].md`).
+- All existing agents (`.claude/agents/*.md`) — for overlap detection in D2 and D11.
+- `CLAUDE.md` — for pipeline rules and conventions.
+- Existing commands (`.claude/commands/*.md`) — for D11 integration checks (when needed).
+
+### Functionalities
+
+| # | Functionality | Description |
+|---|---|---|
+| 1 | Pre-audit setup (Phase 1) | Reads target role, runs prerequisite checks, reads all existing agents, reads CLAUDE.md, resolves `--scope` to dimension list. |
+| 2 | **D1: Identity Integrity** | Checks: single-sentence identifiability, single core responsibility, real gap justification, no contradiction with existing agents, descriptive name, accurate YAML description. |
+| 3 | **D2: Boundary Soundness** | Checks: explicit boundaries, overlap with each existing agent, scope creep resistance under prompt variation, implicit boundaries that should be explicit, process steps belonging to other agents. |
+| 4 | **D3: Prerequisite Gate Completeness** | Checks: gate exists, covers all required inputs, stops with clear error, identifies failing upstream agent, bypass paths, content quality vs. file existence. |
+| 5 | **D4: Process Determinism** | Checks: named phases with numbered steps, specific actions, explicit decision criteria, justified phase order, loop termination conditions, full lifecycle, error branching. |
+| 6 | **D5: Output Predictability** | Checks: concrete template, save location specified, all output scenarios covered, downstream parseability, consistency with other agents, conditional section reliability. |
+| 7 | **D6: Failure Mode Coverage** | Checks: 5 common failures (prerequisites, malformed input, context exhaustion, ambiguous instructions, upstream failure) + role-specific failures. Explicit vs. implicit handling. Silent degradation detection. Retry limits. Partial progress saving. |
+| 8 | **D7: Context Management Soundness** | Checks: read order specified, "never read X" rules, scoping strategy (Grep/Glob before Read), `--scope` handling, checkpoint/save strategy, actionable vs. aspirational limits. |
+| 9 | **D8: Rule Enforceability** | Checks: rule count (5-20 range), enforceability test (observable from output), aspirational language detection ("be thorough", "try to", "consider"), contradictions, mechanism vs. outcome, priority among rules. |
+| 10 | **D9: Anti-Pattern Coverage** | Checks: section exists, domain-specific vs. generic, common LLM failure modes covered, explanations of why bad, redundancy with rules, actual prevention effectiveness. |
+| 11 | **D10: Tool & Permission Analysis** | Checks: least privilege (every tool justified by process), missing tools (process needs tool not granted), Bash justification, read-only contradiction, model selection justification, WebSearch/WebFetch necessity. |
+| 12 | **D11: Integration & Pipeline Fit** | Checks: upstream dependencies defined, downstream consumers defined, handoff format compatibility, pipeline conventions respected, command invocability, existing chain impact, output discoverability. |
+| 13 | **D12: Self-Audit (Auditor Integrity)** | Checks: passes own anatomy checklist at 8/14, process matches own D4 standards, rules enforceable by own D8, has tools its process requires, severity calibration, gaming resistance, sequential ordering blind spots. |
+| 14 | Back-propagation (Phase 3) | After D12, re-reads all earlier verdicts, revises any invalidated by later findings, records every revision. |
+| 15 | Final report (Phase 4) | Tallies severity counts, identifies severity stacking, scores anatomy checklist (14 items), determines verdict mechanically from threshold table, lists deployment conditions and residual risks. |
+| 16 | Severity classification | CRITICAL (will malfunction, silent degradation, privilege escalation, livelock), MAJOR (aspirational rules, missing failure handling, implicit boundaries), MINOR (redundant rules, generic anti-patterns). |
+| 17 | Severity stacking | Two findings combining to CRITICAL behavior → both upgraded to MAJOR with cross-reference. |
+| 18 | Scope parameter handling | Accepts dimension ranges (D1-D3), names (boundaries,tools), or both. D12 always included. Scoped audits cannot produce "deployable" verdict. |
+| 19 | Multi-role audit ("all" mode) | Audits each role separately with full D1-D12 pass, then produces comparative summary noting overlaps, gaps, inconsistencies. |
+
+### Outputs
+
+| File | Condition |
+|------|-----------|
+| Audit report (returned to invoking command/agent) | Primary output |
+| `docs/.workflow/role-audit-[name].md` | When saved by the invoking command |
+
+### Fail-Safe Controls
+
+1. Prerequisite gate — stops if file missing, empty body, or missing frontmatter.
+2. Read-only enforcement — tools are Read, Grep, Glob only.
+3. Never declares "sound" without listing every check performed and its result.
+4. Back-propagation — revises earlier verdicts based on later findings.
+5. Mechanical verdict — thresholds table determines verdict, never overridden.
+6. Severity stacking treated seriously — two minors that combine to critical behavior → upgraded.
+7. Never skips dimensions (unscoped). Never merges dimensions.
+8. Context limit handling — summarizes completed dimensions, finishes remaining with summarized context.
+9. D12 self-audit always included regardless of scope.
+10. Audit what's written, not what's intended — missing sections are absent, not inferred.
+
+---
+
+## 14. Feature Evaluator Agent
+
+**File:** `.claude/agents/feature-evaluator.md`
+**Model:** claude-opus-4-6
+**Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
+
+### Prerequisite Gates
+
+1. **Feature description exists** — must be non-empty (from idea brief or command arguments).
+2. **Source code exists** — Globs for source files. Stops if missing: "Feature evaluation requires an existing codebase."
+3. **If invoked after Discovery** — `docs/.workflow/idea-brief.md` must exist. Stops if missing.
+4. **If invoked without Discovery** — command arguments serve as primary input.
+5. **Idea Brief takes precedence** when both exist.
+
+### Inputs
+
+- Feature description (from idea brief or command arguments).
+- Codebase (read-only for context).
+- `specs/SPECS.md` — project scope and existing commitments.
+- `docs/DOCS.md` — project context and stated goals.
+- `docs/.workflow/idea-brief.md` — if Discovery ran.
+
+### Functionalities
+
+| # | Functionality | Description |
+|---|---|---|
+| 1 | Directory safety | Creates `docs/.workflow/` if missing. |
+| 2 | Proposal understanding (Phase 1) | Reads feature description, specs index, docs index. Identifies core claim: what problem, for whom. |
+| 3 | Codebase context (Phase 2) | Globs project structure, Greps for related patterns, reads 2-5 relevant source files. Determines if similar functionality exists. |
+| 4 | **D1: Necessity** scoring | Evaluates: real problem? Current? Who affected? Cost of inaction? Want vs. need? Score 1-5. |
+| 5 | **D2: Impact** scoring | Evaluates: measurable outcome? Multiplier effect? Immediate vs. speculative? Score 1-5. |
+| 6 | **D3: Complexity Cost** scoring | Evaluates: modules affected? New dependencies? Maintenance burden? Hidden complexities? Score 1-5 (inverted — 5 = low complexity). |
+| 7 | **D4: Alternatives** scoring | Evaluates: existing functionality? External tools (via WebSearch)? 80/20 version? Manual workaround? Score 1-5 (inverted — 5 = no alternatives). |
+| 8 | **D5: Alignment** scoring | Evaluates: project purpose fit? Architecture fit? Vision direction? User surprise? Score 1-5. |
+| 9 | **D6: Risk** scoring | Evaluates: breakage risk? Security surface? Technical debt? Requirement clarity? Compliance? Score 1-5 (inverted — 5 = low risk). |
+| 10 | **D7: Timing** scoring | Evaluates: prerequisites met? Dependency conflicts? Project stability? In-progress conflicts? Score 1-5. |
+| 11 | FVS computation (Phase 4) | Weighted formula: FVS = ((D1+D2+D5)×2 + D3+D4+D6+D7) / 10. Necessity, Impact, Alignment weighted 2×. |
+| 12 | Verdict determination | GO (FVS ≥ 4.0), CONDITIONAL (2.5-3.9), NO-GO (< 2.5). Override rules: any dim=1 → at most CONDITIONAL; D1=1 → NO-GO; D3=1 AND D2≤2 → NO-GO. |
+| 13 | Recommendation (Phase 5) | GO: highlight risks for analyst. CONDITIONAL: list specific conditions. NO-GO: explain why, suggest alternatives. |
+| 14 | User presentation (Phase 6) | Presents full report, states verdict, waits for user decision. Respects override. |
+| 15 | WebSearch for alternatives | Searches for existing solutions, libraries, or patterns that address the same problem (used in D4). |
+| 16 | Score inflation detection | Anti-pattern: if all 7 dimensions score 4+, re-examines for inflation before finalizing. |
+| 17 | Context limit handling | Saves partial evaluation to `docs/.workflow/feature-evaluator-partial.md`. |
+
+### Outputs
+
+| File | Condition |
+|------|-----------|
+| `docs/.workflow/feature-evaluation.md` | Primary output |
+| `docs/.workflow/feature-evaluator-partial.md` | If context limited |
+
+### Fail-Safe Controls
+
+1. Prerequisite gate — stops if no description, no source code, or missing idea brief (when expected).
+2. Directory safety.
+3. Advisory-only — verdict is never a veto; user always decides.
+4. Override documentation — if user overrides NO-GO, it's recorded in the report.
+5. Score evidence requirement — every dimension score must cite specific observations.
+6. FVS formula is deterministic — verdict derived mechanically from scores, not gut feeling.
+7. Override rules prevent single-dimension masking — D1=1 forces NO-GO regardless of FVS.
+8. Score inflation detection — all-high scores trigger re-examination.
+9. Context limit save.
+10. Does not gate bug fixes or improvements — only new features.
+11. Does not re-do Discovery's analysis — builds on idea brief findings.
 
 ---
 

@@ -186,7 +186,7 @@ The enforcement layer for roles. Modeled directly on the C2C enforcement layer's
 | `/workflow:sync` | Fix drift between code and specs/docs | Architect only |
 | `/workflow:functionalities` | Map all codebase functionalities | Functionality Analyst only |
 | `/workflow:understand` | Deep codebase comprehension | Codebase Expert only |
-| `/workflow:c2c` | Multi-round C2C protocol (writer ↔ auditor) | Writer + Auditor (up to 5 rounds) |
+| `/workflow:c2c` | Multi-round C2C protocol (writer ↔ auditor) | Writer + Auditor (up to 20 rounds) |
 | `/workflow:proto-audit` | Audit a protocol specification (12 dimensions, 3 levels) | Proto-Auditor only |
 | `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
 | `/workflow:create-role` | Design a new agent role definition + audit + remediation | Role Creator → Role Auditor → auto-fix |
@@ -480,7 +480,7 @@ A proof-of-concept for multi-round agent-to-agent conversations using the C2C pr
 ```
 Round 1: Writer produces code → Auditor audits and finds issues
 Round 2: Writer fixes/defends/concedes → Auditor re-audits changes
-Round 3: ...continues until certification or max 5 rounds
+Round 3: ...continues until certification or max 20 rounds
 ```
 
 **Agent A (Writer):** Produces production code with persuasive documentation. Self-assesses honestly using confidence tags. Responds to audit findings with `FIX`, `DEFENSE`, or `CONCESSION` messages.
