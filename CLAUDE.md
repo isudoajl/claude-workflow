@@ -50,6 +50,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
 - `workflow-create-role.md` — role-creator → role-auditor → auto-remediation (designs agent roles, audits them adversarially, fixes findings automatically; max 2 remediation cycles)
 - `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels). Accepts `--scope` to limit to specific dimensions
+- `workflow-resume.md` — resumes a stopped or failed workflow from saved milestone progress and chain state. Accepts `--from` to specify a milestone or step
 - `workflow-omega-setup.md` — omega-topology-architect only (maps business domains to OMEGA primitives, proposes and executes configurations after human approval)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
@@ -153,7 +154,7 @@ If the limit is reached, the workflow STOPS and reports remaining issues to the 
 Multi-step commands verify that each agent produced its expected output file before invoking the next agent. If output is missing, the chain halts with a clear report of which step failed.
 
 ### Error Recovery
-If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` documenting which steps completed, which failed, and what remains. The user can resume from the failed step.
+If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` documenting which steps completed, which failed, and what remains. The user can resume with `/workflow:resume`.
 
 ### Directory Safety
 Every agent that writes output files verifies target directories exist before writing. If a directory is missing, the agent creates it. This prevents silent file-write failures.
@@ -307,6 +308,12 @@ Role-creator only: designs comprehensive agent role definitions with sharp bound
 /workflow:audit-role "all"
 ```
 Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Scope accepts dimension ranges (`D1-D3`), names (`boundaries,tools`), or both. Verdicts: broken → degraded → hardened → deployable.
+
+### Resume a stopped milestone-based workflow
+```
+/workflow:resume [--from="M3" or --from="developer"]
+```
+Resumes a milestone-based workflow (`/workflow:new` or `/workflow:new-feature`) that was interrupted by context limits, agent errors, retry exhaustion, or manual stop. Reads `docs/.workflow/milestone-progress.md` and optionally `docs/.workflow/chain-state.md` to auto-detect the resume point. Use `--from` to override: `--from="M[N]"` for a specific milestone, or `--from="test-writer"` / `--from="developer"` / `--from="qa"` / `--from="reviewer"` for a specific step within the next pending milestone. Does not apply to non-milestone workflows like `/workflow:bugfix` or `/workflow:improve-functionality`.
 
 ### Configure OMEGA for a business domain
 ```

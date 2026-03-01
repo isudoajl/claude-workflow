@@ -35,7 +35,7 @@ If any agent fails mid-chain:
    - Which step failed and why
    - What remains to be done
 2. Report to user with the chain state
-3. The user can resume by re-invoking the failed step's agent manually
+3. The user can resume with `/workflow:resume` which auto-detects the resume point, or `/workflow:resume --from="[step]"` to resume from a specific step
 
 ## Step 1: Discovery
 Invoke the `discovery` subagent with the user's raw idea.

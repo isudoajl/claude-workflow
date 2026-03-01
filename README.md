@@ -209,6 +209,7 @@ The enforcement layer for roles. Modeled directly on the C2C enforcement layer's
 | `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
 | `/workflow:create-role` | Design a new agent role definition + audit + remediation | Role Creator → Role Auditor → auto-fix |
 | `/workflow:audit-role` | Adversarial audit of role definitions (12 dimensions) | Role Auditor only |
+| `/workflow:resume` | Resume a stopped or failed milestone-based workflow from saved state | Same agents as the interrupted workflow |
 | `/workflow:omega-setup` | Configure OMEGA for a business domain | OMEGA Topology Architect only |
 
 ### Scope Parameter
@@ -242,7 +243,7 @@ If limits are reached, the workflow stops and reports remaining issues to the us
 Before invoking each agent, the command verifies the previous agent produced its expected output file. Missing output halts the chain with a clear report.
 
 ### Error Recovery
-If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` — what completed, what failed, what remains. The user can resume from the failed step.
+If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` — what completed, what failed, what remains. The user can resume with `/workflow:resume`.
 
 ### Directory Safety
 Agents create target directories before writing (e.g., `docs/qa/`, `docs/reviews/`, `specs/`). No silent file-write failures.
@@ -347,6 +348,7 @@ your-project/
 │       ├── workflow-proto-improve.md
 │       ├── workflow-create-role.md
 │       ├── workflow-audit-role.md
+│       ├── workflow-resume.md
 │       └── workflow-omega-setup.md
 └── .gitignore
 ```
@@ -569,6 +571,31 @@ Verdict scale: broken → degraded → hardened → deployable. Any critical fin
 Can audit a single role or all roles at once, with cross-role comparative analysis for the "all" mode.
 
 **Output:** `docs/.workflow/role-audit-[name].md`
+
+### `/workflow:resume` — Resume Interrupted Workflow
+
+Resumes a workflow that was interrupted by context limits, agent errors, retry exhaustion, or manual stop. Reads the saved milestone progress and optional chain state to auto-detect where to pick up.
+
+```
+Step 1: Read Progress    → parse docs/.workflow/milestone-progress.md for first non-COMPLETE milestone
+Step 2: Read Chain State → if docs/.workflow/chain-state.md exists, identify the failed step
+Step 3: Validate         → verify outputs exist for all COMPLETE milestones
+Step 4: Determine Point  → auto-detect or use --from override
+Step 5: Report Plan      → show the user what will be resumed and from where
+
+  ┌─── MILESTONE LOOP (same as workflow-new) ────────────────────────────────┐
+  │ Test Writer → Developer → Build & Lint → QA + Iteration → Review + Iter │
+  │ → Milestone Commit & Push → next milestone                              │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+Step 12: Final Versioning → full test suite, version tag, push tags, cleanup
+```
+
+Supports `--from` to override the auto-detected resume point:
+- `--from="M3"` — resume from a specific milestone
+- `--from="test-writer"` / `--from="developer"` / `--from="qa"` / `--from="reviewer"` — resume from a specific step within the next pending milestone
+
+Same fail-safe controls as the original workflow: QA iteration limits (3), reviewer iteration limits (2), inter-step output validation, and error recovery with chain state saving.
 
 ### `/workflow:omega-setup` — OMEGA Infrastructure Configuration
 
