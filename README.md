@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Fifteen specialized agents execute in chain or standalone, each with a single responsibility:
+Sixteen specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -173,6 +173,13 @@ The OMEGA solutions architect. Maps user business domains to OMEGA infrastructur
 
 **Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
 
+### 🛠️ Skill Creator (`skill-creator.md`)
+**Model:** Opus | **Tools:** Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
+
+The OMEGA skill creation specialist. Designs and builds OMEGA skills — self-contained capability packages (`SKILL.md` plus optional scripts, references, and assets) that give OMEGA domain expertise. Researches CLIs, APIs, and workflows deeply enough to write skill instructions that a Claude Code subprocess can execute without guesswork. Validates frontmatter format (TOML/YAML), checks for trigger keyword collisions with existing skills, enforces progressive disclosure (body under 500 lines), and bakes in safety constraints for destructive domains. Presents a full skill proposal for user approval before creating any files. Can be recommended by the topology architect when a new skill is needed.
+
+**Output:** `~/.omega/skills/<name>/SKILL.md` and optional `scripts/`, `references/`, `assets/` subdirectories
+
 ### 🔒 Role Auditor (`role-auditor.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
 
@@ -320,7 +327,8 @@ your-project/
 │   │   ├── role-creator.md
 │   │   ├── role-auditor.md
 │   │   ├── feature-evaluator.md
-│   │   └── omega-topology-architect.md
+│   │   ├── omega-topology-architect.md
+│   │   └── skill-creator.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
