@@ -34,6 +34,8 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `feature-evaluator.md` (claude-opus-4-6) — feature gate agent: scores proposed features across 7 dimensions (necessity, impact, complexity cost, alternatives, alignment, risk, timing) and produces a GO/NO-GO/CONDITIONAL verdict. Advisory — user always has final say. Automatically invoked in workflow-new-feature before the Analyst. Outputs `docs/.workflow/feature-evaluation.md`
 - `omega-topology-architect.md` (claude-opus-4-6) — OMEGA solutions architect: maps user business domains to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Proposes minimum viable configurations and executes only after human approval. Outputs `~/.omega/projects/<name>/ROLE.md` and related config files
 - `skill-creator.md` (claude-opus-4-6) — OMEGA skill creation specialist: researches domain tools, CLIs, and APIs, then produces production-ready skill directories at `~/.omega/skills/<name>/` with proper frontmatter, concise instructions, and optional supporting resources (scripts, references, assets). Validates frontmatter, checks trigger collisions, enforces progressive disclosure. Outputs `~/.omega/skills/<name>/SKILL.md`
+- `blockchain-network.md` (claude-opus-4-6) — blockchain network infrastructure specialist: P2P networking (libp2p, devp2p, gossipsub), node operations (full/archive/validator/RPC), chain synchronization, RPC/API infrastructure, network security (eclipse/Sybil attacks, DDoS), monitoring setup (Prometheus/Grafana), and network topology design. Covers Ethereum, Solana, Cosmos, Substrate/Polkadot. Writes configs, scripts, docker-compose, monitoring setups. Outputs infrastructure reports, node setup guides, and configuration files
+- `blockchain-debug.md` (claude-opus-4-6) — blockchain debug specialist: the firefighter called when nodes are broken RIGHT NOW. Diagnoses and fixes active connectivity problems (peer failures, sync stuck, RPC unreachable, Engine API breakdowns, network partitions) using a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Does NOT design infrastructure or set up new nodes — that is blockchain-network's job. Outputs Root Cause Analysis reports to `docs/.workflow/blockchain-debug-rca.md`
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
@@ -52,6 +54,8 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels). Accepts `--scope` to limit to specific dimensions
 - `workflow-resume.md` — resumes a stopped or failed workflow from saved milestone progress and chain state. Accepts `--from` to specify a milestone or step
 - `workflow-omega-setup.md` — omega-topology-architect only (maps business domains to OMEGA primitives, proposes and executes configurations after human approval)
+- `workflow-blockchain-network.md` — blockchain-network only (P2P networking, node operations, RPC infrastructure, network security, monitoring, chain synchronization). Accepts `--scope` to focus on specific aspects (rpc, security, monitoring, sync, validator)
+- `workflow-blockchain-debug.md` — blockchain-debug only (diagnoses and fixes active connectivity problems on blockchain nodes). Accepts `--scope` to focus on specific layers (peers, sync, rpc, engine-api, firewall)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -126,6 +130,7 @@ Discovery validates the idea → Analyst assigns REQ-XXX-001 → Architect maps 
 8. **Every requirement has acceptance criteria** — "it should work" is not acceptable
 9. **Every requirement has a priority** — Must/Should/Could/Won't (MoSCoW)
 10. **Every requirement is traceable** — from ID through tests to implementation
+11. **60% context budget** — every agent must complete its work within 60% of the context window. The Architect sizes milestones to respect this budget, and each agent monitors its own usage proactively. If an agent reaches 60%, it STOPS, saves state, and delegates remaining work to a fresh context via `/workflow:resume`
 
 ## Fail-Safe Controls
 
@@ -193,8 +198,23 @@ All workflow commands accept an optional scope to limit context usage:
 
 When no scope is provided, the analyst determines the minimal scope needed based on the task description.
 
-### When Approaching Context Limits
-If an agent notices it's consuming too much context:
+### 60% Context Budget
+Every agent operates under a **60% context window budget**. This is a proactive limit, not a reactive fallback — agents plan their work to fit within 60%, leaving 40% headroom for reasoning, edge cases, and unexpected complexity.
+
+**Why 60%:** Agents that consume their full context window produce degraded output — they lose track of earlier decisions, repeat themselves, and miss connections. The 60% budget ensures each agent finishes strong with full recall of its work.
+
+**How it works:**
+- The **Architect** sizes milestones so each downstream agent can complete one milestone within 60% of its context (max 3 modules per milestone)
+- Each **pipeline agent** monitors its own usage proactively and stops at the 60% mark
+- When an agent hits the budget, it saves state to `docs/.workflow/` and the pipeline continues via `/workflow:resume`
+
+**Heuristics for agents:**
+- If you've read more than ~20 files without saving progress, you are likely near the budget
+- If you've processed more than 3 modules without checkpointing, save progress now
+- If you're on your second major domain/area, consider whether you have enough budget remaining for the rest
+
+### When Reaching the 60% Budget
+When an agent reaches 60% of its context window:
 1. **Summarize** what has been learned so far into a temporary file at `docs/.workflow/[agent]-[task]-summary.md`
 2. **Delegate** remaining work by spawning a continuation subagent that reads the summary
 3. **Never silently degrade** — if you can't do a thorough job, say so and suggest splitting the task
@@ -329,6 +349,18 @@ Resumes a milestone-based workflow (`/workflow:new` or `/workflow:new-feature`) 
 /workflow:omega-setup "description of business domain"
 ```
 Omega-topology-architect only: maps a user's business goals to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Discovers existing infrastructure, designs a minimum viable configuration, presents a proposal for approval, then executes the setup. Writes to `~/.omega/`.
+
+### Blockchain network infrastructure
+```
+/workflow:blockchain-network "description of task" [--scope="aspect"]
+```
+Blockchain-network specialist only: P2P networking, node operations, RPC/API infrastructure, network security, monitoring, chain synchronization, and validator networking. Covers Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Scope accepts aspects like `rpc`, `security`, `monitoring`, `sync`, `validator`.
+
+### Debug blockchain node connectivity
+```
+/workflow:blockchain-debug "description of the problem" [--scope="layer"]
+```
+Blockchain-debug specialist only: diagnoses and fixes active connectivity problems on blockchain nodes — peer failures, sync stuck, RPC unreachable, Engine API breakdowns, validator missing attestations, network partitions. Follows a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Scope accepts layers like `peers`, `sync`, `rpc`, `engine-api`, `firewall`. For new node setup or infrastructure design, use `/workflow:blockchain-network` instead.
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

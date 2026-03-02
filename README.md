@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Sixteen specialized agents execute in chain or standalone, each with a single responsibility:
+Eighteen specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -187,9 +187,23 @@ The OMEGA skill creation specialist. Designs and builds OMEGA skills — self-co
 ### 🔒 Role Auditor (`role-auditor.md`)
 **Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
 
-The enforcement layer for roles. Modeled directly on the C2C enforcement layer's adversarial principles and the proto-auditor's structured rigor. Assumes every role definition is broken until proven safe. Audits across 12 dimensions — identity integrity, boundary soundness, prerequisite gate completeness, process determinism, output predictability, failure mode coverage, context management soundness, rule enforceability, anti-pattern coverage, tool & permission analysis, integration & pipeline fit, and self-audit — at 2 levels (L1: role definition, L2: self-audit). Produces structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14), severity stacking, back-propagation, and deployment conditions. Blocking rules enforce verdict thresholds: any critical finding or 3+ major findings = broken (must not deploy). The auditor's failure mode is being too agreeable — it fights this by design.
+The enforcement layer for roles. Modeled directly on the C2C enforcement layer's adversarial principles and the proto-auditor's structured rigor. Assumes every role definition is broken until proven safe. Audits across 12 dimensions — identity integrity, boundary soundness, prerequisite gate completeness, process determinism, output predictability, failure mode coverage, context management soundness, rule enforceability, anti-pattern coverage, tool & permission analysis, integration & pipeline fit, and self-audit — at 2 levels (L1: role definition, L2: self-audit). Produces structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14 items), severity stacking, back-propagation, and deployment conditions. Blocking rules enforce verdict thresholds: any critical finding or 3+ major findings = broken (must not deploy). The auditor's failure mode is being too agreeable — it fights this by design.
 
 **Output:** `docs/.workflow/role-audit-[name].md`
+
+### 🔗 Blockchain Network Specialist (`blockchain-network.md`)
+**Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
+
+The blockchain infrastructure engineer. Expert in the networking layer of blockchain systems — P2P protocols (libp2p, devp2p, gossipsub, Kademlia DHT), node operations (full nodes, archive nodes, validators, RPC nodes, light clients), chain synchronization (snap sync, checkpoint sync, state sync), RPC/API infrastructure (JSON-RPC, WebSocket, load balancing, rate limiting), network security (eclipse attacks, Sybil resistance, DDoS protection, firewall hardening), and monitoring (Prometheus, Grafana, alerting). Covers Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Provides exact CLI flags, specific configuration values, real port numbers, and tested docker-compose files. Security-first — every configuration includes firewall rules and hardening. Includes chain-specific reference tables for ports, protocols, sync modes, and client diversity guidance.
+
+**Output:** Configuration files, docker-compose setups, shell scripts, firewall rules, monitoring configs, infrastructure reports, and node setup guides
+
+### 🚒 Blockchain Debug Specialist (`blockchain-debug.md`)
+**Model:** Opus | **Tools:** Read, Write, Bash, Glob, Grep, WebSearch, WebFetch
+
+The firefighter. Called when blockchain nodes are broken RIGHT NOW — peers won't connect, sync is stuck, RPC is unreachable, the Engine API is failing, validators are missing attestations, or nodes are partitioned. Follows a systematic 7-phase debug methodology: gather symptoms, confirm the issue with diagnostic commands, isolate the layer (network/transport, protocol, application, inter-component), diagnose the root cause, propose and apply a fix (with explicit user approval for destructive actions), verify the fix worked, and document everything in a Root Cause Analysis report. Read-only diagnostic commands (port checks, log analysis, RPC queries) run freely; state-changing operations (restarts, config edits, data deletion) require explicit user approval. Will refuse to disable auth, open all ports, or apply unsafe "quick fixes." Includes comprehensive diagnostic command references for Ethereum (EL+CL), Cosmos/CometBFT, Solana, and Substrate/Polkadot, plus a common issues reference organized by symptom. Does NOT design infrastructure, set up new nodes, or write monitoring configs — that is the blockchain-network agent's job. This agent debugs and fixes; the other one builds.
+
+**Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms, diagnosis steps, root cause, fix applied, verification results, and prevention recommendations
 
 ## Commands
 
@@ -212,6 +226,8 @@ The enforcement layer for roles. Modeled directly on the C2C enforcement layer's
 | `/workflow:audit-role` | Adversarial audit of role definitions (12 dimensions) | Role Auditor only |
 | `/workflow:resume` | Resume a stopped or failed milestone-based workflow from saved state | Same agents as the interrupted workflow |
 | `/workflow:omega-setup` | Configure OMEGA for a business domain | OMEGA Topology Architect only |
+| `/workflow:blockchain-network` | Blockchain network infrastructure (nodes, P2P, RPC, security, monitoring) | Blockchain Network Specialist only |
+| `/workflow:blockchain-debug` | Debug active blockchain connectivity problems (peers, sync, RPC, Engine API) | Blockchain Debug Specialist only |
 
 ### Scope Parameter
 
@@ -222,6 +238,8 @@ All commands accept `--scope` to limit context usage on large codebases:
 /workflow:audit --scope="omega-core"
 /workflow:sync --scope="omega-memory"
 /workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
+/workflow:blockchain-network "security audit" --scope="security"
+/workflow:blockchain-debug "sync stuck" --scope="engine-api"
 ```
 
 When no scope is provided, the analyst determines the minimal scope needed.
@@ -257,11 +275,13 @@ Test-writer and reviewer adapt to the project's language (Rust, Python, TypeScri
 
 ## Context Window Management
 
-This workflow is designed for real-world codebases that exceed a single context window. Every agent follows these rules:
+This workflow is designed for real-world codebases that exceed a single context window. Every agent operates under a **60% context window budget** — completing its work within 60% of available context to leave 40% headroom for reasoning and edge cases. The Architect enforces this by sizing milestones to a maximum of 3 modules each, and every pipeline agent monitors its own usage proactively.
 
+- **60% budget** — every agent must finish within 60% of its context window. If it hits the limit, it saves state and delegates via `/workflow:resume`
 - **Read indexes first** — `specs/SPECS.md` gives the project layout without reading every file
 - **Grep before Read** — search for symbols and patterns before loading whole files
 - **Work one module at a time** — never load everything into context simultaneously
+- **Max 3 modules per milestone** — the Architect sizes milestones so each downstream agent can complete one milestone within budget
 - **Save to disk incrementally** — tests, code, and findings are written to files after each module
 - **Checkpoint on large operations** — audit, docs, and sync process one milestone at a time with progress saved to `docs/.workflow/`
 - **Never silently degrade** — if an agent can't finish, it states exactly what was skipped and recommends a scoped follow-up
@@ -337,7 +357,9 @@ your-project/
 │   │   ├── role-auditor.md
 │   │   ├── feature-evaluator.md
 │   │   ├── omega-topology-architect.md
-│   │   └── skill-creator.md
+│   │   ├── skill-creator.md
+│   │   ├── blockchain-network.md
+│   │   └── blockchain-debug.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
@@ -353,7 +375,9 @@ your-project/
 │       ├── workflow-create-role.md
 │       ├── workflow-audit-role.md
 │       ├── workflow-resume.md
-│       └── workflow-omega-setup.md
+│       ├── workflow-omega-setup.md
+│       ├── workflow-blockchain-network.md
+│       └── workflow-blockchain-debug.md
 └── .gitignore
 ```
 
@@ -642,6 +666,46 @@ Phase 6: Execute       → create approved files (ROLE.md, HEARTBEAT.md, TOPOLOG
 Composes existing OMEGA primitives only — never writes Rust code. Sequential topologies only. Pushes back on over-engineering ("you don't need 5 projects for this — one with a good ROLE.md will do"). If context limits are reached, saves progress to `docs/.workflow/topology-architect-progress.md` for resumption.
 
 **Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, scheduling markers, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
+
+### `/workflow:blockchain-network` — Blockchain Network Infrastructure
+
+Blockchain Network Specialist provides expert guidance on blockchain P2P networking, node operations, and network infrastructure:
+
+```
+Phase 1: Assess       → identify chain, node type, task type, read existing configs
+Phase 2: Research      → verify current client versions, check for known issues
+Phase 3: Design        → produce solution with exact configurations, firewall rules, monitoring
+Phase 4: Validate      → verify CLI flags exist, test config syntax, include rollback plan
+Phase 5: Deliver       → write approved configuration files, scripts, and documentation
+```
+
+Task types: node setup, network analysis, RPC infrastructure, security hardening, monitoring setup, network topology design, chain synchronization, validator networking, client migration, multi-chain/cross-chain networking.
+
+Supports Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Includes chain-specific reference tables for ports, protocols, sync modes, and client diversity. Security-first — every configuration includes firewall rules, peer filtering, and hardening. Will refuse to produce configurations that expose admin APIs to the public internet.
+
+**Output:** Configuration files (`.toml`, `.yaml`, `.json`), docker-compose files, shell scripts, firewall rules, monitoring configs (Prometheus, Grafana), infrastructure reports, and node setup guides
+
+### `/workflow:blockchain-debug` — Blockchain Node Debugging
+
+Blockchain Debug Specialist diagnoses and fixes active connectivity problems on blockchain nodes:
+
+```
+Phase 1: Gather Symptoms    → understand what is broken, extract key data points
+Phase 2: Confirm the Issue   → verify the symptom is real using diagnostic commands
+Phase 3: Isolate the Layer   → network/transport, protocol, application, or inter-component
+Phase 4: Diagnose Root Cause → targeted diagnostics within the identified layer
+Phase 5: Fix                 → propose fix, WAIT for user approval, apply minimal change
+Phase 6: Verify              → independently confirm the fix resolved the issue
+Phase 7: Document            → produce Root Cause Analysis report
+```
+
+Covers: zero peers, sync stuck, RPC unreachable, Engine API auth failures, validator missing attestations, peer connect-then-disconnect, network partitions, CometBFT persistent peer failures, Solana delinquent validators. Includes diagnostic command references for Ethereum (EL+CL), Cosmos/CometBFT, Solana, and Substrate/Polkadot, plus a common issues reference organized by symptom.
+
+Read-only diagnostic commands run freely. State-changing operations (restarts, config edits, data deletion, firewall changes) require explicit user approval with risk assessment and rollback instructions. Will refuse to disable JWT auth, open all ports, or apply unsafe "quick fixes."
+
+Does NOT design infrastructure, set up new nodes, write monitoring configs, or do security audits — that is the blockchain-network agent's job. This agent is the firefighter; the other is the architect.
+
+**Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms confirmed, diagnosis steps (including failed hypotheses), root cause with evidence, fix applied, verification results, and prevention recommendations
 
 ## Philosophy
 
