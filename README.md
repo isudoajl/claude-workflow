@@ -16,7 +16,7 @@ This workflow solves all of that.
 
 ## How It Works
 
-Eighteen specialized agents execute in chain or standalone, each with a single responsibility:
+Nineteen specialized agents execute in chain or standalone, each with a single responsibility:
 
 ```
 Your Idea
@@ -205,6 +205,13 @@ The firefighter. Called when blockchain nodes are broken RIGHT NOW — peers won
 
 **Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms, diagnosis steps, root cause, fix applied, verification results, and prevention recommendations
 
+### 🧙 Wizard UX Expert (`wizard-ux.md`)
+**Model:** Opus | **Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
+
+The wizard flow specialist. Designs intuitive installation wizards, setup flows, onboarding sequences, and multi-step configuration processes for TUI (terminal), GUI (desktop), Web (browser), and CLI (non-interactive) contexts. Understands the unique constraints of each medium — a TUI wizard cannot use drag-and-drop; a CLI wizard cannot show a progress ring; a GUI wizard can show parallel panels that a terminal cannot. Produces complete wizard flow specifications so detailed that downstream agents (architect, test-writer, developer) can implement the wizard without making a single UX decision themselves. Every step includes field definitions, smart defaults, validation rules, UX copy, error messages, and medium-specific adaptations. Designs error recovery, accessibility baselines, expert fast-path modes, and post-wizard experiences. Does NOT write implementation code — produces specs consumed by architect, test-writer, and developer.
+
+**Output:** `specs/[domain]-wizard-flow.md` with step sequence, flow architecture, state management, navigation rules, error recovery, expert/fast-path mode, accessibility, and design decisions
+
 ## Commands
 
 | Command | Description | Agents Used |
@@ -228,6 +235,7 @@ The firefighter. Called when blockchain nodes are broken RIGHT NOW — peers won
 | `/workflow:omega-setup` | Configure OMEGA for a business domain | OMEGA Topology Architect only |
 | `/workflow:blockchain-network` | Blockchain network infrastructure (nodes, P2P, RPC, security, monitoring) | Blockchain Network Specialist only |
 | `/workflow:blockchain-debug` | Debug active blockchain connectivity problems (peers, sync, RPC, Engine API) | Blockchain Debug Specialist only |
+| `/workflow:wizard-ux` | Design wizard, setup, or onboarding flows for TUI/GUI/Web/CLI | Wizard UX Expert only |
 
 ### Scope Parameter
 
@@ -240,6 +248,7 @@ All commands accept `--scope` to limit context usage on large codebases:
 /workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
 /workflow:blockchain-network "security audit" --scope="security"
 /workflow:blockchain-debug "sync stuck" --scope="engine-api"
+/workflow:wizard-ux "node setup wizard" --scope="TUI"
 ```
 
 When no scope is provided, the analyst determines the minimal scope needed.
@@ -359,7 +368,8 @@ your-project/
 │   │   ├── omega-topology-architect.md
 │   │   ├── skill-creator.md
 │   │   ├── blockchain-network.md
-│   │   └── blockchain-debug.md
+│   │   ├── blockchain-debug.md
+│   │   └── wizard-ux.md
 │   └── commands/              ← Slash commands
 │       ├── workflow-new.md
 │       ├── workflow-new-feature.md
@@ -377,7 +387,8 @@ your-project/
 │       ├── workflow-resume.md
 │       ├── workflow-omega-setup.md
 │       ├── workflow-blockchain-network.md
-│       └── workflow-blockchain-debug.md
+│       ├── workflow-blockchain-debug.md
+│       └── workflow-wizard-ux.md
 └── .gitignore
 ```
 
@@ -706,6 +717,27 @@ Read-only diagnostic commands run freely. State-changing operations (restarts, c
 Does NOT design infrastructure, set up new nodes, write monitoring configs, or do security audits — that is the blockchain-network agent's job. This agent is the firefighter; the other is the architect.
 
 **Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms confirmed, diagnosis steps (including failed hypotheses), root cause with evidence, fix applied, verification results, and prevention recommendations
+
+### `/workflow:wizard-ux` — Wizard UX Design
+
+Wizard UX Expert designs intuitive installation wizard, setup, onboarding, and configuration flows:
+
+```
+Phase 1: Understand       → read wizard description, scan codebase for config patterns
+Phase 2: Medium Analysis  → document capabilities and constraints of target medium(s)
+Phase 3: Step Design      → define each step (fields, defaults, validation, UX copy, medium adaptations)
+Phase 4: Flow Architecture → step sequence, conditional branches, progress model, navigation, state management
+Phase 5: Error Design     → validation errors, async validation, network failures, permissions, recovery
+Phase 6: Accessibility    → keyboard nav, screen reader, color independence, focus management
+Phase 7: Write Spec       → produce the complete wizard flow specification
+Phase 8: Present & Confirm → show design summary, get explicit approval, iterate if needed
+```
+
+Targets TUI (terminal), GUI (desktop), Web (browser), and CLI (non-interactive). Every step includes smart defaults (detected from environment, inferred from context, industry convention, safest option), actionable error messages, and medium-specific adaptations. Designs expert fast-path modes (config file, CLI flags, env vars) so power users can bypass the wizard entirely.
+
+Does NOT write implementation code — produces specifications consumed by the architect (technical design), test-writer (flow tests), and developer (implementation).
+
+**Output:** `specs/[domain]-wizard-flow.md` with step sequence, flow diagram, state management, navigation rules, error recovery, expert/fast-path mode, accessibility, post-wizard experience, and design decisions
 
 ## Philosophy
 

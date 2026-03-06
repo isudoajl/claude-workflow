@@ -36,6 +36,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `skill-creator.md` (claude-opus-4-6) — OMEGA skill creation specialist: researches domain tools, CLIs, and APIs, then produces production-ready skill directories at `~/.omega/skills/<name>/` with proper frontmatter, concise instructions, and optional supporting resources (scripts, references, assets). Validates frontmatter, checks trigger collisions, enforces progressive disclosure. Outputs `~/.omega/skills/<name>/SKILL.md`
 - `blockchain-network.md` (claude-opus-4-6) — blockchain network infrastructure specialist: P2P networking (libp2p, devp2p, gossipsub), node operations (full/archive/validator/RPC), chain synchronization, RPC/API infrastructure, network security (eclipse/Sybil attacks, DDoS), monitoring setup (Prometheus/Grafana), and network topology design. Covers Ethereum, Solana, Cosmos, Substrate/Polkadot. Writes configs, scripts, docker-compose, monitoring setups. Outputs infrastructure reports, node setup guides, and configuration files
 - `blockchain-debug.md` (claude-opus-4-6) — blockchain debug specialist: the firefighter called when nodes are broken RIGHT NOW. Diagnoses and fixes active connectivity problems (peer failures, sync stuck, RPC unreachable, Engine API breakdowns, network partitions) using a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Does NOT design infrastructure or set up new nodes — that is blockchain-network's job. Outputs Root Cause Analysis reports to `docs/.workflow/blockchain-debug-rca.md`
+- `wizard-ux.md` (claude-opus-4-6) — installation wizard UX expert: designs intuitive step-by-step wizard flows for TUI, GUI, Web, and CLI contexts. Produces complete wizard flow specifications with step definitions (fields, defaults, validation, UX copy), flow architecture (conditional branches, state management, navigation), error recovery, accessibility requirements, and expert fast-path modes. Does NOT write implementation code — produces specs consumed by architect, test-writer, and developer. Outputs `specs/[domain]-wizard-flow.md`
 
 **Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
 - `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
@@ -56,6 +57,7 @@ The setup script (`scripts/setup.sh`) copies agents and commands into the curren
 - `workflow-omega-setup.md` — omega-topology-architect only (maps business domains to OMEGA primitives, proposes and executes configurations after human approval)
 - `workflow-blockchain-network.md` — blockchain-network only (P2P networking, node operations, RPC infrastructure, network security, monitoring, chain synchronization). Accepts `--scope` to focus on specific aspects (rpc, security, monitoring, sync, validator)
 - `workflow-blockchain-debug.md` — blockchain-debug only (diagnoses and fixes active connectivity problems on blockchain nodes). Accepts `--scope` to focus on specific layers (peers, sync, rpc, engine-api, firewall)
+- `workflow-wizard-ux.md` — wizard-ux only (designs installation wizard, setup, and onboarding flows for TUI/GUI/Web/CLI). Accepts `--scope` to specify target medium (TUI, GUI, Web, CLI)
 
 **POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
 - `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
@@ -361,6 +363,12 @@ Blockchain-network specialist only: P2P networking, node operations, RPC/API inf
 /workflow:blockchain-debug "description of the problem" [--scope="layer"]
 ```
 Blockchain-debug specialist only: diagnoses and fixes active connectivity problems on blockchain nodes — peer failures, sync stuck, RPC unreachable, Engine API breakdowns, validator missing attestations, network partitions. Follows a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Scope accepts layers like `peers`, `sync`, `rpc`, `engine-api`, `firewall`. For new node setup or infrastructure design, use `/workflow:blockchain-network` instead.
+
+### Design a wizard or setup flow
+```
+/workflow:wizard-ux "description of wizard" [--scope="medium"]
+```
+Wizard-ux expert only: designs intuitive installation wizard, setup, onboarding, and configuration flows for TUI (terminal), GUI (desktop), Web (browser), or CLI (non-interactive). Produces complete wizard flow specifications with step definitions, validation rules, UX copy, state management, error recovery, accessibility requirements, and expert fast-path modes. Scope accepts target medium like `TUI`, `GUI`, `Web`, `CLI`. The specification is consumed by the architect (technical design), test-writer (flow tests), and developer (implementation).
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

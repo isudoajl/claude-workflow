@@ -42,6 +42,7 @@ echo "   ✓ role-auditor.md"
 echo "   ✓ proto-auditor.md"
 echo "   ✓ proto-architect.md"
 echo "   ✓ feature-evaluator.md"
+echo "   ✓ wizard-ux.md"
 
 # Copy commands
 echo ""
@@ -62,6 +63,7 @@ echo "   ✓ workflow:audit-role"
 echo "   ✓ workflow:c2c"
 echo "   ✓ workflow:proto-audit"
 echo "   ✓ workflow:proto-improve"
+echo "   ✓ workflow:wizard-ux"
 
 # Create specs/ and docs/ structure if they don't exist
 echo ""
@@ -131,6 +133,7 @@ echo "  /workflow:audit-role \"path\"          → Adversarial audit of a role"
 echo "  /workflow:c2c                        → Multi-round C2C protocol POC"
 echo "  /workflow:proto-audit                → Audit a protocol specification"
 echo "  /workflow:proto-improve              → Improve protocol from audit"
+echo "  /workflow:wizard-ux \"desc\"          → Design wizard/setup UX flows"
 echo ""
 echo "  Source of truth: codebase → specs/ → docs/"
 echo ""
