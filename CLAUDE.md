@@ -191,27 +191,133 @@ When specs or docs conflict with the codebase, the codebase wins. Agents must fl
 
 ## Institutional Memory
 
-Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation.
+Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation. **This protocol is not optional** — it is the foundation that gives Claude Code persistent knowledge across sessions.
 
-### Briefing (before work)
-Every agent queries the DB before starting:
-- What do I know about the files I'm about to touch? (hotspots, risk levels)
-- What approaches already failed in this area? (don't repeat them)
-- What findings are open? (address them)
-- What decisions were made? (respect or explicitly supersede them)
-- What patterns are established? (follow them)
+### DB Detection
+At the start of **every session and every workflow**, check if the DB exists:
 
-### Debrief (after work)
-Every agent writes back after completing:
-- What files were changed and why
-- What decisions were made and the rationale
-- What approaches failed (even partial failures)
-- What bugs were found
-- What patterns were discovered
-- Hotspot counter updates for touched files
+```bash
+test -f .claude/memory.db && echo "DB_EXISTS" || echo "NO_DB"
+```
 
-### Pipeline Tracking
-Every workflow command registers a `workflow_run` at start and closes it at end. The `run_id` is passed to every agent in the chain for traceability.
+- If `DB_EXISTS` → follow the full protocol below
+- If `NO_DB` → skip memory operations gracefully, work without institutional memory
+
+### Pipeline Start (orchestrator responsibility)
+Every `/workflow:*` command creates a run entry at the **very beginning**, before invoking any agent:
+
+```bash
+# Register the workflow run
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('WORKFLOW_TYPE', 'USER_DESCRIPTION', 'SCOPE_OR_NULL');"
+
+# Capture the run_id — this is passed to EVERY agent in the chain
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+Replace `WORKFLOW_TYPE` with: `new`, `new-feature`, `improve`, `bugfix`, `audit`, `docs`, `sync`, etc.
+
+### Briefing (MANDATORY — before every agent starts work)
+Before doing any work on a scope, the agent queries the DB. Replace `$SCOPE` with the module, domain, or file path being worked on:
+
+```bash
+# 1. HOTSPOTS — what files are fragile in my scope?
+sqlite3 .claude/memory.db "SELECT file_path, risk_level, times_touched FROM hotspots WHERE file_path LIKE '%$SCOPE%' ORDER BY times_touched DESC LIMIT 5;"
+
+# 2. FAILED APPROACHES — what already failed? DON'T repeat it.
+sqlite3 .claude/memory.db "SELECT approach, failure_reason FROM failed_approaches WHERE domain LIKE '%$SCOPE%' ORDER BY id DESC LIMIT 5;"
+
+# 3. OPEN FINDINGS — what's known to be broken?
+sqlite3 .claude/memory.db "SELECT finding_id, severity, description FROM findings WHERE file_path LIKE '%$SCOPE%' AND status='open' ORDER BY severity LIMIT 10;"
+
+# 4. ACTIVE DECISIONS — what was decided and why?
+sqlite3 .claude/memory.db "SELECT decision, rationale FROM decisions WHERE domain LIKE '%$SCOPE%' AND status='active' ORDER BY id DESC LIMIT 5;"
+
+# 5. KNOWN PATTERNS — what patterns should I follow?
+sqlite3 .claude/memory.db "SELECT name, description FROM patterns WHERE domain LIKE '%$SCOPE%';"
+
+# 6. PAST BUGS — what broke before in this area?
+sqlite3 .claude/memory.db "SELECT description, root_cause, fix_description FROM bugs WHERE affected_files LIKE '%$SCOPE%' ORDER BY id DESC LIMIT 5;"
+```
+
+**How to use the results:**
+- If `failed_approaches` returns results → **do NOT retry those approaches**. Start from a different angle.
+- If `hotspots` shows `risk_level='high'` or `'critical'` → **be extra careful**, add more tests, review more thoroughly.
+- If `findings` shows open P0/P1 → **address them** if they're in your scope.
+- If `decisions` exist → **respect them** unless you have a strong reason to supersede (and document why).
+- If `patterns` exist → **follow them** for consistency.
+
+### Debrief (MANDATORY — after every agent completes or stops)
+After completing work (or when stopping due to context budget / errors), write back what was learned:
+
+```bash
+# 1. LOG FILE CHANGES — every file you touched
+sqlite3 .claude/memory.db "INSERT INTO changes (run_id, file_path, change_type, description, agent) VALUES ($RUN_ID, 'path/to/file.rs', 'modified', 'What changed and WHY', 'developer');"
+
+# 2. LOG DECISIONS — any design/implementation choice you made
+sqlite3 .claude/memory.db "INSERT INTO decisions (run_id, domain, decision, rationale, alternatives, confidence) VALUES ($RUN_ID, 'module-name', 'What was decided', 'Why this choice', '[\"rejected alternative 1: reason\", \"rejected alternative 2: reason\"]', 0.9);"
+
+# 3. LOG FAILED APPROACHES — THE MOST IMPORTANT DEBRIEF
+# Even partial failures. Even "it almost worked but...". This prevents future sessions from wasting time.
+sqlite3 .claude/memory.db "INSERT INTO failed_approaches (run_id, domain, problem, approach, failure_reason, file_paths) VALUES ($RUN_ID, 'module-name', 'What I was trying to solve', 'What I tried', 'Why it did not work', '[\"file1.rs\", \"file2.rs\"]');"
+
+# 4. LOG BUGS FOUND
+sqlite3 .claude/memory.db "INSERT INTO bugs (run_id, description, symptoms, root_cause, fix_description, affected_files) VALUES ($RUN_ID, 'Bug description', 'Error messages or behavior seen', 'Root cause', 'How it was fixed', '[\"files\"]');"
+
+# 5. UPDATE HOTSPOT COUNTERS — every file you touched
+sqlite3 .claude/memory.db "INSERT INTO hotspots (file_path, times_touched, description) VALUES ('path/to/file.rs', 1, 'Why it was touched') ON CONFLICT(file_path) DO UPDATE SET times_touched = times_touched + 1, last_updated = datetime('now');"
+
+# 6. LOG FINDINGS (reviewer/QA only)
+sqlite3 .claude/memory.db "INSERT INTO findings (run_id, finding_id, severity, category, description, file_path, line_range) VALUES ($RUN_ID, 'AUDIT-P1-001', 'P1', 'bug', 'Description', 'file_path', '42-58');"
+
+# 7. LOG REQUIREMENTS (analyst only)
+sqlite3 .claude/memory.db "INSERT OR IGNORE INTO requirements (run_id, req_id, domain, description, priority) VALUES ($RUN_ID, 'REQ-XXX-001', 'domain', 'Requirement description', 'Must');"
+
+# 8. LOG PATTERNS DISCOVERED
+sqlite3 .claude/memory.db "INSERT INTO patterns (run_id, domain, name, description, example_files) VALUES ($RUN_ID, 'domain', 'Pattern name', 'When and how to use it', '[\"example_files\"]');"
+
+# 9. LOG DEPENDENCIES DISCOVERED
+sqlite3 .claude/memory.db "INSERT OR IGNORE INTO dependencies (source_file, target_file, relationship, discovered_run) VALUES ('caller.rs', 'callee.rs', 'calls', $RUN_ID);"
+```
+
+**Rules for debrief:**
+- Log **every** file change, not just the important ones
+- Log **every** failed approach, even small ones — these are the most valuable entries in the entire DB
+- Log decisions with the **alternatives you rejected and why** — future sessions need to know what was considered
+- Update hotspot counters for **every** file you modified
+- If you don't have a `$RUN_ID`, get it: `sqlite3 .claude/memory.db "SELECT MAX(id) FROM workflow_runs;"`
+
+### Pipeline End (orchestrator responsibility)
+When the workflow completes or fails:
+
+```bash
+# On success
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='completed', completed_at=datetime('now'), git_commits='[\"commit_hash1\", \"commit_hash2\"]' WHERE id=$RUN_ID;"
+
+# On failure
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='failed', completed_at=datetime('now'), error_message='What failed and why' WHERE id=$RUN_ID;"
+
+# On partial (context budget hit, will resume)
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='partial', completed_at=datetime('now'), error_message='Context budget reached at step X' WHERE id=$RUN_ID;"
+```
+
+### Non-Pipeline Sessions
+When working **outside** a formal `/workflow:*` command (e.g., user asks for a quick fix, a one-off question, or manual work):
+
+1. **Still check the DB** — run the briefing queries for the area you're working on
+2. **Still write back** — create a workflow_run with type `'manual'` and log what you did
+3. The point is that **no work goes unrecorded**, even informal work
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description) VALUES ('manual', 'Quick fix for X');"
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+# ... do work, run briefing, run debrief ...
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='completed', completed_at=datetime('now') WHERE id=$RUN_ID;"
+```
+
+### Error Handling
+- If `sqlite3` command fails → **log the error but continue working**. Never block work because the DB is inaccessible.
+- If a query returns empty results → that's normal for new projects. Proceed without institutional context.
+- If the DB is corrupted → inform the user, suggest re-initializing with `bash scripts/db-init.sh`.
 
 ## Main Workflow
 
