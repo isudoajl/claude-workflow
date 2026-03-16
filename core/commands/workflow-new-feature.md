@@ -8,6 +8,28 @@ description: Add a feature to an existing project. Accepts optional --scope to l
 The user wants to add functionality to existing code.
 Optional: `--scope="area"` to limit which part of the codebase is analyzed.
 
+## Pipeline Tracking (Institutional Memory)
+If `.claude/memory.db` exists, register this workflow run at the START and close it at the END:
+
+**At pipeline start:**
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('new-feature', 'USER_DESCRIPTION_HERE', 'SCOPE_OR_NULL');"
+# Capture the run_id and pass it to every agent:
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+**At pipeline end (success):**
+```bash
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='completed', completed_at=datetime('now'), git_commits='[\"COMMIT_HASHES\"]' WHERE id=$RUN_ID;"
+```
+
+**At pipeline failure:**
+```bash
+sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='failed', completed_at=datetime('now'), error_message='WHAT_FAILED' WHERE id=$RUN_ID;"
+```
+
+Pass `$RUN_ID` to every agent so they can reference it in their briefing/debrief queries.
+
 ## Existing Project Validation
 Before starting the chain, verify this is an existing project:
 1. Check for source code files in the project. If none exist, suggest `/workflow:new` instead.

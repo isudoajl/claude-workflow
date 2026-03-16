@@ -9,6 +9,17 @@ The user wants to create something new from scratch. Execute the full chain.
 
 **This is a greenfield project.** There may be no existing code, no `specs/`, and no `docs/`. Each agent must handle this gracefully — creating structure instead of reading it.
 
+## Pipeline Tracking (Institutional Memory)
+If `.claude/memory.db` exists, register this workflow run:
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('new', 'USER_DESCRIPTION_HERE', 'SCOPE_OR_NULL');"
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+Close at end: `UPDATE workflow_runs SET status='completed|failed', completed_at=datetime('now'), git_commits='[\"HASHES\"]' WHERE id=$RUN_ID;`
+Pass `$RUN_ID` to every agent.
+
 ## Fail-Safe Controls
 
 ### Iteration Limits (per milestone)

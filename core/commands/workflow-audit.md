@@ -18,6 +18,17 @@ Audit existing code for security, performance, technical debt, and specs/docs dr
 
 ---
 
+## Pipeline Tracking (Institutional Memory)
+If `.claude/memory.db` exists, register this workflow run:
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('audit', 'code audit', 'SCOPE_OR_NULL');"
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+Close at end: `UPDATE workflow_runs SET status='completed|failed', completed_at=datetime('now') WHERE id=$RUN_ID;`
+Pass `$RUN_ID` to the reviewer agent.
+
 ## Mode 1: Read-Only Audit (no --fix)
 
 Invoke ONLY the `reviewer` subagent in full audit mode.

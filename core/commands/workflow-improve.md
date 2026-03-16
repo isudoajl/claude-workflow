@@ -1,5 +1,5 @@
 ---
-name: workflow:improve-functionality
+name: workflow:improve
 description: Improve existing code — refactor, optimize, or enhance without adding new features. Accepts optional --scope to limit context.
 ---
 
@@ -10,6 +10,17 @@ This is NOT for adding new features or fixing bugs. The behavior should stay the
 Optional: `--scope="area"` to limit which part of the codebase is analyzed.
 
 **Note: This workflow does NOT invoke the Architect.** The architecture already exists — only the implementation changes.
+
+## Pipeline Tracking (Institutional Memory)
+If `.claude/memory.db` exists, register this workflow run:
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('improve', 'USER_DESCRIPTION_HERE', 'SCOPE_OR_NULL');"
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+Close at end: `UPDATE workflow_runs SET status='completed|failed', completed_at=datetime('now') WHERE id=$RUN_ID;`
+Pass `$RUN_ID` to every agent.
 
 ## Existing Code Validation
 Before starting, verify there is code to improve:

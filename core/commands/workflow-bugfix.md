@@ -7,6 +7,17 @@ description: Fix a bug with a reduced chain. Accepts optional --scope to limit c
 
 Optional: `--scope="file or module"` to point directly at the suspected area.
 
+## Pipeline Tracking (Institutional Memory)
+If `.claude/memory.db` exists, register this workflow run:
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description, scope) VALUES ('bugfix', 'USER_DESCRIPTION_HERE', 'SCOPE_OR_NULL');"
+RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
+```
+
+Close at end: `UPDATE workflow_runs SET status='completed|failed', completed_at=datetime('now') WHERE id=$RUN_ID;`
+Pass `$RUN_ID` to every agent.
+
 ## Fail-Safe Controls
 
 ### Bug Verification

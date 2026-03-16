@@ -4,77 +4,167 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## About This Repository
 
-This is a **multi-agent workflow toolkit** for Claude Code — not an application. It consists of agent definitions (`.claude/agents/*.md`), slash commands (`.claude/commands/*.md`), a setup script, and the CLAUDE.md rules file. All of these are designed to be **copied into target projects** to enable structured TDD workflows.
+This is a **multi-agent workflow toolkit** for Claude Code — not an application. It consists of core agents, commands, an institutional memory layer (SQLite), and optional extension packs for domain-specific work. All of these are designed to be **deployed into target projects** to enable structured TDD workflows with persistent institutional memory.
 
 ### Development
 
 There is no build system, test suite, or runtime. To test changes:
-1. Edit agent/command files in this repo
-2. Copy them to a target project: `bash scripts/setup.sh` (run from the target project directory)
+1. Edit agent/command files in this repo under `core/` or `extensions/`
+2. Deploy to a target project: `bash scripts/setup.sh [--ext=name]` (run from the target project directory)
 3. Run the workflow commands in the target project via Claude Code
 
-The setup script (`scripts/setup.sh`) copies agents and commands into the current directory. It creates `specs/` and `docs/` scaffolding if missing and never overwrites existing files (except agents and commands which are always overwritten). It does **not** copy CLAUDE.md — each target project maintains its own.
+The setup script copies agents and commands into the target's `.claude/agents/` and `.claude/commands/` (flattened). It creates `specs/`, `docs/` scaffolding if missing, and initializes the SQLite institutional memory database at `.claude/memory.db`. It does **not** copy CLAUDE.md — each target project maintains its own.
 
-### Architecture
+### Repository Structure
 
-**Agents** (`.claude/agents/`) — subagent definitions with YAML frontmatter (`name`, `description`, `tools`, `model`):
-- `discovery.md` (claude-opus-4-6) — pre-pipeline conversational agent: takes raw ideas, discusses with the user, challenges the concept, produces an Idea Brief. The only agent with extended user back-and-forth. Outputs `docs/.workflow/idea-brief.md`
-- `analyst.md` (claude-opus-4-6) — full BA: requirements with acceptance criteria, MoSCoW priorities, traceability matrix, impact analysis. Flags and fixes stale specs before writing new requirements. Outputs `specs/[domain]-requirements.md`
-- `architect.md` (claude-opus-4-6) — designs architecture with failure modes, security, performance budgets. Maintains specs/ and docs/. Outputs `specs/[domain]-architecture.md`
-- `test-writer.md` (claude-opus-4-6) — writes failing tests before code (TDD red phase), priority-driven (Must first), references requirement IDs for traceability. Flags specs inconsistencies when tests reveal undocumented behavior
-- `developer.md` (claude-opus-4-6) — implements minimum code to pass tests, commits per module. Updates relevant specs/docs when implementation changes documented behavior
-- `qa.md` (claude-opus-4-6) — end-to-end validation, acceptance criteria verification, traceability matrix completion, exploratory testing. Verifies specs/docs accuracy against actual behavior and flags drift
-- `reviewer.md` (claude-opus-4-6, read-only) — audits for bugs/security/performance/drift, outputs review reports; supports structured P0-P3 output with AUDIT-PX-NNN IDs for `--fix` mode
-- `functionality-analyst.md` (claude-opus-4-6, read-only) — maps what the codebase does, outputs structured functionality inventory
-- `codebase-expert.md` (claude-opus-4-6, read-only) — deep codebase comprehension: progressively explores projects of any size, builds holistic understanding (architecture, domain, data flows, patterns, risk). Outputs `docs/understanding/PROJECT-UNDERSTANDING.md`
-- `proto-auditor.md` (claude-opus-4-6, read-only) — audits protocol specifications across 12 dimensions at 3 levels (protocol, enforcement, self). Adversarial stance. Outputs structured audit findings to `c2c-protocol/audits/`
-- `proto-architect.md` (claude-opus-4-6) — protocol improvement specialist. Consumes audit reports from proto-auditor, generates structured patches through a 6-step pipeline. Outputs patch reports to `c2c-protocol/patches/`
-- `role-creator.md` (claude-opus-4-6) — meta-agent specialized in designing other agents. Researches the role's domain, studies existing agents for consistency, and produces comprehensive role definitions with sharp boundaries, detailed processes, and complete failure handling. Outputs `.claude/agents/[name].md`
-- `role-auditor.md` (claude-opus-4-6, read-only) — adversarial auditor for role definitions. Audits across 12 dimensions at 2 levels (role definition, self-audit). Assumes every role is broken until proven safe. Outputs structured findings with severity classification and deployment verdicts to `docs/.workflow/role-audit-[name].md`
-- `feature-evaluator.md` (claude-opus-4-6) — feature gate agent: scores proposed features across 7 dimensions (necessity, impact, complexity cost, alternatives, alignment, risk, timing) and produces a GO/NO-GO/CONDITIONAL verdict. Advisory — user always has final say. Automatically invoked in workflow-new-feature before the Analyst. Outputs `docs/.workflow/feature-evaluation.md`
-- `omega-topology-architect.md` (claude-opus-4-6) — OMEGA solutions architect: maps user business domains to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Proposes minimum viable configurations and executes only after human approval. Outputs `~/.omega/projects/<name>/ROLE.md` and related config files
-- `skill-creator.md` (claude-opus-4-6) — OMEGA skill creation specialist: researches domain tools, CLIs, and APIs, then produces production-ready skill directories at `~/.omega/skills/<name>/` with proper frontmatter, concise instructions, and optional supporting resources (scripts, references, assets). Validates frontmatter, checks trigger collisions, enforces progressive disclosure. Outputs `~/.omega/skills/<name>/SKILL.md`
-- `blockchain-network.md` (claude-opus-4-6) — blockchain network infrastructure specialist: P2P networking (libp2p, devp2p, gossipsub), node operations (full/archive/validator/RPC), chain synchronization, RPC/API infrastructure, network security (eclipse/Sybil attacks, DDoS), monitoring setup (Prometheus/Grafana), and network topology design. Covers Ethereum, Solana, Cosmos, Substrate/Polkadot. Writes configs, scripts, docker-compose, monitoring setups. Outputs infrastructure reports, node setup guides, and configuration files
-- `blockchain-debug.md` (claude-opus-4-6) — blockchain debug specialist: the firefighter called when nodes are broken RIGHT NOW. Diagnoses and fixes active connectivity problems (peer failures, sync stuck, RPC unreachable, Engine API breakdowns, network partitions) using a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Does NOT design infrastructure or set up new nodes — that is blockchain-network's job. Outputs Root Cause Analysis reports to `docs/.workflow/blockchain-debug-rca.md`
-- `wizard-ux.md` (claude-opus-4-6) — installation wizard UX expert: designs intuitive step-by-step wizard flows for TUI, GUI, Web, and CLI contexts. Produces complete wizard flow specifications with step definitions (fields, defaults, validation, UX copy), flow architecture (conditional branches, state management, navigation), error recovery, accessibility requirements, and expert fast-path modes. Does NOT write implementation code — produces specs consumed by architect, test-writer, and developer. Outputs `specs/[domain]-wizard-flow.md`
+```
+claude-workflow/
+├── core/                              # Universal foundation (every project)
+│   ├── agents/                        # 13 core agents
+│   │   ├── discovery.md
+│   │   ├── analyst.md
+│   │   ├── architect.md
+│   │   ├── test-writer.md
+│   │   ├── developer.md
+│   │   ├── qa.md
+│   │   ├── reviewer.md
+│   │   ├── feature-evaluator.md
+│   │   ├── functionality-analyst.md
+│   │   ├── codebase-expert.md
+│   │   ├── wizard-ux.md
+│   │   ├── role-creator.md
+│   │   └── role-auditor.md
+│   ├── commands/                      # 13 core commands
+│   │   ├── workflow-new.md
+│   │   ├── workflow-new-feature.md
+│   │   ├── workflow-improve.md
+│   │   ├── workflow-bugfix.md
+│   │   ├── workflow-audit.md
+│   │   ├── workflow-docs.md
+│   │   ├── workflow-sync.md
+│   │   ├── workflow-functionalities.md
+│   │   ├── workflow-understand.md
+│   │   ├── workflow-resume.md
+│   │   ├── workflow-wizard-ux.md
+│   │   ├── workflow-create-role.md
+│   │   └── workflow-audit-role.md
+│   └── db/                            # Institutional memory layer
+│       ├── schema.sql                 # SQLite schema (tables, views, indexes)
+│       └── queries/                   # Named query templates for agents
+│           ├── briefing.sql           # Pre-work queries
+│           ├── debrief.sql            # Post-work inserts/updates
+│           └── maintenance.sql        # Periodic cleanup and health checks
+│
+├── extensions/                        # Domain-specific packs (opt-in)
+│   ├── blockchain/
+│   │   ├── agents/                    # blockchain-network, blockchain-debug, stress-tester
+│   │   └── commands/                  # workflow-blockchain-network, workflow-blockchain-debug, workflow-stress-test
+│   ├── omega/
+│   │   ├── agents/                    # omega-topology-architect, skill-creator
+│   │   └── commands/                  # workflow-omega-setup
+│   └── c2c-protocol/
+│       ├── agents/                    # proto-auditor, proto-architect
+│       └── commands/                  # workflow-c2c, workflow-proto-audit, workflow-proto-improve
+│
+├── scripts/
+│   ├── setup.sh                       # Deploy core + extensions to target projects
+│   └── db-init.sh                     # Initialize/migrate the SQLite DB
+│
+├── poc/                               # Experimental standalone agents
+│   └── c2c-protocol/
+│       ├── c2c-writer.md
+│       └── c2c-auditor.md
+│
+├── CLAUDE.md                          # This file (toolkit + workflow rules)
+└── README.md                          # User-facing documentation
+```
 
-**Commands** (`.claude/commands/`) — slash command orchestrators that chain agents in sequence:
-- `workflow-new.md` — full chain (discovery + all 6 agents) for greenfield projects
-- `workflow-new-feature.md` — full chain for existing projects (discovery conditional on vague descriptions, feature-evaluator gate before analyst)
-- `workflow-improve-functionality.md` — no architect; analyst → test-writer → developer → QA → reviewer
-- `workflow-bugfix.md` — reduced chain with bug reproduction test + QA validation
-- `workflow-audit.md` — reviewer only (read-only analysis); with `--fix`, auto-fix pipeline looping through P0→P1→P2→P3 findings using test-writer + developer per priority pass
-- `workflow-docs.md` — architect only (documentation generation)
-- `workflow-sync.md` — architect only (drift detection and fix)
-- `workflow-functionalities.md` — functionality-analyst only (codebase functionality inventory)
-- `workflow-understand.md` — codebase-expert only (deep project comprehension)
-- `workflow-c2c.md` — multi-round C2C protocol POC: writer ↔ auditor iterate until certification (max 5 rounds)
-- `workflow-proto-audit.md` — proto-auditor only (protocol specification audit, 12 dimensions, 3 levels)
-- `workflow-proto-improve.md` — proto-architect only (protocol improvement from audit findings, 6-step pipeline)
-- `workflow-create-role.md` — role-creator → role-auditor → auto-remediation (designs agent roles, audits them adversarially, fixes findings automatically; max 2 remediation cycles)
-- `workflow-audit-role.md` — role-auditor only (adversarial audit of role definitions, 12 dimensions, 2 levels). Accepts `--scope` to limit to specific dimensions
-- `workflow-resume.md` — resumes a stopped or failed workflow from saved milestone progress and chain state. Accepts `--from` to specify a milestone or step
-- `workflow-omega-setup.md` — omega-topology-architect only (maps business domains to OMEGA primitives, proposes and executes configurations after human approval)
-- `workflow-blockchain-network.md` — blockchain-network only (P2P networking, node operations, RPC infrastructure, network security, monitoring, chain synchronization). Accepts `--scope` to focus on specific aspects (rpc, security, monitoring, sync, validator)
-- `workflow-blockchain-debug.md` — blockchain-debug only (diagnoses and fixes active connectivity problems on blockchain nodes). Accepts `--scope` to focus on specific layers (peers, sync, rpc, engine-api, firewall)
-- `workflow-wizard-ux.md` — wizard-ux only (designs installation wizard, setup, and onboarding flows for TUI/GUI/Web/CLI). Accepts `--scope` to specify target medium (TUI, GUI, Web, CLI)
+### Core Agents
 
-**POC Agents** (`poc/c2c-protocol/`) — standalone agent prompts for the C2C protocol experiment:
-- `c2c-writer.md` — Agent A: code writer + doc author, operates under C2C protocol with confidence/source tags
-- `c2c-auditor.md` — Agent B: code auditor + fact-checker, issues certification when code is production-ready
+All agents use `claude-opus-4-6` and include mandatory **briefing/debrief** protocol for institutional memory.
 
-All commands accept `--scope="area"` to limit context window usage. Agent model assignments are set in the YAML frontmatter.
+| Agent | Role | Outputs |
+|-------|------|---------|
+| `discovery` | Pre-pipeline conversation: explores, challenges, clarifies ideas | `docs/.workflow/idea-brief.md` |
+| `analyst` | BA: requirements, acceptance criteria, MoSCoW, traceability, impact analysis | `specs/[domain]-requirements.md` |
+| `architect` | System design: failure modes, security, performance budgets, milestones | `specs/[domain]-architecture.md` |
+| `test-writer` | TDD red phase: priority-driven tests before code | Test files |
+| `developer` | Implementation: module by module, passing all tests | Source code |
+| `qa` | End-to-end validation, acceptance criteria, exploratory testing | `docs/qa/*-qa-report.md` |
+| `reviewer` | Audit: bugs, security, performance, tech debt, specs/docs drift (read-only) | `docs/reviews/` or `docs/audits/` |
+| `feature-evaluator` | GO/NO-GO gate: 7-dimension scoring before committing resources | `docs/.workflow/feature-evaluation.md` |
+| `functionality-analyst` | Codebase inventory: endpoints, services, models, handlers (read-only) | `docs/functionalities/` |
+| `codebase-expert` | Deep comprehension: 6-layer progressive exploration (read-only) | `docs/understanding/` |
+| `wizard-ux` | Wizard/setup flow design for TUI/GUI/Web/CLI | `specs/[domain]-wizard-flow.md` |
+| `role-creator` | Meta-agent: designs new agent role definitions | `.claude/agents/[name].md` |
+| `role-auditor` | Meta-agent: adversarial audit of role definitions (read-only) | `docs/.workflow/role-audit-*.md` |
+
+### Extension Packs
+
+| Extension | Agents | Commands | Target Domain |
+|-----------|--------|----------|---------------|
+| `blockchain` | blockchain-network, blockchain-debug, stress-tester | workflow-blockchain-network, workflow-blockchain-debug, workflow-stress-test | Ethereum, Solana, Cosmos, Substrate |
+| `omega` | omega-topology-architect, skill-creator | workflow-omega-setup | OMEGA framework |
+| `c2c-protocol` | proto-auditor, proto-architect | workflow-c2c, workflow-proto-audit, workflow-proto-improve | C2C protocol research |
+
+### Core Commands
+
+| Command | Chain | Purpose |
+|---------|-------|---------|
+| `workflow:new` | discovery → analyst → architect → [milestone loop: test-writer → developer → QA → reviewer] | Greenfield projects |
+| `workflow:new-feature` | (discovery?) → feature-evaluator → analyst → architect → [milestone loop] | Add feature to existing project |
+| `workflow:improve` | analyst → test-writer → developer → QA → reviewer | Refactor/optimize (no architect) |
+| `workflow:bugfix` | analyst → test-writer → developer → QA → reviewer | Fix a bug |
+| `workflow:audit` | reviewer only; with `--fix`: reviewer → [P0→P3: test-writer → developer → verify] | Code audit |
+| `workflow:docs` | architect only | Generate/update specs & docs |
+| `workflow:sync` | architect only | Drift detection and fix |
+| `workflow:functionalities` | functionality-analyst only | Codebase inventory |
+| `workflow:understand` | codebase-expert only | Deep project comprehension |
+| `workflow:resume` | reads milestone progress, resumes chain | Resume stopped workflow |
+| `workflow:wizard-ux` | wizard-ux only | Wizard/setup flow design |
+| `workflow:create-role` | role-creator → role-auditor → auto-remediation | Design agent role |
+| `workflow:audit-role` | role-auditor only | Audit agent role definition |
+
+### Institutional Memory (SQLite)
+
+Every target project gets `.claude/memory.db` — a SQLite database that accumulates knowledge across workflow sessions:
+
+- **workflow_runs** — every pipeline execution (type, description, scope, status, commits)
+- **changes** — what files were touched and why, by which agent
+- **decisions** — architectural/design decisions with rationale and rejected alternatives
+- **failed_approaches** — what was tried and why it failed (the gold mine for future sessions)
+- **bugs** — symptoms, root cause, fix description, affected files, related bugs
+- **hotspots** — files that keep breaking or being touched (risk levels, touch counts)
+- **findings** — reviewer/QA findings that persist across sessions (with status tracking)
+- **dependencies** — component relationships discovered during work
+- **requirements** — requirement lifecycle tracking (defined → tested → implemented → verified)
+- **patterns** — successful patterns discovered that should be reused
+- **decay_log** — tracks how the memory evolves (archival, confidence changes)
+
+**Agent protocol**: Every agent has a mandatory briefing (query DB before work) and debrief (write back after work) phase. No agent acts without checking institutional memory first. No agent finishes without contributing to it.
+
+**Query references**: Agents use `sqlite3` CLI commands. Templates are in `core/db/queries/`.
+
+### Setup Script
+
+```bash
+bash scripts/setup.sh                           # core only
+bash scripts/setup.sh --ext=blockchain           # core + blockchain
+bash scripts/setup.sh --ext=blockchain,omega     # core + multiple extensions
+bash scripts/setup.sh --ext=all                  # core + all extensions
+bash scripts/setup.sh --no-db                    # skip SQLite initialization
+bash scripts/setup.sh --list-ext                 # list available extensions
+```
 
 ### Maintaining README.md
 **Always update `README.md`** when any of the following change:
-- An agent is added, removed, or modified (`.claude/agents/*.md`)
-- A command is added, removed, or modified (`.claude/commands/*.md`)
+- An agent is added, removed, or modified (`core/agents/*.md` or `extensions/*/agents/*.md`)
+- A command is added, removed, or modified (`core/commands/*.md` or `extensions/*/commands/*.md`)
 - The setup script behavior changes (`scripts/setup.sh`)
-
-The README must stay in sync with the actual agents, commands, and project structure at all times.
+- The DB schema changes (`core/db/schema.sql`)
 
 ### Git After Every Change
-**Always commit and push** after completing any modification to the toolkit (agents, commands, setup script, CLAUDE.md, README.md). Use conventional commit messages (`feat:`, `fix:`, `docs:`, `refactor:`) and push to the remote immediately.
+**Always commit and push** after completing any modification to the toolkit. Use conventional commit messages (`feat:`, `fix:`, `docs:`, `refactor:`) and push to the remote immediately.
 
 ---
 
@@ -89,18 +179,45 @@ Everything below this line defines the workflow behavior when this CLAUDE.md is 
 ## Philosophy
 This project uses a multi-agent workflow designed to produce the highest quality code possible.
 Each agent has a specific role and the code passes through multiple validation layers before being considered complete.
+Every agent reads from and writes to a shared institutional memory (SQLite) — no agent acts alone, without backpressure.
 
 ## Source of Truth Hierarchy
 1. **Codebase** — the ultimate source of truth. Always trust code over documentation.
-2. **specs/** — technical specifications per domain. `specs/SPECS.md` is the master index linking to per-domain spec files (e.g. `specs/auth.md`, `specs/memory-store.md`).
-3. **docs/** — user-facing and developer documentation. `docs/DOCS.md` is the master index linking to topic guides.
+2. **`.claude/memory.db`** — institutional memory. Accumulated decisions, failed approaches, hotspots, findings across all sessions.
+3. **specs/** — technical specifications per domain. `specs/SPECS.md` is the master index.
+4. **docs/** — user-facing and developer documentation. `docs/DOCS.md` is the master index.
 
 When specs or docs conflict with the codebase, the codebase wins. Agents must flag the discrepancy and update specs/docs accordingly.
+
+## Institutional Memory
+
+Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation.
+
+### Briefing (before work)
+Every agent queries the DB before starting:
+- What do I know about the files I'm about to touch? (hotspots, risk levels)
+- What approaches already failed in this area? (don't repeat them)
+- What findings are open? (address them)
+- What decisions were made? (respect or explicitly supersede them)
+- What patterns are established? (follow them)
+
+### Debrief (after work)
+Every agent writes back after completing:
+- What files were changed and why
+- What decisions were made and the rationale
+- What approaches failed (even partial failures)
+- What bugs were found
+- What patterns were discovered
+- Hotspot counter updates for touched files
+
+### Pipeline Tracking
+Every workflow command registers a `workflow_run` at start and closes it at end. The `run_id` is passed to every agent in the chain for traceability.
 
 ## Main Workflow
 
 ```
 Raw Idea ("build a CRM tool")
+  → [Pipeline start: register workflow_run in memory.db]
   → Discovery (explores, challenges, clarifies the IDEA with the user)
   → Idea Brief (clear, validated concept)
   → Feature Evaluator (GO/NO-GO gate: scores necessity, impact, complexity, alternatives, alignment, risk, timing)
@@ -112,6 +229,7 @@ Raw Idea ("build a CRM tool")
   → QA (end-to-end validation, acceptance criteria verification, exploratory testing)
   → Reviewer (audits code, verifies specs/docs accuracy)
   → Git (automatic versioning)
+  → [Pipeline end: close workflow_run, update memory.db]
 ```
 
 ## Traceability Chain
@@ -119,6 +237,7 @@ Every requirement flows through the entire pipeline via unique IDs:
 ```
 Discovery validates the idea → Analyst assigns REQ-XXX-001 → Architect maps to module → Test Writer writes TEST-XXX-001 → Developer implements → QA verifies acceptance criteria → Reviewer audits completeness
 ```
+All IDs are also stored in the `requirements` table in memory.db for cross-session tracking.
 
 ## Global Rules
 
@@ -132,7 +251,9 @@ Discovery validates the idea → Analyst assigns REQ-XXX-001 → Architect maps 
 8. **Every requirement has acceptance criteria** — "it should work" is not acceptable
 9. **Every requirement has a priority** — Must/Should/Could/Won't (MoSCoW)
 10. **Every requirement is traceable** — from ID through tests to implementation
-11. **60% context budget** — every agent must complete its work within 60% of the context window. The Architect sizes milestones to respect this budget, and each agent monitors its own usage proactively. If an agent reaches 60%, it STOPS, saves state, and delegates remaining work to a fresh context via `/workflow:resume`
+11. **60% context budget** — every agent must complete its work within 60% of the context window
+12. **Briefing before action** — every agent queries memory.db before starting work
+13. **Debrief after action** — every agent writes findings back to memory.db after completing work
 
 ## Fail-Safe Controls
 
@@ -164,10 +285,10 @@ If the limit is reached, the workflow STOPS and reports remaining issues to the 
 Multi-step commands verify that each agent produced its expected output file before invoking the next agent. If output is missing, the chain halts with a clear report of which step failed.
 
 ### Error Recovery
-If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` documenting which steps completed, which failed, and what remains. The user can resume with `/workflow:resume`.
+If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` and updates memory.db with the failure. The user can resume with `/workflow:resume`.
 
 ### Directory Safety
-Every agent that writes output files verifies target directories exist before writing. If a directory is missing, the agent creates it. This prevents silent file-write failures.
+Every agent that writes output files verifies target directories exist before writing. If a directory is missing, the agent creates it.
 
 ### Developer Max Retry
 The developer has a maximum of **5 attempts** per test-fix cycle for a single module. If tests still fail after 5 attempts, the developer stops and escalates for human review or architecture reassessment.
@@ -180,14 +301,16 @@ Test-writer and reviewer adapt their patterns to the project's language (detecte
 ### Critical Rules
 - **NEVER read the entire codebase at once** — always scope to the relevant area
 - **Read indexes first** — start with `specs/SPECS.md` or `docs/DOCS.md` to identify which files matter
+- **Query memory.db first** — check what's already known before reading files
 - **Scope narrowing** — all commands accept an optional scope parameter to limit the area of work
 - **Chunking** — for large operations (audit, sync, docs), work one milestone/domain at a time
 
 ### Agent Scoping Strategy
-1. Read the master index (`specs/SPECS.md`) to understand the project layout
-2. Identify which domains/milestones are relevant to the task
-3. Read ONLY the relevant spec files and code files
-4. If you feel context getting heavy, stop and summarize what you've learned so far before continuing
+1. Query memory.db for context on the target area (hotspots, decisions, failures)
+2. Read the master index (`specs/SPECS.md`) to understand the project layout
+3. Identify which domains/milestones are relevant to the task
+4. Read ONLY the relevant spec files and code files
+5. If you feel context getting heavy, stop and summarize what you've learned so far before continuing
 
 ### Scope Parameter
 All workflow commands accept an optional scope to limit context usage:
@@ -230,7 +353,11 @@ root-project/
 ├── specs/                ← Technical specifications (at project root)
 ├── docs/                 ← Documentation (at project root)
 ├── CLAUDE.md             ← Workflow rules
-└── .claude/              ← Agents and commands
+└── .claude/
+    ├── agents/           ← Agent definitions (deployed by setup.sh)
+    ├── commands/         ← Command definitions (deployed by setup.sh)
+    ├── memory.db         ← Institutional memory (SQLite)
+    └── db-queries/       ← Query reference files for agents
 ```
 
 Code lives in `backend/` (and optionally `frontend/`). Specs and docs remain at the project root.
@@ -271,17 +398,17 @@ docs/
 ```
 /workflow:new "description of the idea"
 ```
-Full chain: discovery → analyst → architect → test-writer → developer → QA → reviewer. Discovery explores the idea with the user first.
+Full chain: discovery → analyst → architect → test-writer → developer → QA → reviewer.
 
 ### Add feature to existing project
 ```
 /workflow:new-feature "description of the feature" [--scope="area"]
 ```
-Full chain: (discovery if vague) → **feature-evaluator** (GO/NO-GO gate) → analyst → architect → test-writer → developer → QA → reviewer. Discovery is invoked when the feature description is vague; skipped for specific, well-scoped features. The feature-evaluator always runs to assess whether the feature is worth building before committing pipeline resources.
+Full chain: (discovery if vague) → feature-evaluator (GO/NO-GO) → analyst → architect → test-writer → developer → QA → reviewer.
 
 ### Improve existing code
 ```
-/workflow:improve-functionality "description of the improvement" [--scope="area"]
+/workflow:improve "description of the improvement" [--scope="area"]
 ```
 Reduced chain (no architect): analyst → test-writer (regression) → developer (refactor) → QA → reviewer
 
@@ -294,81 +421,48 @@ Reduced chain: analyst → test-writer (reproduces the bug) → developer → QA
 ### Audit existing code
 ```
 /workflow:audit [--scope="milestone or module"]
-```
-Reviewer only: looks for vulnerabilities, technical debt, performance issues, and specs/docs drift.
-
-### Audit and auto-fix
-```
 /workflow:audit --fix [--scope="area"] [--include-p3]
 ```
-Reviewer produces a prioritized report (P0/P1/P2/P3), then the pipeline auto-loops through each priority level: test-writer writes regression tests → developer fixes findings → build & lint validation → verification → commit per priority pass. P3 findings are skipped by default (use `--include-p3` to include). Findings that resist fixing after 5 attempts are escalated for human review.
 
 ### Document existing project
 ```
 /workflow:docs [--scope="milestone or module"]
 ```
-Architect only: reads the codebase, generates/updates specs/ and docs/.
 
 ### Sync specs and docs with codebase
 ```
 /workflow:sync [--scope="milestone or module"]
 ```
-Architect only: reads the codebase, compares against specs/ and docs/, flags drift, updates outdated files.
 
 ### Map codebase functionalities
 ```
 /workflow:functionalities [--scope="module or area"]
 ```
-Functionality-analyst only: reads the codebase and produces a structured inventory of all functionalities (endpoints, services, models, handlers, etc.).
 
 ### Understand a codebase
 ```
 /workflow:understand [--scope="module or area"]
 ```
-Codebase-expert only: deep comprehension of a project of any size. Progressively explores through 6 layers (shape → architecture → domain → data flow → patterns → complexity). Produces a holistic understanding document at `docs/understanding/`.
 
 ### Create a new agent role
 ```
 /workflow:create-role "description of the desired role"
 ```
-Role-creator only: designs comprehensive agent role definitions with sharp boundaries, detailed processes, output formats, and complete failure handling. Researches the role's domain and validates against existing agents.
 
 ### Audit an agent role definition
 ```
 /workflow:audit-role ".claude/agents/[name].md" [--scope="dimensions"]
-/workflow:audit-role "all"
 ```
-Role-auditor only: adversarial audit of role definitions across 12 dimensions (identity, boundaries, prerequisites, process, output, failures, context, rules, anti-patterns, tools, integration, self-audit). Assumes broken until proven safe. Scope accepts dimension ranges (`D1-D3`), names (`boundaries,tools`), or both. Verdicts: broken → degraded → hardened → deployable.
 
-### Resume a stopped milestone-based workflow
+### Resume a stopped workflow
 ```
 /workflow:resume [--from="M3" or --from="developer"]
 ```
-Resumes a milestone-based workflow (`/workflow:new` or `/workflow:new-feature`) that was interrupted by context limits, agent errors, retry exhaustion, or manual stop. Reads `docs/.workflow/milestone-progress.md` and optionally `docs/.workflow/chain-state.md` to auto-detect the resume point. Use `--from` to override: `--from="M[N]"` for a specific milestone, or `--from="test-writer"` / `--from="developer"` / `--from="qa"` / `--from="reviewer"` for a specific step within the next pending milestone. Does not apply to non-milestone workflows like `/workflow:bugfix` or `/workflow:improve-functionality`.
-
-### Configure OMEGA for a business domain
-```
-/workflow:omega-setup "description of business domain"
-```
-Omega-topology-architect only: maps a user's business goals to OMEGA primitives (projects, skills, topologies, schedules, heartbeats). Discovers existing infrastructure, designs a minimum viable configuration, presents a proposal for approval, then executes the setup. Writes to `~/.omega/`.
-
-### Blockchain network infrastructure
-```
-/workflow:blockchain-network "description of task" [--scope="aspect"]
-```
-Blockchain-network specialist only: P2P networking, node operations, RPC/API infrastructure, network security, monitoring, chain synchronization, and validator networking. Covers Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Scope accepts aspects like `rpc`, `security`, `monitoring`, `sync`, `validator`.
-
-### Debug blockchain node connectivity
-```
-/workflow:blockchain-debug "description of the problem" [--scope="layer"]
-```
-Blockchain-debug specialist only: diagnoses and fixes active connectivity problems on blockchain nodes — peer failures, sync stuck, RPC unreachable, Engine API breakdowns, validator missing attestations, network partitions. Follows a systematic 7-phase methodology (gather symptoms, confirm, isolate layer, diagnose root cause, fix with approval, verify, document). Read-only diagnostics by default; destructive actions require explicit user approval. Scope accepts layers like `peers`, `sync`, `rpc`, `engine-api`, `firewall`. For new node setup or infrastructure design, use `/workflow:blockchain-network` instead.
 
 ### Design a wizard or setup flow
 ```
 /workflow:wizard-ux "description of wizard" [--scope="medium"]
 ```
-Wizard-ux expert only: designs intuitive installation wizard, setup, onboarding, and configuration flows for TUI (terminal), GUI (desktop), Web (browser), or CLI (non-interactive). Produces complete wizard flow specifications with step definitions, validation rules, UX copy, state management, error recovery, accessibility requirements, and expert fast-path modes. Scope accepts target medium like `TUI`, `GUI`, `Web`, `CLI`. The specification is consumed by the architect (technical design), test-writer (flow tests), and developer (implementation).
 
 ## Conventions
 - Preferred language: Rust (or whatever the user defines)

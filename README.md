@@ -1,6 +1,6 @@
 # Claude Code Quality Workflow
 
-A multi-agent orchestration system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers. Instead of asking an AI to "build X" and hoping for the best, this workflow forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent with its own context window.
+A multi-agent orchestration system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers with **persistent institutional memory**. Instead of asking an AI to "build X" and hoping for the best, this workflow forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent that reads from and writes to a shared knowledge base.
 
 ## The Problem
 
@@ -11,750 +11,211 @@ When you ask an AI to write code directly, it:
 - **Ignores context** — not reading existing code conventions, patterns, or documentation
 - **Lets documentation rot** — specs and docs drift out of sync with the actual codebase
 - **Has no traceability** — requirements, tests, and code aren't linked, so gaps go unnoticed
+- **Forgets everything** — each session starts fresh with zero knowledge of past decisions, failures, or patterns
 
 This workflow solves all of that.
 
 ## How It Works
 
-Nineteen specialized agents execute in chain or standalone, each with a single responsibility:
+Thirteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/debrief** phases — querying institutional memory before starting and writing findings back after completing.
 
 ```
 Your Idea
   ↓
-💡 Discovery     → Explores and challenges your idea through conversation
+[Pipeline registers in memory.db]
   ↓
-⚖️ Evaluator     → GO/NO-GO gate: scores necessity, impact, complexity, alternatives
+Discovery     → Explores and challenges your idea through conversation
   ↓
-🔍 Analyst       → Questions your idea, defines requirements with acceptance criteria
+Evaluator     → GO/NO-GO gate: scores necessity, impact, complexity, alternatives
   ↓
-🏗️ Architect     → Designs architecture with failure modes, security, performance budgets, milestones
+Analyst       → Questions your idea, defines requirements with acceptance criteria
   ↓
-┌─── Per Milestone (auto-loop) ───────────────────────────────────────────┐
-│ 🧪 Test Writer   → Writes tests BEFORE code exists (TDD, priority-driven) │
-│   ↓                                                                       │
-│ 💻 Developer     → Implements module by module until all tests pass       │
-│   ↓                                                                       │
-│ 🔨 Build & Lint  → cargo build/clippy/test (or language equivalent)       │
-│   ↓                                                                       │
-│ ✅ QA            → Validates end-to-end functionality and acceptance criteria │
-│   ↓                                                                       │
-│ 👁️ Reviewer      → Audits for bugs, security, performance, and docs drift │
-│   ↓                                                                       │
-│ 📦 Git           → Auto-commit and push per milestone                     │
-└─────────────────────────────────────────────────────────────────────────┘
+Architect     → Designs architecture with failure modes, security, performance budgets
   ↓
-🏷️ Final Version  → Full test suite, version tag, push tags
+┌─── Per Milestone (auto-loop) ───────────────────────────────────────────────┐
+│ Test Writer   → Writes tests BEFORE code exists (TDD, priority-driven)      │
+│ Developer     → Implements minimum code to pass (module by module)           │
+│ Compiler      → Build + lint + test validation gate                          │
+│ QA            → End-to-end validation, acceptance criteria, exploratory tests │
+│ Reviewer      → Audits for bugs, security, performance, specs/docs drift     │
+└─────────────────────────────────────────────────────────────────────────────┘
+  ↓
+[Pipeline completes, memory.db updated with all decisions, findings, patterns]
 ```
 
-Each agent runs as a Claude Code subagent with its own isolated context window. The analyst's heavy reading doesn't eat into the developer's context. Work is scoped, incremental, and saved to disk at every step. Every agent validates its prerequisites before starting, and every multi-step command enforces iteration limits and inter-step output validation to prevent silent failures.
+## Architecture
 
-## Traceability Chain
+### Core + Extensions
 
-Every requirement flows through the entire pipeline via unique IDs:
+The toolkit separates **universal foundation** (core) from **domain-specific packs** (extensions):
 
 ```
-Discovery validates the idea
-  → Analyst assigns REQ-XXX-001
-    → Architect maps to module
-      → Test Writer writes TEST-XXX-001
-        → Developer implements
-          → QA verifies acceptance criteria
-            → Reviewer audits completeness
+claude-workflow/
+├── core/                              # Every project gets this
+│   ├── agents/                        # 13 universal agents
+│   ├── commands/                      # 13 universal commands
+│   └── db/                            # Institutional memory layer
+│       ├── schema.sql                 # SQLite schema
+│       └── queries/                   # Named query templates
+│           ├── briefing.sql           # Pre-work queries
+│           ├── debrief.sql            # Post-work inserts/updates
+│           └── maintenance.sql        # Periodic cleanup
+│
+├── extensions/                        # Opt-in per project
+│   ├── blockchain/                    # Ethereum, Solana, Cosmos, Substrate
+│   │   ├── agents/                    # blockchain-network, blockchain-debug, stress-tester
+│   │   └── commands/                  # 3 commands
+│   ├── omega/                         # OMEGA framework
+│   │   ├── agents/                    # omega-topology-architect, skill-creator
+│   │   └── commands/                  # 1 command
+│   └── c2c-protocol/                  # C2C protocol research
+│       ├── agents/                    # proto-auditor, proto-architect
+│       └── commands/                  # 3 commands
+│
+└── scripts/
+    ├── setup.sh                       # Deploy to target projects
+    └── db-init.sh                     # Initialize SQLite
 ```
 
-Requirements use MoSCoW priorities (Must/Should/Could/Won't). Tests are written in priority order — Must requirements get exhaustive coverage first.
+### Institutional Memory (SQLite)
+
+Every target project gets `.claude/memory.db` — a persistent knowledge base that survives context compression and session boundaries:
+
+| Table | Purpose | Written By | Read By |
+|-------|---------|-----------|---------|
+| `workflow_runs` | Pipeline execution traces | Orchestrator commands | All agents |
+| `changes` | What files were changed and why | developer, architect | analyst, reviewer |
+| `decisions` | Design decisions with rationale + rejected alternatives | architect, analyst, developer | All agents |
+| `failed_approaches` | What was tried and why it failed | developer, architect | developer, architect |
+| `bugs` | Symptoms, root cause, fix, affected files | qa, developer | analyst, test-writer |
+| `hotspots` | Files that keep breaking (risk levels, touch counts) | All agents | All agents |
+| `findings` | Reviewer/QA findings with status tracking | reviewer, qa | developer, test-writer |
+| `dependencies` | Component relationships | architect, reviewer | architect, reviewer |
+| `requirements` | Requirement lifecycle (defined → tested → verified) | analyst, test-writer, qa | All agents |
+| `patterns` | Successful patterns to reuse | developer, architect | developer, architect |
+| `decay_log` | Memory evolution audit trail | maintenance | maintenance |
+
+**Agent protocol**: Before work → query DB (briefing). After work → write back (debrief). No exceptions.
+
+**Why this matters**: Without institutional memory, every session is a fresh hire. The developer wastes cycles on approaches that already failed. The reviewer misses that a file was flagged fragile three sessions ago. The analyst re-specifies requirements that already exist. The DB eliminates this.
+
+## Core Agents (13)
+
+| Agent | Role |
+|-------|------|
+| **discovery** | Pre-pipeline conversation: explores, challenges, clarifies raw ideas |
+| **analyst** | Business analysis: requirements, acceptance criteria, MoSCoW, traceability, impact |
+| **architect** | System design: failure modes, security, performance budgets, milestones |
+| **test-writer** | TDD red phase: writes failing tests before code, priority-driven |
+| **developer** | Implementation: module by module, minimum code to pass tests |
+| **qa** | End-to-end validation, acceptance criteria verification, exploratory testing |
+| **reviewer** | Audit: bugs, security, performance, tech debt, specs/docs drift (read-only) |
+| **feature-evaluator** | GO/NO-GO gate: 7-dimension scoring before committing pipeline resources |
+| **functionality-analyst** | Codebase inventory: maps endpoints, services, models, handlers (read-only) |
+| **codebase-expert** | Deep comprehension: 6-layer progressive exploration (read-only) |
+| **wizard-ux** | Wizard/setup flow design for TUI/GUI/Web/CLI |
+| **role-creator** | Meta-agent: designs new agent role definitions |
+| **role-auditor** | Meta-agent: adversarial audit of role definitions (read-only) |
+
+## Extension Packs
+
+### Blockchain (3 agents, 3 commands)
+- **blockchain-network** — P2P networking, node operations, RPC infrastructure, monitoring, security
+- **blockchain-debug** — Firefighter: diagnoses active connectivity problems using 7-phase methodology
+- **stress-tester** — Black-box adversarial testing of blockchain CLI/RPC endpoints
+
+### OMEGA (2 agents, 1 command)
+- **omega-topology-architect** — Maps business domains to OMEGA primitives
+- **skill-creator** — Creates OMEGA skill definitions
+
+### C2C Protocol (2 agents, 3 commands)
+- **proto-auditor** — Audits protocol specs across 12 dimensions at 3 levels
+- **proto-architect** — Generates patches from audit findings via 6-step pipeline
+
+## Core Commands (13)
+
+| Command | Description |
+|---------|-------------|
+| `/workflow:new "idea"` | Full pipeline for greenfield projects |
+| `/workflow:new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
+| `/workflow:improve "desc" [--scope]` | Refactor/optimize (no architect step) |
+| `/workflow:bugfix "bug" [--scope]` | Bug fix with reproduction test |
+| `/workflow:audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
+| `/workflow:docs [--scope]` | Generate/update specs & docs |
+| `/workflow:sync [--scope]` | Detect and fix specs/docs drift |
+| `/workflow:functionalities [--scope]` | Map codebase functionalities |
+| `/workflow:understand [--scope]` | Deep codebase comprehension |
+| `/workflow:resume [--from]` | Resume stopped milestone-based workflow |
+| `/workflow:wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
+| `/workflow:create-role "desc"` | Design a new agent role |
+| `/workflow:audit-role "path" [--scope]` | Adversarial audit of role definitions |
+
+## Setup
+
+### Prerequisites
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
+- `sqlite3` available (standard on macOS/Linux)
+- A git repository to install the workflow into
+
+### Install
+
+Navigate to your target project and run:
+
+```bash
+# Core only (13 agents, 13 commands, SQLite memory)
+bash /path/to/claude-workflow/scripts/setup.sh
+
+# Core + blockchain extension
+bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain
+
+# Core + multiple extensions
+bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain,omega
+
+# Core + all extensions
+bash /path/to/claude-workflow/scripts/setup.sh --ext=all
+
+# List available extensions
+bash /path/to/claude-workflow/scripts/setup.sh --list-ext
+
+# Skip SQLite initialization
+bash /path/to/claude-workflow/scripts/setup.sh --no-db
+```
+
+This copies agents → `.claude/agents/`, commands → `.claude/commands/`, initializes `.claude/memory.db`, and creates `specs/` + `docs/` scaffolding if missing. It never overwrites CLAUDE.md — each project maintains its own.
+
+### What gets deployed
+
+```
+your-project/
+├── .claude/
+│   ├── agents/           ← Core agents (+ extension agents if selected)
+│   ├── commands/         ← Core commands (+ extension commands if selected)
+│   ├── memory.db         ← Institutional memory (SQLite)
+│   └── db-queries/       ← Query reference files
+├── specs/
+│   └── SPECS.md          ← Master spec index (created if missing)
+└── docs/
+    └── DOCS.md           ← Master doc index (created if missing)
+```
+
+## Guardrails
+
+- **Prerequisite gates**: Every agent verifies upstream output exists before proceeding
+- **Iteration limits**: QA↔Developer max 3, Reviewer↔Developer max 2, Audit fix max 5 per finding
+- **60% context budget**: Agents stop at 60% context usage, save state, continue via `/workflow:resume`
+- **Inter-step validation**: Commands verify each agent produced output before invoking the next
+- **Error recovery**: Failed chains save state to `docs/.workflow/chain-state.md` + memory.db
+- **Developer max retry**: 5 attempts per test-fix cycle, then escalation
+- **Language-agnostic**: Adapts to Rust, TypeScript, Python, Go, Elixir, or any detected language
 
 ## Source of Truth
 
 ```
-Codebase  →  specs/  →  docs/
-(ultimate)   (technical)  (user-facing)
+Codebase > .claude/memory.db > specs/ > docs/
 ```
 
-The codebase always wins. When specs or docs are outdated, agents flag the discrepancy and fix it. Every agent reads the actual code before trusting any documentation.
-
-## Agents
-
-> For a complete inventory of every functionality, input, output, and fail-safe control for each agent, see [docs/agent-functionalities.md](docs/agent-functionalities.md).
-
-### 💡 Discovery (`discovery.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
-
-The idea validator. The only agent that engages in extended back-and-forth with the user. Takes a raw idea, explores the vision, challenges assumptions, identifies risks, and produces a clear Idea Brief for the Analyst. Uses web search to research patterns and inform challenges. Adapts its approach based on context — full exploration for new projects, anchored exploration for features on existing codebases. Requires explicit user approval before saving the Idea Brief to ensure the pipeline builds from a validated concept. Ensures `docs/.workflow/` exists before writing. Saves partial progress if the user abandons mid-discovery.
-
-**Output:** `docs/.workflow/idea-brief.md` (full or lightweight template based on discovery depth)
-
-### 🔍 Analyst (`analyst.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob, WebFetch, WebSearch
-
-The business analyst. Validates prerequisites (idea brief must exist when invoked after discovery). Reads `specs/SPECS.md` to understand the project, scopes to the relevant area, reads the actual code, then questions everything that isn't clear. Never assumes — always asks. Assigns requirement IDs with MoSCoW priorities and explicit acceptance criteria. Performs impact analysis on existing code. Flags and fixes drift between code and specs — updates stale specs to match the codebase before writing new requirements. Ensures output directories exist before writing.
-
-**Output:** `specs/[domain]-requirements.md` with requirement IDs, acceptance criteria, traceability matrix
-
-### 🏗️ Architect (`architect.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob
-
-The designer. Validates prerequisites (analyst requirements must exist). Takes the analyst's requirements and designs the system architecture before any code is written. Defines modules, interfaces, dependencies, and implementation order. Plans failure modes and recovery strategies. Identifies security considerations and trust boundaries. Sets performance budgets. Creates and updates spec files in `specs/` and documentation in `docs/`. Ensures output directories exist before writing. When the project scope warrants it, defines **milestones** (M1, M2, M3...) with IDs, names, scoped modules/requirements, and dependency ordering — enabling the pipeline to auto-loop through milestones without user intervention.
-
-Also handles `/workflow:docs` and `/workflow:sync` — reading the codebase and bringing specs/docs back in sync. Handles missing specs/docs gracefully by creating them from scratch.
-
-**Output:** `specs/[domain]-architecture.md` (with optional Milestones table), updated specs and docs
-
-### 🧪 Test Writer (`test-writer.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
-
-The contract writer. Validates prerequisites (architect design and analyst requirements must exist). Detects project language and adapts test structure accordingly — supports Rust, TypeScript, Python, Go, and any language with standard conventions. Writes all tests BEFORE any implementation exists, driven by requirement priorities — Must requirements first (exhaustive coverage), then Should, then Could. References requirement IDs for full traceability. Covers acceptance criteria, failure modes, security scenarios, and edge cases. Flags specs inconsistencies when tests reveal undocumented behavior. Works one module at a time, saving to disk after each.
-
-**Output:** Test files that must fail initially (red phase of TDD)
-
-### 💻 Developer (`developer.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
-
-The builder. Validates prerequisites (tests, architect design, and analyst requirements must exist). Reads the analyst's requirements directly for traceability. Implements the minimum code needed to pass all tests, one module at a time in the order defined by the architect. Matches existing code conventions by grepping the codebase. Never advances to the next module until the current one's tests all pass. Updates the traceability matrix's "Implementation Module" column after each module. Updates relevant specs/ and docs/ when implementation changes documented behavior. Has a max retry limit of 5 attempts per test-fix cycle — escalates after that. Handles new project scaffolding. Commits after each module. Includes mandatory **compilation & lint validation** before QA handoff — runs build, lint (e.g., `cargo clippy`, `eslint`), and full test suite for the project's detected language (Rust, Elixir, Node.js/TypeScript, or general pattern).
-
-**Cycle:** Red → Green → Refactor → Update Traceability → Sync Specs/Docs → Commit → Next → Compile & Lint Validation
-
-### ✅ QA (`qa.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep
-
-The validator. Validates prerequisites (source code and tests must exist). Bridges the gap between "tests pass" and "it works as the user expects." Validates acceptance criteria for each requirement. Runs end-to-end flows, not just unit tests. Performs exploratory testing to find issues that scripted tests miss. Verifies failure modes and security scenarios actually behave correctly. Checks traceability matrix completeness. Verifies specs/docs accuracy against actual system behavior and flags drift. Has a "system won't start" fallback — if the system can't run, documents the error and validates what it can. Ensures `docs/qa/` exists before writing reports.
-
-**Output:** QA validation report with acceptance criteria results, exploratory findings, and specs/docs drift
-
-### 👁️ Reviewer (`reviewer.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
-
-The auditor. Validates prerequisites (source code must exist). Reviews all implemented code looking for bugs, security vulnerabilities, performance issues, technical debt, and specs/docs drift. Uses language-adaptive Grep patterns for cross-cutting scans (supports Rust, Python, TypeScript, Go, and others). Works module by module, saving findings incrementally. Brutally honest — doesn't approve out of courtesy. Can escalate architectural issues distinctly from code issues. Ensures output directories exist before writing reports. Supports two output formats: standard (for code reviews and read-only audits) and structured P0-P3 (for `--fix` mode with AUDIT-PX-NNN IDs, location, category, suggested fix, and test strategy fields).
-
-**Output:** Review report with critical/minor findings, specs drift, and final verdict (standard format), or structured P0-P3 audit report with AUDIT-PX-NNN IDs (when `--fix` is specified)
-
-### 📊 Functionality Analyst (`functionality-analyst.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
-
-The cartographer. Reads the codebase (ignoring docs — code is the single source of truth) and produces a structured inventory of everything the system does: endpoints, services, models, CLI commands, handlers, integrations, workers, migrations. Identifies dead code and unused exports. Notes cross-module dependencies.
-
-**Output:** `docs/functionalities/[domain]-functionalities.md` and master index
-
-### 🧠 Codebase Expert (`codebase-expert.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
-
-The comprehension engine. Goes beyond cataloging to build a deep understanding of any codebase — regardless of size. Works in 6 progressive layers: project shape → architecture & boundaries → domain & business logic → data flow & state → patterns & conventions → complexity & risk map. Produces a holistic understanding document that reads like a senior engineer's onboarding guide. Handles large codebases through progressive summarization with checkpoints.
-
-**Output:** `docs/understanding/PROJECT-UNDERSTANDING.md` (or `[scope]-understanding.md`)
-
-### 🔬 Proto-Auditor (`proto-auditor.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
-
-The protocol auditor. Audits protocol specifications across 12 dimensions (self-reference integrity, trust model soundness, confidence claim validity, escalation & deadlock, quorum & partition, adversarial resistance, specification completeness, enforcement realism, temporal integrity, composability, information leakage, self-audit) at 3 levels (L1: protocol, L2: enforcement, L3: self). Operates with an adversarial stance — assumes broken until proven safe. Produces structured `audit()` blocks per dimension and a `final_report()` with severity stacking and back-propagation checks.
-
-**Output:** `c2c-protocol/audits/audit-[protocol]-[date].md`
-
-### 🔧 Proto-Architect (`proto-architect.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Grep, Glob
-
-The protocol improver. Consumes audit reports from Proto-Auditor and generates structured patches to close findings. Runs a 6-step pipeline: triage, root cause isolation, patch generation, self-audit, version increment, and regression check. Patches are classified into quality tiers (Tier 1: closes root cause with no new surface, down to Tier 4: rejected). Never adds complexity without closing a finding. Never patches symptoms when root causes are reachable.
-
-**Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
-
-### 🎭 Role Creator (`role-creator.md`)
-**Model:** Opus | **Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
-
-The meta-agent. The only agent specialized in designing other agents. Analyzes the desired role's domain, researches best practices and pitfalls, studies existing agents for pattern consistency and overlap detection, and produces complete agent definitions that cover every base: identity, boundaries, prerequisites, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, failure handling, and integration. Walks through a Role Anatomy Checklist and validates completeness, consistency, clarity, boundary sharpness, and failure coverage before presenting the result. Gets user approval before saving. Can also create companion command files.
-
-**Output:** `.claude/agents/[name].md` (and optionally `.claude/commands/workflow-[name].md`)
-
-### ⚖️ Feature Evaluator (`feature-evaluator.md`)
-**Model:** Opus | **Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
-
-The gate. Evaluates whether a proposed feature is worth building before the full pipeline commits resources. Scores features across 7 dimensions — necessity, impact, complexity cost, alternatives, alignment, risk, and timing — using a weighted Feature Viability Score (FVS). Necessity, Impact, and Alignment are weighted 2x because a feature that isn't needed, impactful, or aligned shouldn't be built regardless of how easy it is. Produces a GO/CONDITIONAL/NO-GO verdict. Advisory, not a veto — the user always has the final say. Searches for existing alternatives in the codebase and via web search. Prevents wasted pipeline effort on unnecessary, redundant, or misaligned features. Automatically invoked in workflow-new-feature before the Analyst. Does not gate bug fixes or improvements.
-
-**Output:** `docs/.workflow/feature-evaluation.md`
-
-### 🧩 OMEGA Topology Architect (`omega-topology-architect.md`)
-**Model:** Opus | **Tools:** Read, Write, Grep, Glob
-
-The OMEGA solutions architect. Maps user business domains to OMEGA infrastructure primitives — projects, skills, topologies, schedules, heartbeats, and lessons. When a user describes a business goal ("help me trade stocks", "monitor my servers"), this agent understands the domain, discovers existing OMEGA infrastructure, designs a minimum viable configuration, presents it for approval, and executes the setup. Composes existing primitives only — writes ROLE.md, TOPOLOGY.toml, SKILL.md, and HEARTBEAT.md files but never Rust code. Sequential topologies only. Human always approves before any files are created. Pushes back on over-engineering.
-
-**Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
-
-### 🛠️ Skill Creator (`skill-creator.md`)
-**Model:** Opus | **Tools:** Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
-
-The OMEGA skill creation specialist. Designs and builds OMEGA skills — self-contained capability packages (`SKILL.md` plus optional scripts, references, and assets) that give OMEGA domain expertise. Researches CLIs, APIs, and workflows deeply enough to write skill instructions that a Claude Code subprocess can execute without guesswork. Validates frontmatter format (TOML/YAML), checks for trigger keyword collisions with existing skills, enforces progressive disclosure (body under 500 lines), and bakes in safety constraints for destructive domains. Presents a full skill proposal for user approval before creating any files. Can be recommended by the topology architect when a new skill is needed.
-
-**Output:** `~/.omega/skills/<name>/SKILL.md` and optional `scripts/`, `references/`, `assets/` subdirectories
-
-### 🔒 Role Auditor (`role-auditor.md`)
-**Model:** Opus | **Tools:** Read, Grep, Glob (read-only)
-
-The enforcement layer for roles. Modeled directly on the C2C enforcement layer's adversarial principles and the proto-auditor's structured rigor. Assumes every role definition is broken until proven safe. Audits across 12 dimensions — identity integrity, boundary soundness, prerequisite gate completeness, process determinism, output predictability, failure mode coverage, context management soundness, rule enforceability, anti-pattern coverage, tool & permission analysis, integration & pipeline fit, and self-audit — at 2 levels (L1: role definition, L2: self-audit). Produces structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14 items), severity stacking, back-propagation, and deployment conditions. Blocking rules enforce verdict thresholds: any critical finding or 3+ major findings = broken (must not deploy). The auditor's failure mode is being too agreeable — it fights this by design.
-
-**Output:** `docs/.workflow/role-audit-[name].md`
-
-### 🔗 Blockchain Network Specialist (`blockchain-network.md`)
-**Model:** Opus | **Tools:** Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
-
-The blockchain infrastructure engineer. Expert in the networking layer of blockchain systems — P2P protocols (libp2p, devp2p, gossipsub, Kademlia DHT), node operations (full nodes, archive nodes, validators, RPC nodes, light clients), chain synchronization (snap sync, checkpoint sync, state sync), RPC/API infrastructure (JSON-RPC, WebSocket, load balancing, rate limiting), network security (eclipse attacks, Sybil resistance, DDoS protection, firewall hardening), and monitoring (Prometheus, Grafana, alerting). Covers Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Provides exact CLI flags, specific configuration values, real port numbers, and tested docker-compose files. Security-first — every configuration includes firewall rules and hardening. Includes chain-specific reference tables for ports, protocols, sync modes, and client diversity guidance.
-
-**Output:** Configuration files, docker-compose setups, shell scripts, firewall rules, monitoring configs, infrastructure reports, and node setup guides
-
-### 🚒 Blockchain Debug Specialist (`blockchain-debug.md`)
-**Model:** Opus | **Tools:** Read, Write, Bash, Glob, Grep, WebSearch, WebFetch
-
-The firefighter. Called when blockchain nodes are broken RIGHT NOW — peers won't connect, sync is stuck, RPC is unreachable, the Engine API is failing, validators are missing attestations, or nodes are partitioned. Follows a systematic 7-phase debug methodology: gather symptoms, confirm the issue with diagnostic commands, isolate the layer (network/transport, protocol, application, inter-component), diagnose the root cause, propose and apply a fix (with explicit user approval for destructive actions), verify the fix worked, and document everything in a Root Cause Analysis report. Read-only diagnostic commands (port checks, log analysis, RPC queries) run freely; state-changing operations (restarts, config edits, data deletion) require explicit user approval. Will refuse to disable auth, open all ports, or apply unsafe "quick fixes." Includes comprehensive diagnostic command references for Ethereum (EL+CL), Cosmos/CometBFT, Solana, and Substrate/Polkadot, plus a common issues reference organized by symptom. Does NOT design infrastructure, set up new nodes, or write monitoring configs — that is the blockchain-network agent's job. This agent debugs and fixes; the other one builds.
-
-**Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms, diagnosis steps, root cause, fix applied, verification results, and prevention recommendations
-
-### 🧙 Wizard UX Expert (`wizard-ux.md`)
-**Model:** Opus | **Tools:** Read, Write, Grep, Glob, WebSearch, WebFetch
-
-The wizard flow specialist. Designs intuitive installation wizards, setup flows, onboarding sequences, and multi-step configuration processes for TUI (terminal), GUI (desktop), Web (browser), and CLI (non-interactive) contexts. Understands the unique constraints of each medium — a TUI wizard cannot use drag-and-drop; a CLI wizard cannot show a progress ring; a GUI wizard can show parallel panels that a terminal cannot. Produces complete wizard flow specifications so detailed that downstream agents (architect, test-writer, developer) can implement the wizard without making a single UX decision themselves. Every step includes field definitions, smart defaults, validation rules, UX copy, error messages, and medium-specific adaptations. Designs error recovery, accessibility baselines, expert fast-path modes, and post-wizard experiences. Does NOT write implementation code — produces specs consumed by architect, test-writer, and developer.
-
-**Output:** `specs/[domain]-wizard-flow.md` with step sequence, flow architecture, state management, navigation rules, error recovery, expert/fast-path mode, accessibility, and design decisions
-
-## Commands
-
-| Command | Description | Agents Used |
-|---------|-------------|-------------|
-| `/workflow:new "idea"` | Build something from scratch | discovery → analyst → architect → test-writer → developer → QA → reviewer |
-| `/workflow:new-feature "feature"` | Add to existing project | (discovery) → **feature-evaluator** → analyst → architect → test-writer → developer → QA → reviewer |
-| `/workflow:improve-functionality "improvement"` | Refactor, optimize, or enhance | analyst → test-writer → developer → QA → reviewer |
-| `/workflow:bugfix "bug"` | Fix a bug | analyst → test-writer → developer → QA → reviewer |
-| `/workflow:audit` | Read-only code + specs audit | Reviewer only |
-| `/workflow:audit --fix` | Audit + auto-fix by priority (P0→P1→P2→P3) | Reviewer → Test Writer → Developer per priority |
-| `/workflow:docs` | Generate/update specs & docs | Architect only |
-| `/workflow:sync` | Fix drift between code and specs/docs | Architect only |
-| `/workflow:functionalities` | Map all codebase functionalities | Functionality Analyst only |
-| `/workflow:understand` | Deep codebase comprehension | Codebase Expert only |
-| `/workflow:c2c` | Multi-round C2C protocol (writer ↔ auditor) | Writer + Auditor (up to 20 rounds) |
-| `/workflow:proto-audit` | Audit a protocol specification (12 dimensions, 3 levels) | Proto-Auditor only |
-| `/workflow:proto-improve` | Improve protocol based on audit findings | Proto-Architect only |
-| `/workflow:create-role` | Design a new agent role definition + audit + remediation | Role Creator → Role Auditor → auto-fix |
-| `/workflow:audit-role` | Adversarial audit of role definitions (12 dimensions) | Role Auditor only |
-| `/workflow:resume` | Resume a stopped or failed milestone-based workflow from saved state | Same agents as the interrupted workflow |
-| `/workflow:omega-setup` | Configure OMEGA for a business domain | OMEGA Topology Architect only |
-| `/workflow:blockchain-network` | Blockchain network infrastructure (nodes, P2P, RPC, security, monitoring) | Blockchain Network Specialist only |
-| `/workflow:blockchain-debug` | Debug active blockchain connectivity problems (peers, sync, RPC, Engine API) | Blockchain Debug Specialist only |
-| `/workflow:wizard-ux` | Design wizard, setup, or onboarding flows for TUI/GUI/Web/CLI | Wizard UX Expert only |
-
-### Scope Parameter
-
-All commands accept `--scope` to limit context usage on large codebases:
-
-```bash
-/workflow:new-feature "add retry logic" --scope="omega-providers"
-/workflow:audit --scope="omega-core"
-/workflow:sync --scope="omega-memory"
-/workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
-/workflow:blockchain-network "security audit" --scope="security"
-/workflow:blockchain-debug "sync stuck" --scope="engine-api"
-/workflow:wizard-ux "node setup wizard" --scope="TUI"
-```
-
-When no scope is provided, the analyst determines the minimal scope needed.
-
-## Fail-Safe Controls
-
-The workflow is reinforced with guardrails at every level to prevent silent failures, infinite loops, and cascading garbage.
-
-### Prerequisite Gates
-Every agent validates its upstream input before starting. If required input is missing, the agent **stops immediately** with a clear error message identifying what's missing and which upstream agent failed.
-
-### Iteration Limits
-Multi-step commands enforce maximum iteration counts:
-- **QA ↔ Developer:** max 3 iterations
-- **Reviewer ↔ Developer:** max 2 iterations
-- **Audit --fix developer attempts:** max 5 per finding
-- **Audit --fix build/lint retries:** max 3 per priority pass
-- **Audit --fix verification iterations:** max 2 per priority pass
-
-If limits are reached, the workflow stops and reports remaining issues to the user.
-
-### Inter-Step Output Validation
-Before invoking each agent, the command verifies the previous agent produced its expected output file. Missing output halts the chain with a clear report.
-
-### Error Recovery
-If any agent fails mid-chain, the workflow saves chain state to `docs/.workflow/chain-state.md` — what completed, what failed, what remains. The user can resume with `/workflow:resume`.
-
-### Directory Safety
-Agents create target directories before writing (e.g., `docs/qa/`, `docs/reviews/`, `specs/`). No silent file-write failures.
-
-### Language-Agnostic
-Test-writer and reviewer adapt to the project's language (Rust, Python, TypeScript, Go, etc.) by detecting config files and existing source. No language is assumed.
-
-## Context Window Management
-
-This workflow is designed for real-world codebases that exceed a single context window. Every agent operates under a **60% context window budget** — completing its work within 60% of available context to leave 40% headroom for reasoning and edge cases. The Architect enforces this by sizing milestones to a maximum of 3 modules each, and every pipeline agent monitors its own usage proactively.
-
-- **60% budget** — every agent must finish within 60% of its context window. If it hits the limit, it saves state and delegates via `/workflow:resume`
-- **Read indexes first** — `specs/SPECS.md` gives the project layout without reading every file
-- **Grep before Read** — search for symbols and patterns before loading whole files
-- **Work one module at a time** — never load everything into context simultaneously
-- **Max 3 modules per milestone** — the Architect sizes milestones so each downstream agent can complete one milestone within budget
-- **Save to disk incrementally** — tests, code, and findings are written to files after each module
-- **Checkpoint on large operations** — audit, docs, and sync process one milestone at a time with progress saved to `docs/.workflow/`
-- **Never silently degrade** — if an agent can't finish, it states exactly what was skipped and recommends a scoped follow-up
-- **Clean up** — temporary `docs/.workflow/` files are removed after workflow completion
-
-## Installation
-
-### Quick Install (existing project)
-
-```bash
-# Clone the workflow repo
-git clone <repo-url> claude-workflow
-
-# Copy agents and commands into your project
-mkdir -p .claude/agents .claude/commands
-cp claude-workflow/.claude/agents/*.md .claude/agents/
-cp claude-workflow/.claude/commands/*.md .claude/commands/
-```
-
-> **Note:** Do not copy CLAUDE.md — each project should have its own. Merge the workflow rules from `claude-workflow/CLAUDE.md` into your project's CLAUDE.md manually (see [Integrate With Existing CLAUDE.md](#integrate-with-existing-claudemd)).
-
-### Setup Script (new project)
-
-```bash
-git clone <repo-url> claude-workflow
-cd my-project
-bash ../claude-workflow/scripts/setup.sh
-```
-
-The setup script copies agents and commands, creates `specs/SPECS.md` and `docs/DOCS.md` if they don't exist, and never overwrites existing files (except agents and commands which are always kept in sync).
-
-## Project Structure
-
-The workflow expects (and creates if missing) this structure:
-
-```
-your-project/
-├── CLAUDE.md                  ← Workflow rules (read by Claude Code on startup)
-├── backend/                   ← Backend source code
-│   ├── src/
-│   └── tests/
-├── frontend/                  ← Frontend source code (if applicable)
-│   ├── src/
-│   └── tests/
-├── specs/
-│   ├── SPECS.md               ← Master index of all technical specs
-│   ├── domain-a.md            ← Per-domain spec files
-│   └── domain-b.md
-├── docs/
-│   ├── DOCS.md                ← Master index of all documentation
-│   ├── quickstart.md          ← Topic-oriented guides
-│   ├── architecture.md
-│   ├── .workflow/             ← Temporary agent checkpoints (auto-cleaned)
-│   ├── reviews/               ← Code review reports
-│   ├── audits/                ← Audit reports
-│   ├── sync/                  ← Sync/drift reports
-│   ├── functionalities/       ← Codebase functionality inventories
-│   └── understanding/        ← Deep codebase comprehension documents
-├── .claude/
-│   ├── agents/                ← Subagent definitions
-│   │   ├── discovery.md
-│   │   ├── analyst.md
-│   │   ├── architect.md
-│   │   ├── test-writer.md
-│   │   ├── developer.md
-│   │   ├── qa.md
-│   │   ├── reviewer.md
-│   │   ├── functionality-analyst.md
-│   │   ├── codebase-expert.md
-│   │   ├── proto-auditor.md
-│   │   ├── proto-architect.md
-│   │   ├── role-creator.md
-│   │   ├── role-auditor.md
-│   │   ├── feature-evaluator.md
-│   │   ├── omega-topology-architect.md
-│   │   ├── skill-creator.md
-│   │   ├── blockchain-network.md
-│   │   ├── blockchain-debug.md
-│   │   └── wizard-ux.md
-│   └── commands/              ← Slash commands
-│       ├── workflow-new.md
-│       ├── workflow-new-feature.md
-│       ├── workflow-improve-functionality.md
-│       ├── workflow-bugfix.md
-│       ├── workflow-audit.md
-│       ├── workflow-docs.md
-│       ├── workflow-sync.md
-│       ├── workflow-functionalities.md
-│       ├── workflow-understand.md
-│       ├── workflow-proto-audit.md
-│       ├── workflow-proto-improve.md
-│       ├── workflow-create-role.md
-│       ├── workflow-audit-role.md
-│       ├── workflow-resume.md
-│       ├── workflow-omega-setup.md
-│       ├── workflow-blockchain-network.md
-│       ├── workflow-blockchain-debug.md
-│       └── workflow-wizard-ux.md
-└── .gitignore
-```
-
-Code lives in `backend/` (and optionally `frontend/`). Specs and docs remain at the project root. Agents are aware of this structure when scoping reads and writes.
-
-## Requirements
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed (`npm install -g @anthropic-ai/claude-code`)
-- Claude Pro or Max subscription
-- Git
-- Rust toolchain (recommended) or your preferred language
-
-## Customization
-
-### Change Language
-Edit `CLAUDE.md` and change:
-```
-- Preferred language: Rust
-```
-To your preferred language. All agents adapt automatically — the test-writer will match your language's test conventions, the developer will follow your language's patterns.
-
-### Add Custom Agents
-Create a `.md` file in `.claude/agents/` with the frontmatter format:
-```yaml
----
-name: your-agent
-description: When to invoke this agent
-tools: Read, Write, Edit, Bash, Glob, Grep
-model: sonnet
----
-
-Your agent instructions here...
-```
-
-### Modify Workflows
-Edit commands in `.claude/commands/` to change agent chain order, add steps, or create new workflow modes.
-
-### Integrate With Existing CLAUDE.md
-If your project already has a `CLAUDE.md`, merge the workflow rules from this project's `CLAUDE.md` into yours — specifically the Source of Truth Hierarchy, Global Rules, Traceability Chain, and Context Window Management sections.
-
-## Workflow Details
-
-### `/workflow:new` — Full Pipeline
-
-```
-Step 1:   Discovery          → explores and challenges the idea with the user, produces Idea Brief
-Step 2:   Analyst            → questions user, generates requirements with IDs, priorities, acceptance criteria
-Step 3:   Architect          → designs architecture with failure modes, security, performance budgets, milestones
-Step 3.5: Milestone Extract  → parses architecture for milestones, creates progress tracker
-
-  ┌─── FOR EACH MILESTONE (auto-loop, no user intervention between milestones) ───┐
-  │ Step 4:   Test Writer    → writes failing tests scoped to this milestone       │
-  │ Step 5:   Developer      → implements module by module until green             │
-  │ Step 5.5: Build & Lint   → cargo build/clippy/test (or language equivalent)    │
-  │ Step 6-7: QA + Iteration → validates acceptance criteria (max 3 rounds)        │
-  │ Step 8-9: Review + Iter  → audits code + specs drift (max 2 rounds)            │
-  │ Step 9.5: Commit & Push  → git commit + push, update milestone progress        │
-  └────────────────────────────────────────────────────────────────────────────────┘
-
-Step 10:  Final Versioning   → full test suite, version tag, push tags, cleanup
-```
-
-### `/workflow:new-feature` — Same as New, Context-Aware
-
-Same pipeline but every agent reads existing code first. Discovery is invoked when the feature description is vague; skipped for specific, well-scoped features. The **Feature Evaluator** always runs as a gate — scoring the proposed feature across 7 dimensions and producing a GO/CONDITIONAL/NO-GO verdict before the pipeline commits resources. The user always has the final say on whether to proceed. The analyst checks for specs drift and performs impact analysis. The test-writer matches existing test conventions. All previous tests must continue passing (regression). Features that span multiple milestones use the same **auto-looping milestone pipeline** as `/workflow:new` — each milestone is built, validated, committed, and pushed before the next begins.
-
-### `/workflow:improve-functionality` — Refactor and Optimize
-
-```
-Step 1: Analyst    → reads current code, identifies what to improve (no new requirements)
-Step 2: Test Writer→ writes regression tests to lock in existing behavior
-Step 3: Developer  → refactors/optimizes, all tests must still pass
-Step 4: QA         → validates behavior hasn't changed despite improvements
-Step 5: Reviewer   → verifies improvement is real, no behavior changes slipped in
-```
-
-Skips the architect since the architecture already exists. The analyst focuses on code quality, performance, and patterns rather than questioning new requirements. Behavior stays the same — only the implementation gets better.
-
-### `/workflow:bugfix` — Reduced Chain
-
-```
-Step 1: Analyst    → locates bug in code (Grep), performs impact analysis
-Step 2: Test Writer→ writes a test that reproduces the bug (must fail)
-Step 3: Developer  → fixes bug, reproduction test passes, no regression
-Step 4: QA         → reproduces original scenario, validates root cause fix
-Step 5: Reviewer   → verifies root cause fix (not a patch), checks specs
-```
-
-### `/workflow:audit` — Code Audit (Read-Only or Auto-Fix)
-
-**Read-only mode** (default): Reviewer scans the codebase looking for security issues, performance problems, technical debt, dead code, missing tests, and documentation drift. On large codebases, works one milestone at a time with checkpoints. Produces a comprehensive report at `docs/audits/`.
-
-**Auto-fix mode** (`--fix`): After the audit, the pipeline automatically loops through findings by priority — writing regression tests, fixing issues, validating, and committing per priority pass.
-
-```
-Step 1:   Reviewer           → structured audit with P0/P1/P2/P3 findings (AUDIT-PX-NNN IDs)
-Step 1.5: Progress Tracker   → creates docs/.workflow/audit-fix-progress.md
-
-  ┌─── FOR EACH PRIORITY LEVEL (P0 → P1 → P2 → [P3]) ───────────────────┐
-  │ Step 2:   Test Writer    → regression tests proving issues exist       │
-  │ Step 3:   Developer      → fixes findings scoped to this priority     │
-  │ Step 3.5: Build & Lint   → full compilation + lint + test suite       │
-  │ Step 4:   Verification   → regression tests pass + no regressions     │
-  │ Step 4.5: Commit & Push  → git commit + push per priority pass        │
-  └───────────────────────────────────────────────────────────────────────┘
-
-Step 5:   Final Summary      → total fixes, escalated findings, cleanup
-```
-
-**Priority levels:**
-- **P0 (Critical):** Security vulns, data loss, broken core logic, crashes — all findings MUST be attempted
-- **P1 (Major):** Performance issues, significant bugs, major tech debt — all findings MUST be attempted
-- **P2 (Minor):** Code quality, moderate debt, edge cases — all findings SHOULD be attempted
-- **P3 (Suggestions):** Style, enhancements, docs gaps — SKIPPED by default (use `--include-p3` to include)
-
-Each finding gets a unique `AUDIT-PX-NNN` ID that flows through tests, fixes, and commits for full traceability. Findings that resist fixing after 5 attempts are escalated for human review. The audit report itself uses a structured format with Location, Category, Description, Impact, Suggested Fix, and Test Strategy fields.
-
-### `/workflow:docs` — Documentation Generation
-
-Architect reads the codebase (source of truth) and creates or updates specs and docs to match reality. Works one milestone at a time on large projects.
-
-### `/workflow:sync` — Drift Detection and Fix
-
-Architect compares every spec and doc file against the actual code. Produces a drift report showing stale specs, missing specs, orphaned docs, and index gaps. Then fixes everything found. Report saved to `docs/sync/`.
-
-### `/workflow:functionalities` — Codebase Inventory
-
-Functionality Analyst reads the source code (ignoring documentation) and maps everything the system does: endpoints, services, models, CLI commands, handlers, integrations, workers, and migrations. Identifies dead code and cross-module dependencies. Produces structured inventories at `docs/functionalities/`.
-
-### `/workflow:understand` — Deep Codebase Comprehension
-
-Codebase Expert progressively builds a holistic understanding of any project, regardless of size. Works through 6 layers:
-
-```
-Layer 1: Project Shape      → languages, frameworks, directory organization, build system
-Layer 2: Architecture       → modules, boundaries, dependency direction, bootstrap flow
-Layer 3: Domain Logic       → core entities, relationships, business workflows
-Layer 4: Data Flow          → entry → processing → storage → exit, config flow
-Layer 5: Patterns           → conventions, architectural patterns, the "template" for new features
-Layer 6: Complexity & Risk  → high-complexity areas, security-sensitive paths, technical debt
-```
-
-Handles large codebases through progressive summarization — saves checkpoints to `docs/.workflow/` after each layer pair. If it can't finish, it tells you exactly what was covered and what remains. Produces a comprehensive understanding document at `docs/understanding/` that reads like an onboarding guide for a senior engineer.
-
-### `/workflow:proto-audit` — Protocol Specification Audit
-
-Proto-Auditor runs a full adversarial audit on a protocol specification across 12 dimensions at 3 levels:
-
-```
-D1:  Self-Reference Integrity       D7:  Specification Completeness
-D2:  Trust Model Soundness          D8:  Enforcement Realism
-D3:  Confidence Claim Validity      D9:  Temporal & Ordering Integrity
-D4:  Escalation & Deadlock          D10: Composability & Cross-Layer
-D5:  Quorum & Partition             D11: Information Leakage & Side Channels
-D6:  Adversarial Agent Resistance   D12: Self-Audit (Auditor Integrity)
-```
-
-Levels: L1 (protocol spec), L2 (enforcement layer), L3 (self-audit). Outputs structured `audit()` blocks per dimension and a `final_report()` with severity stacking, back-propagation, and deployment conditions. Findings are classified as CRITICAL, MAJOR, or MINOR. The overall verdict scale is: broken → degraded → hardened → production-ready.
-
-**Output:** `c2c-protocol/audits/audit-[protocol]-[date].md`
-
-### `/workflow:proto-improve` — Protocol Improvement from Audit
-
-Proto-Architect consumes an audit report and generates structured patches through a 6-step pipeline:
-
-```
-P1: Triage         → classify findings, group by root cause, order dependencies
-P2: Root Cause     → isolate layer (axiom/rule/meta/implicit), determine scope
-P3: Patch Gen      → generate patches (amend/extend/add/deprecate/axiom/define)
-P4: Self-Audit     → reject patches that add complexity without closing findings
-P5: Version        → classify version bump (major/minor)
-P6: Regression     → verify patches don't break interacting rules
-```
-
-Patches are quality-tiered: Tier 1 (closes root cause, no new surface) through Tier 4 (rejected). Structural changes require operator approval. CRITICAL findings cannot be closed with symptom-only patches without sign-off. Patch batches are atomic — all pass or none apply.
-
-**Output:** `c2c-protocol/patches/patches-[protocol]-[date].md`
-
-### `/workflow:c2c` — Multi-Round C2C Protocol
-
-A proof-of-concept for multi-round agent-to-agent conversations using the C2C protocol. Two agents iterate in a loop:
-
-```
-Round 1: Writer produces code → Auditor audits and finds issues
-Round 2: Writer fixes/defends/concedes → Auditor re-audits changes
-Round 3: ...continues until certification or max 20 rounds
-```
-
-**Agent A (Writer):** Produces production code with persuasive documentation. Self-assesses honestly using confidence tags. Responds to audit findings with `FIX`, `DEFENSE`, or `CONCESSION` messages.
-
-**Agent B (Auditor):** Audits code line-by-line, fact-checks confidence claims, verifies R04 compliance (accuracy > persuasion). Issues `CERTIFICATION` when code meets production standards (`accepted`, `conditional`, or `rejected`).
-
-Both agents communicate exclusively through structured `msg()` blocks with mandatory `conf()` and `src()` tags on every claim. The orchestrator manages turn numbering, conversation history, and context compression across rounds.
-
-**Output:** Per-round transcripts in `poc/c2c-protocol/rounds/` and a `RESULTS.md` summarizing bugs found/fixed, defenses, concessions, and certification status.
-
-### `/workflow:create-role` — Agent Role Design + Audit + Remediation
-
-Role Creator designs comprehensive agent role definitions, then the Role Auditor automatically audits the result, and any critical/major findings are remediated immediately:
-
-```
-Phase 1: Creation
-  Step 1: Analyze    → read the role request, study existing agents for overlap/patterns
-  Step 2: Clarify    → ask targeted questions if the description is vague (skip if clear)
-  Step 3: Research   → WebSearch for domain best practices, methodologies, pitfalls
-  Step 4: Design     → walk the Role Anatomy Checklist, select tools and model
-  Step 5: Write      → produce the complete agent definition
-  Step 6: Validate   → completeness, consistency, clarity, boundary, failure checks
-  Step 7: Confirm    → present to user, get explicit approval before saving
-  Step 8: Save       → write agent file + optional companion command
-
-Phase 2: Automatic Audit
-  Step 9: Audit      → role-auditor runs full D1-D12 adversarial audit on the new role
-
-Phase 3: Automatic Remediation (if broken/degraded)
-  Step 10: Fix       → apply corrections for all critical and major findings
-  Step 11: Re-audit  → role-auditor re-audits the corrected role
-  (max 2 remediation cycles, then escalates to user)
-```
-
-Every role produced includes: identity, boundaries, prerequisite gate, directory safety, source of truth, context management, step-by-step process, output format, rules, anti-patterns, and failure handling. The Role Creator validates against existing agents to prevent overlap and ensures consistency with CLAUDE.md workflow rules. The automatic audit+remediation loop ensures roles reach **hardened** or better before delivery.
-
-**Output:** `.claude/agents/[name].md`, `docs/.workflow/role-audit-[name].md`, and optionally `.claude/commands/workflow-[name].md`
-
-### `/workflow:audit-role` — Adversarial Role Audit
-
-Role Auditor performs a full adversarial audit of agent role definitions, modeled on the C2C enforcement layer principles. Assumes every role is broken until proven safe.
-
-```
-D1:  Identity Integrity              D7:  Context Management Soundness
-D2:  Boundary Soundness              D8:  Rule Enforceability
-D3:  Prerequisite Gate Completeness  D9:  Anti-Pattern Coverage
-D4:  Process Determinism             D10: Tool & Permission Analysis
-D5:  Output Predictability           D11: Integration & Pipeline Fit
-D6:  Failure Mode Coverage           D12: Self-Audit (Auditor Integrity)
-```
-
-Levels: L1 (role definition), L2 (self-audit). Outputs structured `audit()` blocks per dimension and a `final_report()` with an anatomy checklist score (N/14 items), severity stacking, back-propagation, and deployment conditions.
-
-Severity: CRITICAL (role will malfunction, silent degradation, privilege escalation), MAJOR (aspirational rules, missing failure handling, implicit boundaries), MINOR (redundant rules, generic anti-patterns).
-
-Verdict scale: broken → degraded → hardened → deployable. Any critical finding = broken. The auditor's failure mode is being too agreeable — it fights this actively.
-
-Can audit a single role or all roles at once, with cross-role comparative analysis for the "all" mode.
-
-**Output:** `docs/.workflow/role-audit-[name].md`
-
-### `/workflow:resume` — Resume Interrupted Workflow
-
-Resumes a workflow that was interrupted by context limits, agent errors, retry exhaustion, or manual stop. Reads the saved milestone progress and optional chain state to auto-detect where to pick up.
-
-```
-Step 1: Read Progress    → parse docs/.workflow/milestone-progress.md for first non-COMPLETE milestone
-Step 2: Read Chain State → if docs/.workflow/chain-state.md exists, identify the failed step
-Step 3: Validate         → verify outputs exist for all COMPLETE milestones
-Step 4: Determine Point  → auto-detect or use --from override
-Step 5: Report Plan      → show the user what will be resumed and from where
-
-  ┌─── MILESTONE LOOP (same as workflow-new) ────────────────────────────────┐
-  │ Test Writer → Developer → Build & Lint → QA + Iteration → Review + Iter │
-  │ → Milestone Commit & Push → next milestone                              │
-  └──────────────────────────────────────────────────────────────────────────┘
-
-Step 12: Final Versioning → full test suite, version tag, push tags, cleanup
-```
-
-Supports `--from` to override the auto-detected resume point:
-- `--from="M3"` — resume from a specific milestone
-- `--from="test-writer"` / `--from="developer"` / `--from="qa"` / `--from="reviewer"` — resume from a specific step within the next pending milestone
-
-Same fail-safe controls as the original workflow: QA iteration limits (3), reviewer iteration limits (2), inter-step output validation, and error recovery with chain state saving.
-
-### `/workflow:omega-setup` — OMEGA Infrastructure Configuration
-
-OMEGA Topology Architect maps a user's business goals to OMEGA primitives through a 6-phase process:
-
-```
-Phase 1: Understand    → targeted questions to understand the business domain (max 2 rounds)
-Phase 2: Discover      → read existing ~/.omega/ projects, skills, topologies, heartbeats
-Phase 3: Map           → determine which primitives serve the goal (projects, skills, schedules, heartbeats)
-Phase 4: Design        → assemble into a structured proposal with minimum viable setup
-Phase 5: Present       → show proposal, explain decisions, wait for explicit human approval
-Phase 6: Execute       → create approved files (ROLE.md, HEARTBEAT.md, TOPOLOGY.toml, SKILL.md)
-```
-
-Composes existing OMEGA primitives only — never writes Rust code. Sequential topologies only. Pushes back on over-engineering ("you don't need 5 projects for this — one with a good ROLE.md will do"). If context limits are reached, saves progress to `docs/.workflow/topology-architect-progress.md` for resumption.
-
-**Output:** `~/.omega/projects/<name>/ROLE.md`, `~/.omega/projects/<name>/HEARTBEAT.md`, scheduling markers, optionally `~/.omega/topologies/<name>/TOPOLOGY.toml` and `~/.omega/skills/<name>/SKILL.md`
-
-### `/workflow:blockchain-network` — Blockchain Network Infrastructure
-
-Blockchain Network Specialist provides expert guidance on blockchain P2P networking, node operations, and network infrastructure:
-
-```
-Phase 1: Assess       → identify chain, node type, task type, read existing configs
-Phase 2: Research      → verify current client versions, check for known issues
-Phase 3: Design        → produce solution with exact configurations, firewall rules, monitoring
-Phase 4: Validate      → verify CLI flags exist, test config syntax, include rollback plan
-Phase 5: Deliver       → write approved configuration files, scripts, and documentation
-```
-
-Task types: node setup, network analysis, RPC infrastructure, security hardening, monitoring setup, network topology design, chain synchronization, validator networking, client migration, multi-chain/cross-chain networking.
-
-Supports Ethereum (Geth, Reth, Nethermind, Erigon + Lighthouse, Prysm, Teku, Nimbus, Lodestar), Solana, Cosmos/CometBFT, and Substrate/Polkadot. Includes chain-specific reference tables for ports, protocols, sync modes, and client diversity. Security-first — every configuration includes firewall rules, peer filtering, and hardening. Will refuse to produce configurations that expose admin APIs to the public internet.
-
-**Output:** Configuration files (`.toml`, `.yaml`, `.json`), docker-compose files, shell scripts, firewall rules, monitoring configs (Prometheus, Grafana), infrastructure reports, and node setup guides
-
-### `/workflow:blockchain-debug` — Blockchain Node Debugging
-
-Blockchain Debug Specialist diagnoses and fixes active connectivity problems on blockchain nodes:
-
-```
-Phase 1: Gather Symptoms    → understand what is broken, extract key data points
-Phase 2: Confirm the Issue   → verify the symptom is real using diagnostic commands
-Phase 3: Isolate the Layer   → network/transport, protocol, application, or inter-component
-Phase 4: Diagnose Root Cause → targeted diagnostics within the identified layer
-Phase 5: Fix                 → propose fix, WAIT for user approval, apply minimal change
-Phase 6: Verify              → independently confirm the fix resolved the issue
-Phase 7: Document            → produce Root Cause Analysis report
-```
-
-Covers: zero peers, sync stuck, RPC unreachable, Engine API auth failures, validator missing attestations, peer connect-then-disconnect, network partitions, CometBFT persistent peer failures, Solana delinquent validators. Includes diagnostic command references for Ethereum (EL+CL), Cosmos/CometBFT, Solana, and Substrate/Polkadot, plus a common issues reference organized by symptom.
-
-Read-only diagnostic commands run freely. State-changing operations (restarts, config edits, data deletion, firewall changes) require explicit user approval with risk assessment and rollback instructions. Will refuse to disable JWT auth, open all ports, or apply unsafe "quick fixes."
-
-Does NOT design infrastructure, set up new nodes, write monitoring configs, or do security audits — that is the blockchain-network agent's job. This agent is the firefighter; the other is the architect.
-
-**Output:** Root Cause Analysis report at `docs/.workflow/blockchain-debug-rca.md` with symptoms confirmed, diagnosis steps (including failed hypotheses), root cause with evidence, fix applied, verification results, and prevention recommendations
-
-### `/workflow:wizard-ux` — Wizard UX Design
-
-Wizard UX Expert designs intuitive installation wizard, setup, onboarding, and configuration flows:
-
-```
-Phase 1: Understand       → read wizard description, scan codebase for config patterns
-Phase 2: Medium Analysis  → document capabilities and constraints of target medium(s)
-Phase 3: Step Design      → define each step (fields, defaults, validation, UX copy, medium adaptations)
-Phase 4: Flow Architecture → step sequence, conditional branches, progress model, navigation, state management
-Phase 5: Error Design     → validation errors, async validation, network failures, permissions, recovery
-Phase 6: Accessibility    → keyboard nav, screen reader, color independence, focus management
-Phase 7: Write Spec       → produce the complete wizard flow specification
-Phase 8: Present & Confirm → show design summary, get explicit approval, iterate if needed
-```
-
-Targets TUI (terminal), GUI (desktop), Web (browser), and CLI (non-interactive). Every step includes smart defaults (detected from environment, inferred from context, industry convention, safest option), actionable error messages, and medium-specific adaptations. Designs expert fast-path modes (config file, CLI flags, env vars) so power users can bypass the wizard entirely.
-
-Does NOT write implementation code — produces specifications consumed by the architect (technical design), test-writer (flow tests), and developer (implementation).
-
-**Output:** `specs/[domain]-wizard-flow.md` with step sequence, flow diagram, state management, navigation rules, error recovery, expert/fast-path mode, accessibility, post-wizard experience, and design decisions
-
-## Philosophy
-
-> "The best code is the one that went through multiple layers of questioning before it existed."
-
-This workflow exists because:
-- Without constraints, AI assumes things and generates silent bugs
-- Tests written after code are biased toward what was built, not what should be built
-- Requirements without acceptance criteria and priorities lead to vague implementations
-- Traceability from requirement to test to code catches gaps that informal processes miss
-- A strict compiler (Rust) compensates for AI weaknesses in ways a dynamic language can't
-- QA validation catches issues that unit tests alone miss — "tests pass" doesn't mean "it works"
-- Code review by a separate instance catches what the original missed
-- Documenting before coding forces clarity of thought
-- Specs and docs drift silently — automated sync catches it before it becomes a liability
-- Context limits are real — scoping and chunking prevent quality degradation on large codebases
+When anything conflicts, the codebase wins. Agents flag discrepancies and update accordingly.
 
 ## License
 
-MIT
+This toolkit is designed for use with Claude Code by Anthropic.
