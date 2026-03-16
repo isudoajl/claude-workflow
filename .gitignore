@@ -1,1 +1,5 @@
 .DS_Store
+.claude/memory.db
+.claude/memory.db-wal
+.claude/memory.db-shm
+.claude/db-queries/
