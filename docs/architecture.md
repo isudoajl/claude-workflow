@@ -14,8 +14,8 @@ It is **not** an application. It is a set of agent definitions, command orchestr
 |----|-----|
 | Flat `.claude/agents/` and `.claude/commands/` | `core/` + `extensions/` source organization |
 | All 20 agents copied to every project | Core (13) always; extensions opt-in via `--ext=` |
-| No cross-session memory | SQLite `.claude/memory.db` with 12 tables + 4 views |
-| Agents act independently | Mandatory briefing/debrief — no agent acts without memory check |
+| No cross-session memory | SQLite `.claude/memory.db` with 14 tables + 7 views |
+| Agents act independently | Mandatory briefing/debrief + self-learning — agents score their own work and distill patterns |
 | `workflow-feature.md` + `workflow-new-feature.md` (duplicate) | Consolidated: only `workflow-new-feature.md` |
 | `workflow-improve.md` + `workflow-improve-functionality.md` (duplicate) | Consolidated: only `workflow-improve.md` |
 | `setup.sh` copies everything blindly | `setup.sh --ext=blockchain,omega` — selective deployment |
@@ -119,6 +119,15 @@ User invokes /workflow:new-feature "add retry logic" --scope="scheduler"
     └─ Orchestrator closes workflow_run (status=completed, git_commits=[...])
 ```
 
+### Self-Learning Layer
+
+Every briefing and debrief now includes a self-learning phase:
+
+- **Briefing addition**: Inject the 15 most recent outcomes + all active lessons for the scope
+- **Debrief addition**: Score every significant action (-1/0/+1), check for lesson distillation opportunity, reinforce/supersede existing lessons
+
+This creates a feedback loop on top of the existing memory protocol. The `failed_approaches` table captures *what didn't work*. The `outcomes` + `lessons` tables capture *what worked, how well, and why* — turning passive record-keeping into active learning.
+
 ### Cross-Session Memory Accumulation
 
 ```
@@ -199,6 +208,20 @@ Each agent needs different context:
 - **Test Writer** needs bug history and open findings (write regression tests for known failures)
 
 A single "dump everything" query would consume too much context. Targeted queries respect the 60% budget.
+
+### Why Self-Learning (not just record-keeping)
+
+The original institutional memory is a **ledger** — it records what happened faithfully. But it never asks "how well did it work?" The self-learning mechanism adds evaluation and distillation:
+
+| Without self-learning | With self-learning |
+|-|-|
+| Records failures (failed_approaches) | Records failures AND successes (outcomes) |
+| No quality signal | Score: -1/0/+1 per action |
+| Manual pattern discovery (patterns table) | Automatic pattern distillation (lessons table) |
+| No cross-agent feedback | Developer -1 informs architect next time |
+| Static knowledge | Confidence-tracked, decay-aware knowledge |
+
+The design choice to keep this as SQL tables (not a separate system) ensures it rides the existing briefing/debrief protocol with no new infrastructure.
 
 ### Why Decay Mechanics
 

@@ -158,6 +158,16 @@ bash scripts/setup.sh --no-db                    # skip SQLite initialization
 bash scripts/setup.sh --list-ext                 # list available extensions
 ```
 
+### Maintaining Documentation
+**Always update `docs/` and `README.md`** after ANY modification to the toolkit. This includes:
+- Schema changes → update `docs/institutional-memory.md`
+- Architecture changes → update `docs/architecture.md`
+- Agent changes → update `docs/agent-inventory.md`
+- New features or capabilities → update relevant doc files
+- Any change → update `docs/DOCS.md` index if new doc files were added
+
+This is a **day-one rule**, not something the self-learning system discovers over time. If you modify the toolkit and don't update docs, you've shipped broken documentation.
+
 ### Maintaining README.md
 **Always update `README.md`** when any of the following change:
 - An agent is added, removed, or modified (`core/agents/*.md` or `extensions/*/agents/*.md`)

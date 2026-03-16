@@ -160,12 +160,40 @@ Written by: developer, architect. Read by: developer, architect.
 | `description` | TEXT | What the pattern is and when to use it |
 | `example_files` | TEXT | JSON array of files demonstrating it |
 
+#### `outcomes` — Self-learning Tier 1: raw self-scored results
+Written by: all pipeline agents (analyst, architect, test-writer, developer, qa, reviewer). Read by: all agents (briefing).
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `agent` | TEXT | Which agent scored itself |
+| `score` | INTEGER | -1 (unhelpful), 0 (neutral), +1 (helpful) |
+| `domain` | TEXT | Topic/module/area |
+| `action` | TEXT | What the agent did |
+| `lesson` | TEXT | What was learned from the outcome |
+
+After every significant action, agents rate their own effectiveness. The 15 most recent outcomes for a scope are injected into every future briefing, creating a feedback loop that rewards what works and penalizes what doesn't.
+
+#### `lessons` — Self-learning Tier 2: distilled patterns from outcomes
+Written by: all pipeline agents. Read by: all agents (briefing).
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `domain` | TEXT | Topic/module/area |
+| `content` | TEXT UNIQUE(with domain) | The distilled rule |
+| `source_agent` | TEXT | Which agent first distilled this |
+| `occurrences` | INTEGER | Bumped on content-match dedup |
+| `confidence` | REAL | 0.0–1.0 — grows with reinforcement, decays without it |
+| `status` | TEXT | active → archived \| superseded |
+| `last_reinforced` | TEXT | When last dedup bump occurred |
+
+When patterns emerge from 3+ repeated outcomes, agents distill them into permanent rules. Content-based deduplication means identical lessons bump `occurrences` instead of creating duplicates. Confidence grows with reinforcement (+0.1 per confirmation) and decays without it (-0.1 every 30 days unreinforced). Capped at 10 active lessons per domain — oldest pruned during maintenance.
+
 #### `decay_log` — Memory evolution audit trail
 Written by: maintenance queries. Read by: maintenance queries.
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `entity_type` | TEXT | decision, approach, finding, hotspot, pattern |
+| `entity_type` | TEXT | decision, approach, finding, hotspot, pattern, lesson |
 | `entity_id` | INTEGER | ID of the entity being decayed |
 | `action` | TEXT | archived, confidence_decayed, promoted, stale_flagged |
 | `reason` | TEXT | Why the decay happened |
@@ -183,6 +211,15 @@ Per-domain summary: open findings, failed approaches, max risk level. High-level
 
 #### `v_recent_activity`
 Last 20 workflow runs with counts of files changed, findings produced, and bugs found.
+
+#### `v_recent_outcomes`
+Last 50 outcomes with agent, score, domain, action, lesson, and workflow context. Used by briefing to inject the 15 most recent outcomes for a scope.
+
+#### `v_active_lessons`
+All active lessons sorted by confidence, with a `strength` classification: strong (5+ occurrences), moderate (3+), emerging (<3). Used by briefing to inject distilled rules.
+
+#### `v_domain_learning`
+Per-domain learning health: total outcomes, positive/neutral/negative counts, average score, and active lesson count. Used for monitoring self-learning effectiveness.
 
 ## Briefing Queries by Agent
 
@@ -237,6 +274,29 @@ SELECT finding_id, description, file_path FROM findings
 WHERE file_path LIKE '%scheduler%' AND status='open';
 ```
 
+### Self-Learning (all agents)
+```sql
+-- Inject recent outcomes (what worked, what didn't)
+SELECT agent, score, action, lesson FROM outcomes
+WHERE domain LIKE '%scheduler%' ORDER BY id DESC LIMIT 15;
+
+-- Inject active lessons (distilled rules)
+SELECT content, occurrences, confidence FROM lessons
+WHERE domain LIKE '%scheduler%' AND status='active' ORDER BY confidence DESC;
+
+-- Check domain learning health
+SELECT domain, avg_score, positive, negative, active_lessons
+FROM v_domain_learning WHERE domain LIKE '%scheduler%';
+```
+
+**How agents use learning context:**
+- Outcomes with +1 → prefer that technique
+- Outcomes with -1 → avoid that approach
+- Lessons with confidence ≥0.8 → treat as established rules
+- Lessons with confidence ≥0.5 → strong guidance, follow unless specific reason not to
+- Lessons with confidence <0.5 → emerging patterns, consider but don't blindly follow
+- Negative average domain score → slow down, be extra careful
+
 ## Debrief Templates
 
 ### Developer debrief
@@ -267,9 +327,55 @@ UPDATE hotspots SET risk_level='high', description='Race condition under concurr
 WHERE file_path='src/scheduler.rs';
 ```
 
+### Self-learning debrief (all agents)
+```sql
+-- Score every significant action (-1 unhelpful, 0 neutral, +1 helpful)
+INSERT INTO outcomes (run_id, agent, score, domain, action, lesson)
+VALUES (42, 'developer', 1, 'scheduler',
+  'Used Option<T> for queue access',
+  'Option<T> pattern avoided unwrap panic in concurrent context');
+
+-- Check for lesson distillation opportunity (3+ outcomes with same theme?)
+SELECT score, action, lesson FROM outcomes
+WHERE domain = 'scheduler' AND agent = 'developer' ORDER BY id DESC LIMIT 10;
+
+-- Distill a lesson (content-based dedup bumps occurrences automatically)
+INSERT INTO lessons (domain, content, source_agent)
+VALUES ('scheduler',
+  'Always use Option<T> for container access in concurrent contexts — unwrap causes panics under race conditions',
+  'developer')
+ON CONFLICT(domain, content) DO UPDATE SET
+  occurrences = occurrences + 1,
+  confidence = MIN(1.0, confidence + 0.1),
+  last_reinforced = datetime('now');
+
+-- Reinforce an existing lesson you confirmed during work
+UPDATE lessons SET occurrences = occurrences + 1,
+  confidence = MIN(1.0, confidence + 0.1),
+  last_reinforced = datetime('now')
+WHERE domain = 'scheduler' AND content LIKE '%Option<T>%';
+
+-- Supersede a lesson that no longer applies
+UPDATE lessons SET status = 'superseded'
+WHERE domain = 'scheduler' AND content LIKE '%outdated pattern%';
+```
+
+## The Self-Learning Loop
+
+```
+Agent starts → briefing injects recent outcomes + active lessons
+  → Agent works (confirms or contradicts existing lessons)
+  → Agent debriefs: scores outcomes (-1/0/+1), distills new lessons
+  → Next agent/session gets updated learning context
+```
+
+Unlike `failed_approaches` (which only captures failures), the self-learning system captures **what works** and **how well it works**. Over time, high-confidence lessons become established rules that agents follow automatically, while low-confidence lessons decay and get archived.
+
+**Cross-agent learning**: The developer's -1 score on a retry-heavy module informs the architect to design smaller milestones next time. The test-writer's +1 on edge-case-first testing reinforces that approach project-wide.
+
 ## Decay Mechanics
 
-Memory without forgetting becomes noise. Three mechanisms keep the DB healthy:
+Memory without forgetting becomes noise. Four mechanisms keep the DB healthy:
 
 ### 1. Stale Detection
 Decisions that haven't been reinforced (no related changes) for 30+ days are flagged as `stale`. Agents see stale decisions in briefings but treat them as potentially outdated.
@@ -284,6 +390,13 @@ Hotspot risk levels auto-escalate based on `times_touched`:
 - 10+ → critical
 
 This ensures frequently-broken files get progressively more attention.
+
+### 4. Self-Learning Decay
+The self-learning tables have their own decay mechanics:
+- **Outcome archival**: Raw outcomes older than 60 days are deleted — they should have been distilled into lessons by then
+- **Lesson confidence decay**: Lessons not reinforced in 30+ days lose 0.1 confidence — ensuring stale rules fade
+- **Lesson cap**: Maximum 10 active lessons per domain — when exceeded, lowest-confidence lessons are archived
+- **Zero-confidence archival**: Lessons that decay to ≤0.1 confidence and haven't been reinforced in 60+ days are archived
 
 ## Git Integration
 
@@ -302,7 +415,8 @@ SQLite binary files don't diff in git. Mitigations:
 - `$RUN_ID` passing relies on orchestrator convention, not enforcement
 
 **Potential future additions:**
-- A `workflow:memory-health` command that runs maintenance queries
-- Cross-project pattern sharing (export patterns from one project, import to another)
+- A `workflow:memory-health` command that runs maintenance queries + self-learning health stats
+- Cross-project pattern sharing (export patterns and lessons from one project, import to another)
 - Automated decay via a post-workflow hook
 - A `workflow:memory-query` command for ad-hoc DB queries
+- A `/learning` command to inspect outcomes and lessons (similar to OMEGA's /learning)
