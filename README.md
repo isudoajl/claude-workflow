@@ -93,9 +93,26 @@ Every target project gets `.claude/memory.db` — a persistent knowledge base th
 | `dependencies` | Component relationships | architect, reviewer | architect, reviewer |
 | `requirements` | Requirement lifecycle (defined → tested → verified) | analyst, test-writer, qa | All agents |
 | `patterns` | Successful patterns to reuse | developer, architect | developer, architect |
+| `outcomes` | Self-learning Tier 1: raw self-scored results per action | All pipeline agents | All agents (briefing) |
+| `lessons` | Self-learning Tier 2: distilled patterns from outcomes | All pipeline agents | All agents (briefing) |
 | `decay_log` | Memory evolution audit trail | maintenance | maintenance |
 
-**Agent protocol**: Before work → query DB (briefing). After work → write back (debrief). No exceptions.
+**Agent protocol**: Before work → query DB (briefing + learning context). After work → write back (debrief + self-score). No exceptions.
+
+### Self-Learning Loop
+
+Agents don't just record what happened — they evaluate *how well it worked* and distill patterns into permanent rules:
+
+```
+Agent starts → briefing injects recent outcomes + active lessons
+  → Agent works (confirms or contradicts existing lessons)
+  → Agent debriefs: scores outcomes (-1/0/+1), distills new lessons
+  → Next agent/session gets updated learning context
+```
+
+- **Tier 1 (Outcomes)**: After every significant action, the agent self-scores: +1 (helpful), 0 (neutral), -1 (unhelpful). The 15 most recent outcomes for the scope are injected into every future briefing.
+- **Tier 2 (Lessons)**: When patterns emerge from 3+ repeated outcomes, agents distill them into permanent rules with content-based deduplication, confidence tracking, and a cap of 10 active lessons per domain.
+- **Cross-agent learning**: The developer's -1 score on a retry-heavy module informs the architect to design smaller milestones next time. The test-writer's +1 on edge-case-first testing reinforces that approach across sessions.
 
 **Why this matters**: Without institutional memory, every session is a fresh hire. The developer wastes cycles on approaches that already failed. The reviewer misses that a file was flagged fragile three sessions ago. The analyst re-specifies requirements that already exist. The DB eliminates this.
 

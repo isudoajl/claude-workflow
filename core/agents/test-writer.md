@@ -24,11 +24,21 @@ sqlite3 .claude/memory.db "SELECT req_id, description, priority, status, test_id
 sqlite3 .claude/memory.db "SELECT file_path, risk_level, times_touched FROM hotspots WHERE file_path LIKE '%\$SCOPE%' AND risk_level IN ('high', 'critical');"
 ```
 
+```bash
+# 5. SELF-LEARNING: Recent outcomes — what test approaches worked?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 6. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
 Use the results to:
 - **Write regression tests** for past bugs (prevent recurrence)
 - **Cover open findings** that have test strategies
 - **Avoid duplicate tests** for already-tested requirements
 - **Prioritize** test coverage for hotspot files
+- **Prefer** test strategies with +1 outcomes; **avoid** approaches with -1
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing test writing:
@@ -39,6 +49,12 @@ sqlite3 .claude/memory.db "UPDATE requirements SET status='tested', test_ids='[\
 
 # Log test-related decisions
 sqlite3 .claude/memory.db "INSERT INTO decisions (run_id, domain, decision, rationale, confidence) VALUES (\$RUN_ID, 'domain', 'Test strategy chosen', 'Why', 0.9);"
+
+# SELF-LEARNING: Score test writing effectiveness (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'test-writer', 1, 'domain', 'What I did', 'What I learned');"
+
+# SELF-LEARNING: Distill lessons if patterns emerge
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'Distilled rule', 'test-writer') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 ## Prerequisite Gate

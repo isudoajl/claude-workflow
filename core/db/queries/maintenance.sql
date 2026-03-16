@@ -61,3 +61,59 @@ AND id NOT IN (SELECT entity_id FROM decay_log WHERE entity_type='finding' AND a
 -- (Agents should run: for each hotspot, check if file exists, if not flag it)
 SELECT file_path FROM hotspots
 WHERE last_updated < datetime('now', '-60 days');
+
+-- ============================================================
+-- SELF-LEARNING MAINTENANCE
+-- ============================================================
+
+-- 7. Enforce lesson cap: max 10 active lessons per domain
+-- Keeps knowledge fresh by pruning oldest when cap is exceeded
+-- Archive excess lessons (keeps the 10 highest-confidence per domain)
+UPDATE lessons SET status = 'archived'
+WHERE status = 'active'
+AND id NOT IN (
+    SELECT id FROM lessons l2
+    WHERE l2.domain = lessons.domain AND l2.status = 'active'
+    ORDER BY l2.confidence DESC, l2.occurrences DESC
+    LIMIT 10
+);
+
+INSERT INTO decay_log (entity_type, entity_id, action, reason)
+SELECT 'lesson', id, 'archived', 'Lesson cap exceeded (>10 per domain) — lowest confidence pruned'
+FROM lessons
+WHERE status = 'archived'
+AND id NOT IN (SELECT entity_id FROM decay_log WHERE entity_type='lesson' AND action='archived');
+
+-- 8. Archive old outcomes (keep last 60 days of raw scores)
+-- Outcomes older than 60 days have already been distilled into lessons (hopefully)
+DELETE FROM outcomes
+WHERE created_at < datetime('now', '-60 days');
+
+-- 9. Decay lesson confidence for unreinforced lessons (not reinforced in 30+ days)
+UPDATE lessons SET confidence = MAX(0.1, confidence - 0.1)
+WHERE status = 'active'
+AND last_reinforced < datetime('now', '-30 days');
+
+-- 10. Archive zero-confidence lessons
+UPDATE lessons SET status = 'archived'
+WHERE status = 'active'
+AND confidence <= 0.1
+AND last_reinforced < datetime('now', '-60 days');
+
+-- 11. Self-learning health stats
+SELECT '=== SELF-LEARNING HEALTH ===' as report;
+SELECT 'Total outcomes' as metric, COUNT(*) as value FROM outcomes
+UNION ALL SELECT 'Positive outcomes (+1)', COUNT(*) FROM outcomes WHERE score = 1
+UNION ALL SELECT 'Neutral outcomes (0)', COUNT(*) FROM outcomes WHERE score = 0
+UNION ALL SELECT 'Negative outcomes (-1)', COUNT(*) FROM outcomes WHERE score = -1
+UNION ALL SELECT 'Overall avg score', ROUND(AVG(score), 2) FROM outcomes
+UNION ALL SELECT 'Active lessons', COUNT(*) FROM lessons WHERE status = 'active'
+UNION ALL SELECT 'Archived lessons', COUNT(*) FROM lessons WHERE status = 'archived'
+UNION ALL SELECT 'Strong lessons (5+ occurrences)', COUNT(*) FROM lessons WHERE status = 'active' AND occurrences >= 5
+UNION ALL SELECT 'Domains with lessons', COUNT(DISTINCT domain) FROM lessons WHERE status = 'active';
+
+-- 12. Learning effectiveness per domain
+SELECT domain, total_outcomes, positive, negative, avg_score, active_lessons
+FROM v_domain_learning
+ORDER BY total_outcomes DESC
+LIMIT 10;

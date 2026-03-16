@@ -24,11 +24,21 @@ sqlite3 .claude/memory.db "SELECT finding_id, severity, description, file_path F
 sqlite3 .claude/memory.db "SELECT source_file, target_file, relationship FROM dependencies WHERE source_file LIKE '%\$SCOPE%' OR target_file LIKE '%\$SCOPE%';"
 ```
 
+```bash
+# 5. SELF-LEARNING: Recent outcomes — what QA approaches worked?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 6. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
 Use the results to:
 - **Check** whether past bugs have recurred
 - **Focus** exploratory testing on hotspot areas
 - **Verify** open findings are actually addressed
 - **Test** downstream dependencies for breakage
+- **Prefer** QA techniques with +1 outcomes; **avoid** approaches with -1
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing QA:
@@ -42,6 +52,12 @@ sqlite3 .claude/memory.db "INSERT INTO hotspots (file_path, risk_level, times_to
 
 # Update requirement verification status
 sqlite3 .claude/memory.db "UPDATE requirements SET status='verified' WHERE req_id='REQ-XXX-001';"
+
+# SELF-LEARNING: Score QA effectiveness (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'qa', 1, 'domain', 'What I validated', 'What I learned');"
+
+# SELF-LEARNING: Distill lessons if patterns emerge
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'Distilled rule', 'qa') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 ## Prerequisite Gate

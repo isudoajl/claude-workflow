@@ -27,11 +27,21 @@ sqlite3 .claude/memory.db "SELECT req_id, description, priority, status FROM req
 sqlite3 .claude/memory.db "SELECT type, description, status, started_at FROM workflow_runs WHERE scope LIKE '%\$SCOPE%' OR description LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 5;"
 ```
 
+```bash
+# 6. SELF-LEARNING: Recent outcomes — what analysis approaches worked?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 7. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
 Use the results to:
 - **Incorporate** known hotspots into your impact analysis
 - **Reference** past bugs when assessing regression risk
 - **Avoid** re-specifying existing requirements
 - **Flag** open findings relevant to the new work
+- **Prefer** analysis approaches with +1 outcomes; **avoid** those with -1
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing analysis:
@@ -42,6 +52,12 @@ sqlite3 .claude/memory.db "INSERT OR IGNORE INTO requirements (run_id, req_id, d
 
 # Log key decisions (scope choices, priority rationale)
 sqlite3 .claude/memory.db "INSERT INTO decisions (run_id, domain, decision, rationale, confidence) VALUES (\$RUN_ID, 'domain', 'Decision', 'Rationale', 0.9);"
+
+# SELF-LEARNING: Score analysis effectiveness (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'analyst', 1, 'domain', 'What I did', 'What I learned');"
+
+# SELF-LEARNING: Distill lessons if patterns emerge
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'Distilled rule', 'analyst') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 ## Rules

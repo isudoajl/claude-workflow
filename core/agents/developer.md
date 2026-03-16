@@ -27,11 +27,21 @@ sqlite3 .claude/memory.db "SELECT decision, rationale FROM decisions WHERE domai
 sqlite3 .claude/memory.db "SELECT name, description FROM patterns WHERE domain LIKE '%\$SCOPE%';"
 ```
 
-Replace `$SCOPE` with the module/domain you're working on. Use the results to:
+Replace `$SCOPE` with the module/domain you're working on. ```bash
+# 6. SELF-LEARNING: Recent outcomes — what worked and what didn't here?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 7. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
+Use the results to:
 - **Avoid** approaches that already failed
 - **Be careful** with hotspot files (high `times_touched` or `risk_level`)
 - **Address** open findings if they're in your scope
 - **Follow** established patterns and decisions
+- **Prefer** techniques with +1 outcomes; **avoid** approaches with -1 outcomes
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing ALL work (or when stopping due to budget/errors), write back to the DB:
@@ -51,6 +61,15 @@ sqlite3 .claude/memory.db "INSERT INTO hotspots (file_path, times_touched) VALUE
 
 # Log patterns you discovered or followed
 sqlite3 .claude/memory.db "INSERT INTO patterns (run_id, domain, name, description, example_files) VALUES (\$RUN_ID, 'domain', 'Pattern name', 'Description', '[\"files\"]');"
+
+# SELF-LEARNING: Score every significant action (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'developer', 1, 'domain', 'What I did', 'What I learned');"
+# Score: +1 (succeeded cleanly), 0 (worked, unremarkable), -1 (failed/excessive iteration)
+
+# SELF-LEARNING: Check for lesson distillation (3+ outcomes with same theme?)
+sqlite3 .claude/memory.db "SELECT score, action, lesson FROM outcomes WHERE domain='DOMAIN' AND agent='developer' ORDER BY id DESC LIMIT 10;"
+# If pattern found, distill:
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'The distilled rule', 'developer') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 The `$RUN_ID` is passed by the workflow orchestrator. If not available, query: `SELECT MAX(id) FROM workflow_runs;`

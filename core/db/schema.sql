@@ -1,5 +1,5 @@
 -- Claude Workflow Institutional Memory Schema
--- Version: 1.0.0
+-- Version: 1.1.0 — Added self-learning tables (outcomes, lessons) and learning views
 -- Every workflow execution writes to this DB. Every agent reads from it before acting.
 
 PRAGMA journal_mode = WAL;
@@ -167,6 +167,43 @@ CREATE TABLE IF NOT EXISTS patterns (
 );
 
 -- ============================================================
+-- OUTCOMES — Tier 1 self-learning: raw self-scored results
+-- ============================================================
+CREATE TABLE IF NOT EXISTS outcomes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER REFERENCES workflow_runs(id),
+    agent TEXT NOT NULL,                   -- which agent scored itself
+    score INTEGER NOT NULL CHECK(score IN (-1, 0, 1)),  -- -1 unhelpful, 0 neutral, +1 helpful
+    domain TEXT,                           -- topic/module/area
+    action TEXT NOT NULL,                  -- what the agent did
+    lesson TEXT NOT NULL,                  -- what was learned from the outcome
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_outcomes_domain ON outcomes(domain);
+CREATE INDEX IF NOT EXISTS idx_outcomes_agent ON outcomes(agent);
+CREATE INDEX IF NOT EXISTS idx_outcomes_score ON outcomes(score);
+
+-- ============================================================
+-- LESSONS — Tier 2 self-learning: distilled patterns from outcomes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS lessons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain TEXT NOT NULL,
+    content TEXT NOT NULL,                  -- the distilled rule
+    source_agent TEXT,                      -- which agent first distilled this
+    occurrences INTEGER DEFAULT 1,          -- bumped on content-match dedup
+    confidence REAL DEFAULT 0.5,            -- 0.0-1.0, grows with reinforcement
+    status TEXT DEFAULT 'active',           -- active, archived, superseded
+    created_at TEXT DEFAULT (datetime('now')),
+    last_reinforced TEXT DEFAULT (datetime('now')),
+    UNIQUE(domain, content)                -- content-based deduplication
+);
+
+CREATE INDEX IF NOT EXISTS idx_lessons_domain ON lessons(domain);
+CREATE INDEX IF NOT EXISTS idx_lessons_status ON lessons(status);
+
+-- ============================================================
 -- DECAY LOG — tracks how the memory evolves over time
 -- ============================================================
 CREATE TABLE IF NOT EXISTS decay_log (
@@ -230,6 +267,44 @@ FROM (
     LEFT JOIN hotspots h ON h.file_path = f.file_path
 )
 GROUP BY domain;
+
+-- Learning context: recent outcomes + active lessons for a scope
+-- Usage: SELECT * FROM v_recent_outcomes WHERE domain LIKE '%scheduler%';
+CREATE VIEW IF NOT EXISTS v_recent_outcomes AS
+SELECT
+    o.agent, o.score, o.domain, o.action, o.lesson, o.created_at,
+    (SELECT w.type || ': ' || w.description FROM workflow_runs w WHERE w.id = o.run_id) as workflow_context
+FROM outcomes o
+ORDER BY o.id DESC
+LIMIT 50;
+
+-- Active lessons with reinforcement strength
+CREATE VIEW IF NOT EXISTS v_active_lessons AS
+SELECT
+    l.domain, l.content, l.source_agent, l.occurrences, l.confidence,
+    l.created_at, l.last_reinforced,
+    CASE
+        WHEN l.occurrences >= 5 THEN 'strong'
+        WHEN l.occurrences >= 3 THEN 'moderate'
+        ELSE 'emerging'
+    END as strength
+FROM lessons l
+WHERE l.status = 'active'
+ORDER BY l.confidence DESC, l.occurrences DESC;
+
+-- Domain learning health: outcomes + lessons per domain
+CREATE VIEW IF NOT EXISTS v_domain_learning AS
+SELECT
+    domain,
+    COUNT(*) as total_outcomes,
+    SUM(CASE WHEN score = 1 THEN 1 ELSE 0 END) as positive,
+    SUM(CASE WHEN score = 0 THEN 1 ELSE 0 END) as neutral,
+    SUM(CASE WHEN score = -1 THEN 1 ELSE 0 END) as negative,
+    ROUND(AVG(score), 2) as avg_score,
+    (SELECT COUNT(*) FROM lessons l WHERE l.domain = o.domain AND l.status = 'active') as active_lessons
+FROM outcomes o
+GROUP BY domain
+ORDER BY total_outcomes DESC;
 
 -- Recent workflow activity
 CREATE VIEW IF NOT EXISTS v_recent_activity AS

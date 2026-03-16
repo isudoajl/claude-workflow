@@ -139,6 +139,8 @@ Every target project gets `.claude/memory.db` — a SQLite database that accumul
 - **dependencies** — component relationships discovered during work
 - **requirements** — requirement lifecycle tracking (defined → tested → implemented → verified)
 - **patterns** — successful patterns discovered that should be reused
+- **outcomes** — Tier 1 self-learning: raw self-scored results per action (score, domain, lesson)
+- **lessons** — Tier 2 self-learning: distilled patterns from outcomes (content-deduped, capped per domain, confidence-tracked)
 - **decay_log** — tracks how the memory evolves (archival, confidence changes)
 
 **Agent protocol**: Every agent has a mandatory briefing (query DB before work) and debrief (write back after work) phase. No agent acts without checking institutional memory first. No agent finishes without contributing to it.
@@ -314,6 +316,103 @@ RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
 sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='completed', completed_at=datetime('now') WHERE id=$RUN_ID;"
 ```
 
+### Self-Learning (Outcome Scoring + Lesson Distillation)
+
+The institutional memory doesn't just record *what happened* — it evaluates *how well it worked* and distills patterns for future sessions. This is a two-tier reward-based learning loop where agents evaluate their own behavior.
+
+#### Tier 1: Outcomes (Working Memory)
+
+After every **significant action** (module implementation, test creation, design decision, bug fix, approach selection), the agent self-scores:
+
+```bash
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'AGENT_NAME', SCORE, 'DOMAIN', 'What I did', 'What I learned from doing it');"
+```
+
+**Scoring guide:**
+| Score | Meaning | When to use |
+|-------|---------|-------------|
+| **+1** | Helpful | Approach succeeded cleanly, minimal iteration, good result worth repeating |
+| **0** | Neutral | Worked but unremarkable, nothing to learn from this |
+| **-1** | Unhelpful | Approach failed, required excessive iteration, hit walls, produced suboptimal result |
+
+**Rules:**
+- Score **every significant action**, not just the final result
+- Be **honest** — a -1 is more valuable than a false +1
+- Include **specific context** in the lesson text, not vague statements
+- Bad: `"it worked"` → Good: `"Option<T> pattern avoided unwrap panic in concurrent queue access"`
+
+**During briefing**, the 15 most recent outcomes for the scope are injected:
+```bash
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+```
+
+**How to use outcomes in briefing:**
+- If recent outcomes show repeated -1 scores for an approach → **avoid that approach**
+- If recent outcomes show +1 for a technique → **prefer that technique**
+- If the domain's average score is negative → **slow down, be extra careful, consider asking for help**
+
+#### Tier 2: Lessons (Long-Term Memory)
+
+When patterns emerge from repeated outcomes, the agent distills them into **permanent rules**:
+
+```bash
+# Content-based dedup: same rule text bumps occurrences instead of duplicating
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('DOMAIN', 'The distilled rule', 'AGENT_NAME') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
+```
+
+**When to distill a lesson:**
+- You notice **3+ outcomes in the same domain** sharing a theme
+- You confirm an approach that **consistently works** (+1) or **consistently fails** (-1)
+- You discover a **non-obvious pattern** that future agents would benefit from
+
+**Lesson constraints:**
+- **Cap of 10 active lessons per domain** — oldest/lowest-confidence pruned during maintenance
+- **Content-based dedup** — if the exact lesson already exists, occurrences bumps automatically
+- **Confidence grows** with reinforcement (+0.1 per confirmation, max 1.0)
+- **Confidence decays** without reinforcement (-0.1 every 30 days unreinforced)
+
+**During briefing**, all active lessons for the scope are injected:
+```bash
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
+**How to use lessons in briefing:**
+- Lessons with `confidence >= 0.8` → **treat as established rules**, follow them
+- Lessons with `confidence >= 0.5` → **strong guidance**, follow unless you have specific reason not to
+- Lessons with `confidence < 0.5` → **emerging patterns**, consider but don't blindly follow
+- If a lesson no longer applies → **supersede it**: `UPDATE lessons SET status='superseded' WHERE ...`
+
+#### The Loop
+
+```
+Agent starts → briefing injects outcomes + lessons
+  → Agent works (may confirm/contradict existing lessons)
+  → Agent debriefs: scores outcomes, distills new lessons, reinforces existing ones
+  → Next agent (or next session) gets updated context
+```
+
+#### Self-Learning in Debrief (additions to mandatory debrief)
+
+After the standard debrief entries (changes, decisions, failed approaches, etc.), every agent adds:
+
+```bash
+# 1. SELF-SCORE — rate every significant action
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'AGENT', 1, 'domain', 'What I did', 'What I learned');"
+
+# 2. CHECK FOR DISTILLATION — do recent outcomes suggest a pattern?
+sqlite3 .claude/memory.db "SELECT score, action, lesson FROM outcomes WHERE domain='DOMAIN' AND agent='AGENT' ORDER BY id DESC LIMIT 10;"
+# If 3+ share a theme → distill:
+
+# 3. DISTILL LESSON (only if pattern detected)
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'The pattern rule', 'agent') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
+
+# 4. REINFORCE existing lessons you confirmed during work
+sqlite3 .claude/memory.db "UPDATE lessons SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now') WHERE domain='domain' AND content LIKE '%pattern%';"
+
+# 5. SUPERSEDE lessons that no longer apply
+sqlite3 .claude/memory.db "UPDATE lessons SET status='superseded' WHERE domain='domain' AND content LIKE '%outdated pattern%';"
+```
+
 ### Error Handling
 - If `sqlite3` command fails → **log the error but continue working**. Never block work because the DB is inaccessible.
 - If a query returns empty results → that's normal for new projects. Proceed without institutional context.
@@ -360,6 +459,8 @@ All IDs are also stored in the `requirements` table in memory.db for cross-sessi
 11. **60% context budget** — every agent must complete its work within 60% of the context window
 12. **Briefing before action** — every agent queries memory.db before starting work
 13. **Debrief after action** — every agent writes findings back to memory.db after completing work
+14. **Self-score every action** — every agent rates its own significant actions (-1/0/+1) during debrief
+15. **Distill lessons from patterns** — when 3+ outcomes share a theme, distill into a permanent lesson
 
 ## Fail-Safe Controls
 

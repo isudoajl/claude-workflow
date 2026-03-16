@@ -27,11 +27,21 @@ sqlite3 .claude/memory.db "SELECT decision, rationale, alternatives FROM decisio
 sqlite3 .claude/memory.db "SELECT name, description FROM patterns WHERE domain LIKE '%\$SCOPE%';"
 ```
 
+```bash
+# 6. SELF-LEARNING: Recent outcomes — what design approaches worked?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 7. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
 Use the results to:
 - **Avoid** architectural patterns that already failed
 - **Minimize** coupling with known fragile hotspots
 - **Respect** existing decisions (or explicitly supersede them with rationale)
 - **Build on** established patterns
+- **Learn from** downstream outcomes (developer -1 scores → design smaller milestones)
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing design:
@@ -45,6 +55,12 @@ sqlite3 .claude/memory.db "INSERT OR IGNORE INTO dependencies (source_file, targ
 
 # Supersede old decisions if architecture changed
 sqlite3 .claude/memory.db "UPDATE decisions SET status='superseded', superseded_by=\$NEW_DECISION_ID WHERE id=\$OLD_DECISION_ID;"
+
+# SELF-LEARNING: Score design effectiveness (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'architect', 1, 'domain', 'What I designed', 'What I learned');"
+
+# SELF-LEARNING: Distill lessons if patterns emerge
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'Distilled rule', 'architect') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 ## Prerequisite Gate

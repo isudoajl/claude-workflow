@@ -48,3 +48,29 @@
 
 -- 15. Log decay (for the compressor/maintenance)
 -- sqlite3 .claude/memory.db "INSERT INTO decay_log (entity_type, entity_id, action, reason, run_id) VALUES ('decision', 15, 'stale_flagged', 'Referenced file no longer exists after refactor', 42);"
+
+-- ============================================================
+-- SELF-LEARNING — score your own work and distill lessons
+-- ============================================================
+
+-- 16. Self-score an outcome (MANDATORY — score every significant action)
+-- Score: -1 (approach failed, excessive iteration, suboptimal result)
+--         0 (worked but unremarkable, nothing to learn)
+--        +1 (clean success, good approach, worth repeating)
+-- sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (42, 'developer', 1, 'scheduler', 'Used Option<T> for queue access', 'Option<T> pattern avoided unwrap panic that failed_approaches flagged');"
+
+-- 17. Distill a lesson from repeated outcomes
+-- Only create when you notice a PATTERN across 3+ outcomes (same domain, same theme)
+-- Content-based dedup: if the lesson already exists, occurrences bumps automatically
+-- sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('scheduler', 'Always use Option<T> for container access in concurrent contexts — unwrap causes panics under race conditions', 'developer') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
+
+-- 18. Check for lesson distillation opportunity (run during debrief)
+-- If 3+ recent outcomes in the same domain share a theme, it's time to distill
+-- sqlite3 .claude/memory.db "SELECT domain, score, lesson FROM outcomes WHERE domain = 'scheduler' ORDER BY id DESC LIMIT 10;"
+-- Then analyze: do these outcomes suggest a pattern? If yes, INSERT INTO lessons.
+
+-- 19. Reinforce an existing lesson (when you confirm it still holds)
+-- sqlite3 .claude/memory.db "UPDATE lessons SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now') WHERE domain = 'scheduler' AND content LIKE '%Option<T>%';"
+
+-- 20. Supersede a lesson (when you discover it no longer applies)
+-- sqlite3 .claude/memory.db "UPDATE lessons SET status = 'superseded' WHERE domain = 'scheduler' AND content LIKE '%old pattern%';"

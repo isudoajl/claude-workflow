@@ -27,11 +27,21 @@ sqlite3 .claude/memory.db "SELECT description, root_cause FROM bugs WHERE affect
 sqlite3 .claude/memory.db "SELECT name, description FROM patterns WHERE domain LIKE '%\$SCOPE%';"
 ```
 
+```bash
+# 6. SELF-LEARNING: Recent outcomes — what review approaches worked?
+sqlite3 .claude/memory.db "SELECT agent, score, action, lesson FROM outcomes WHERE domain LIKE '%\$SCOPE%' ORDER BY id DESC LIMIT 15;"
+
+# 7. SELF-LEARNING: Active lessons — distilled rules for this area
+sqlite3 .claude/memory.db "SELECT content, occurrences, confidence FROM lessons WHERE domain LIKE '%\$SCOPE%' AND status='active' ORDER BY confidence DESC;"
+```
+
 Use the results to:
 - **Prioritize** review of hotspot files
 - **Check** whether previously reported findings were actually fixed
 - **Trace** dependencies to assess change blast radius
 - **Compare** implementation against established patterns
+- **Focus on** areas with -1 outcomes from other agents
+- **Follow** high-confidence lessons (≥0.8) as established rules
 
 ## Institutional Memory — Debrief (MANDATORY)
 After completing the review:
@@ -45,6 +55,12 @@ sqlite3 .claude/memory.db "UPDATE hotspots SET risk_level='high', description='R
 
 # Log discovered dependencies
 sqlite3 .claude/memory.db "INSERT OR IGNORE INTO dependencies (source_file, target_file, relationship, discovered_run) VALUES ('src', 'dst', 'calls', \$RUN_ID);"
+
+# SELF-LEARNING: Score review effectiveness (-1/0/+1)
+sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, action, lesson) VALUES (\$RUN_ID, 'reviewer', 1, 'domain', 'What I reviewed', 'What I learned');"
+
+# SELF-LEARNING: Distill lessons if patterns emerge
+sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) VALUES ('domain', 'Distilled rule', 'reviewer') ON CONFLICT(domain, content) DO UPDATE SET occurrences = occurrences + 1, confidence = MIN(1.0, confidence + 0.1), last_reinforced = datetime('now');"
 ```
 
 ## Prerequisite Gate
