@@ -289,13 +289,8 @@ EOF
 }
 
 if [ -f "$SETTINGS_FILE" ]; then
-    # Check if hooks are already configured
-    if grep -q '"hooks"' "$SETTINGS_FILE" 2>/dev/null; then
-        echo "   = hooks already configured in settings.json (skipping)"
-        echo "   NOTE: To update hooks config, delete the 'hooks' key from $SETTINGS_FILE and re-run setup"
-    else
-        # Merge hooks into existing settings
-        python3 -c "
+    # Merge/update hooks into existing settings (preserves non-hook settings)
+    python3 -c "
 import json, sys
 with open('$SETTINGS_FILE', 'r') as f:
     settings = json.load(f)
@@ -305,13 +300,12 @@ with open('$SETTINGS_FILE', 'w') as f:
     json.dump(settings, f, indent=2)
     f.write('\n')
 " <<< "$(generate_hooks_json)" 2>/dev/null
-        if [ $? -eq 0 ]; then
-            echo "   + hooks added to existing settings.json"
-        else
-            echo "   WARNING: Could not merge hooks — creating fresh settings.json"
-            generate_hooks_json > "$SETTINGS_FILE"
-            echo "   + settings.json created with hooks"
-        fi
+    if [ $? -eq 0 ]; then
+        echo "   + hooks configured in settings.json (merged with existing settings)"
+    else
+        echo "   WARNING: Could not merge hooks — overwriting settings.json"
+        generate_hooks_json > "$SETTINGS_FILE"
+        echo "   + settings.json created with hooks"
     fi
 else
     generate_hooks_json > "$SETTINGS_FILE"

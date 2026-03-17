@@ -194,7 +194,7 @@ The setup script is **safe to re-run** at any time:
 | Agents & commands | Overwritten with latest versions |
 | CLAUDE.md workflow rules | Replaced with latest (project rules preserved) |
 | Hook scripts | Overwritten with latest versions |
-| Hook config (settings.json) | Preserved if hooks key exists; added if missing |
+| Hook config (settings.json) | Hooks key always updated; other settings preserved |
 | `specs/SPECS.md`, `docs/DOCS.md` | NOT overwritten if they exist |
 | `memory.db` | Schema migrated (new tables added, existing data preserved) |
 | Query reference files | Overwritten with latest |
