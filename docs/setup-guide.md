@@ -5,10 +5,30 @@
 ## Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed
-- `sqlite3` available (standard on macOS and most Linux distributions)
+- `sqlite3` available (standard on macOS and most Linux distributions; not needed for `omg init`, only for agent runtime)
 - A git repository as the target project
 
-## Quick Start
+## Quick Start (omg CLI — Recommended)
+
+Install the `omg` binary (single binary, zero runtime dependencies for init):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/isudoajl/claude-workflow/main/cli/install.sh | bash
+```
+
+Navigate to your **target project** and run:
+
+```bash
+omg init
+```
+
+Check installation health:
+
+```bash
+omg doctor
+```
+
+## Quick Start (Legacy Shell Script)
 
 Navigate to your **target project** (not the OMEGA repo) and run:
 
@@ -16,14 +36,16 @@ Navigate to your **target project** (not the OMEGA repo) and run:
 bash /path/to/omega/scripts/setup.sh
 ```
 
-That's it. One command deploys everything:
+> **Note**: The shell script requires Python 3 (for JSON merging) and sqlite3 CLI. The `omg` binary eliminates both dependencies.
+
+Either method deploys everything:
 
 | What | Where | Notes |
 |------|-------|-------|
-| 13 agents | `.claude/agents/` | Core pipeline agents |
-| 13 commands | `.claude/commands/` | Workflow orchestrators |
+| 14 agents | `.claude/agents/` | Core pipeline agents |
+| 14 commands | `.claude/commands/` | Workflow orchestrators |
 | Workflow rules | `CLAUDE.md` | **Appended** to existing CLAUDE.md (never overwrites) |
-| Automation hooks | `.claude/hooks/` | 4 hooks: auto-briefing, commit gate, debrief nudge, cleanup |
+| Automation hooks | `.claude/hooks/` | 5 hooks: auto-briefing, commit gate, incremental gate, debrief nudge, session close |
 | Hook config | `.claude/settings.json` | Registers hooks with Claude Code |
 | Memory DB | `.claude/memory.db` | SQLite with 14 tables, 7 views (incl. self-learning) |
 | Query references | `.claude/db-queries/` | Briefing, debrief, maintenance SQL templates |
@@ -92,8 +114,18 @@ bash /path/to/omega/scripts/setup.sh --list-ext
 | `--ext=name1,name2` | Install named extensions alongside core |
 | `--ext=all` | Install all available extensions |
 | `--no-db` | Skip SQLite initialization (agents will skip briefing/debrief and self-learning) |
+| `--verbose` | Show unchanged files individually (by default only new/updated are shown) |
 | `--list-ext` | Show available extensions and exit |
 | `--help` | Show usage help |
+
+### Change Detection Output
+
+The setup script reports every file's status:
+- `+` (new) — file did not exist, created
+- `~` (updated) — file existed but content changed, overwritten
+- `=` (unchanged) — file content matches, skipped (only shown with `--verbose`)
+
+At the end, a summary line shows totals: `N new, N updated, N unchanged (N total)`.
 
 ## What Gets Deployed
 
@@ -105,12 +137,12 @@ your-project/
 │   │   ├── analyst.md
 │   │   ├── architect.md
 │   │   ├── developer.md
-│   │   ├── ... (13 core agents)
+│   │   ├── ... (14 core agents)
 │   │   └── blockchain-network.md  (if --ext=blockchain)
 │   ├── commands/              ← Workflow orchestrators
 │   │   ├── workflow-new.md
 │   │   ├── workflow-bugfix.md
-│   │   ├── ... (13 core commands)
+│   │   ├── ... (14 core commands)
 │   │   └── workflow-blockchain-network.md  (if --ext=blockchain)
 │   ├── hooks/                 ← Automation hooks
 │   │   ├── briefing.sh        ← UserPromptSubmit: injects memory context on first prompt

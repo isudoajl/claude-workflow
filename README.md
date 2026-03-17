@@ -47,14 +47,33 @@ Architect     -> Designs architecture with failure modes, security, performance 
 
 - **Claude Code** — `npm install -g @anthropic-ai/claude-code`
 - **Git** — the target project must be inside a git repository (setup.sh will `git init` if needed)
-- **SQLite3** — for institutional memory (`sqlite3` CLI must be in PATH)
-- **Python 3** — used by setup.sh to merge hooks into `settings.json`
+- **SQLite3** — for institutional memory (`sqlite3` CLI must be in PATH; not needed if using the `omg` binary for init)
 
 ## Deployment
 
-OMEGA is **not an application** — it's deployed into target projects. You run the setup script from your target project's directory, and it copies agents, commands, hooks, and memory infrastructure into your project.
+OMEGA is **not an application** — it's deployed into target projects. There are two ways to deploy:
 
-### Quick Start
+### Option A: `omg` CLI (Recommended)
+
+A single Rust binary that embeds all assets and has zero runtime dependencies for installation:
+
+```bash
+# Install the CLI
+curl -fsSL https://raw.githubusercontent.com/isudoajl/claude-workflow/main/cli/install.sh | bash
+
+# Navigate to your target project
+cd /path/to/your-project
+
+# Deploy core toolkit
+omg init
+
+# Start Claude Code and use the workflow
+claude
+```
+
+See `omg --help` for all commands: `init`, `update`, `doctor`, `self-update`, `list-ext`, `version`.
+
+### Option B: Shell Script (Legacy)
 
 ```bash
 # Navigate to your target project
@@ -67,6 +86,8 @@ bash /path/to/omega/scripts/setup.sh
 claude
 ```
 
+> **Note**: The shell script requires Python 3 (for JSON merging) and sqlite3 CLI. The `omg` binary eliminates both dependencies.
+
 Then inside Claude Code:
 ```
 /workflow:new "build a REST API for user management"
@@ -74,27 +95,28 @@ Then inside Claude Code:
 
 ### Setup Options
 
+#### Using `omg` CLI
 ```bash
-# Core only (14 agents, 14 commands, 5 hooks, SQLite memory)
+omg init                              # Core only (14 agents, 14 commands, 5 hooks, SQLite memory)
+omg init --ext=blockchain             # Core + specific extension
+omg init --ext=blockchain,c2c-protocol # Core + multiple extensions
+omg init --ext=all                    # Core + all extensions
+omg init --no-db                      # Skip SQLite initialization
+omg init --dry-run                    # Show what would be deployed without writing
+omg init --verbose                    # Show unchanged files individually
+omg update                            # Update to latest (idempotent)
+omg doctor                            # Health check
+omg list-ext                          # List available extensions
+```
+
+#### Using shell script (legacy)
+```bash
 bash /path/to/omega/scripts/setup.sh
-
-# Core + specific extensions
 bash /path/to/omega/scripts/setup.sh --ext=blockchain
-bash /path/to/omega/scripts/setup.sh --ext=blockchain,c2c-protocol
-
-# Core + all extensions
 bash /path/to/omega/scripts/setup.sh --ext=all
-
-# Skip SQLite initialization
 bash /path/to/omega/scripts/setup.sh --no-db
-
-# List available extensions
-bash /path/to/omega/scripts/setup.sh --list-ext
-
-# Show unchanged files individually
 bash /path/to/omega/scripts/setup.sh --verbose
-
-# Show help
+bash /path/to/omega/scripts/setup.sh --list-ext
 bash /path/to/omega/scripts/setup.sh --help
 ```
 
@@ -150,17 +172,19 @@ omega/
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema
 │   │   └── queries/                   # Named query templates
-│   │       ├── briefing.sql
-│   │       ├── debrief.sql
-│   │       └── maintenance.sql
 │   └── hooks/                         # 5 automation hooks
 │
 ├── extensions/                        # Opt-in per project
 │   ├── blockchain/                    # Ethereum, Solana, Cosmos, Substrate
 │   └── c2c-protocol/                  # C2C protocol research
 │
+├── cli/                               # Rust binary (omg) — recommended installer
+│   ├── src/                           # 11 modules (~2900 lines)
+│   ├── Cargo.toml
+│   └── install.sh                     # curl-pipe-bash installer
+│
 └── scripts/
-    ├── setup.sh                       # Deploy to target projects
+    ├── setup.sh                       # Legacy shell installer
     └── db-init.sh                     # Initialize/migrate SQLite
 ```
 
