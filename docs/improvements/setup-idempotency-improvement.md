@@ -25,20 +25,20 @@ The setup script is already safe to re-run (same filesystem state). But it does 
 
 ## Requirements
 
-| ID | Requirement | Priority |
-|----|------------|----------|
-| REQ-SETUP-001 | Add `copy_if_changed` helper using `cmp -s` for file comparison | Must |
-| REQ-SETUP-002 | Track per-run counters (NEW, UPDATED, UNCHANGED) | Must |
-| REQ-SETUP-003 | Core agents section uses `copy_if_changed` with accurate symbols | Must |
-| REQ-SETUP-004 | Core commands section uses `copy_if_changed` with accurate symbols | Must |
-| REQ-SETUP-005 | Extensions section uses `copy_if_changed` with accurate symbols | Must |
-| REQ-SETUP-006 | Hooks section uses `copy_if_changed` with accurate symbols | Must |
-| REQ-SETUP-007 | settings.json detects whether hooks actually changed before writing | Should |
-| REQ-SETUP-008 | CLAUDE.md detects whether workflow rules changed before rewriting | Should |
-| REQ-SETUP-009 | Summary shows counts of new/updated/unchanged | Must |
-| REQ-SETUP-010 | db-init.sh query file copying uses change detection | Could |
-| REQ-SETUP-011 | `--verbose` flag to show unchanged files (hidden by default) | Could |
-| REQ-SETUP-012 | `--dry-run` flag | Won't |
+| ID | Requirement | Priority | Implementation Module |
+|----|------------|----------|---------------------|
+| REQ-SETUP-001 | Add `copy_if_changed` helper using `cmp -s` for file comparison | Must | copy_if_changed @ scripts/setup.sh |
+| REQ-SETUP-002 | Track per-run counters (NEW, UPDATED, UNCHANGED) | Must | counters @ scripts/setup.sh |
+| REQ-SETUP-003 | Core agents section uses `copy_if_changed` with accurate symbols | Must | core-agents-loop @ scripts/setup.sh |
+| REQ-SETUP-004 | Core commands section uses `copy_if_changed` with accurate symbols | Must | core-commands-loop @ scripts/setup.sh |
+| REQ-SETUP-005 | Extensions section uses `copy_if_changed` with accurate symbols | Must | extensions-loop @ scripts/setup.sh |
+| REQ-SETUP-006 | Hooks section uses `copy_if_changed` with accurate symbols | Must | hooks-loop @ scripts/setup.sh |
+| REQ-SETUP-007 | settings.json detects whether hooks actually changed before writing | Should | settings-json-compare @ scripts/setup.sh |
+| REQ-SETUP-008 | CLAUDE.md detects whether workflow rules changed before rewriting | Should | claude-md-compare @ scripts/setup.sh |
+| REQ-SETUP-009 | Summary shows counts of new/updated/unchanged | Must | summary @ scripts/setup.sh |
+| REQ-SETUP-010 | db-init.sh query file copying uses change detection | Could | _(not implemented)_ |
+| REQ-SETUP-011 | `--verbose` flag to show unchanged files (hidden by default) | Could | verbose-flag @ scripts/setup.sh |
+| REQ-SETUP-012 | `--dry-run` flag | Won't | _(deferred)_ |
 
 ## Acceptance Criteria
 
