@@ -88,9 +88,16 @@ claude
 
 > **Note**: The shell script requires Python 3 (for JSON merging) and sqlite3 CLI. The `omg` binary eliminates both dependencies.
 
-Then inside Claude Code:
+Then inside Claude Code, either invoke a command directly or describe what you need in natural language:
 ```
 /workflow:new "build a REST API for user management"
+```
+
+Or just describe the work — OMEGA routes it automatically:
+```
+"there's a bug where login fails on empty passwords"  → invokes workflow:bugfix
+"add support for webhook notifications"                → invokes workflow:new-feature
+"explain how the auth middleware works"                → invokes workflow:understand
 ```
 
 ### Setup Options
