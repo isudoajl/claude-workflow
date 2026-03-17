@@ -1,7 +1,7 @@
-# Specs
+# SPECS.md -- Technical Specifications
 
-This directory is intentionally empty in the toolkit repository.
+> Master index of technical specifications for OMEGA.
 
-`specs/` is populated in **target projects** when the workflow is deployed via `setup.sh`. It holds per-domain technical specifications (e.g., `core-config.md`, `memory-store.md`) that describe what the project's code does.
+## Architecture
 
-Since this repository is the toolkit itself — not an application — there are no domain specs to write here.
+- [OMEGA CLI Architecture](omega-cli-architecture.md) -- Rust binary rewrite of the toolkit: crate layout, asset embedding, CLI design, cross-platform builds, install script, SQLite strategy, version management, extension discovery, milestones

@@ -3,3 +3,4 @@
 .claude/memory.db-wal
 .claude/memory.db-shm
 .claude/db-queries/
+cli/target/

@@ -7,6 +7,7 @@
 ## Architecture & Design
 
 - [Architecture Overview](architecture.md) — v2 core/extensions structure, data flow, deployment model, design decisions
+- [OMEGA CLI Architecture](../specs/omega-cli-architecture.md) — Rust binary rewrite: crate layout, asset embedding, CLI design, cross-platform builds, install script, SQLite bundling, version management, extension discovery
 - [Institutional Memory](institutional-memory.md) — SQLite layer: schema, briefing/debrief protocol, self-learning loop, query patterns, decay mechanics
 - [Setup Guide](setup-guide.md) — Deploying the toolkit to target projects via `setup.sh`, hook installation, DB initialization
 
