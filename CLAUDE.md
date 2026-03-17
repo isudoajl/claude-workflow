@@ -150,6 +150,8 @@ Every target project gets `.claude/memory.db` — a SQLite database that accumul
 - **outcomes** — Tier 1 self-learning: raw self-scored results per action (score, domain, lesson)
 - **lessons** — Tier 2 self-learning: distilled patterns from outcomes (content-deduped, capped per domain, confidence-tracked)
 - **decay_log** — tracks how the memory evolves (archival, confidence changes)
+- **user_profile** — per-project identity (name, experience level, communication style)
+- **onboarding_state** — tracks onboarding flow progress and resumability
 
 **Agent protocol**: Every agent has mandatory briefing (query DB before work), incremental logging (write to DB during work), and close-out (verify completeness after work). No agent acts without checking institutional memory first. No agent finishes without contributing to it.
 

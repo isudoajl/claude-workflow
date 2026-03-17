@@ -88,7 +88,7 @@ if [ -n "$PROFILE_TABLE_EXISTS" ]; then
         USAGE_BREAKDOWN=$(sqlite3 -separator '' "$DB_PATH" "SELECT completed_runs || ' ' || type FROM v_workflow_usage WHERE completed_runs > 0 ORDER BY completed_runs DESC LIMIT 4;" 2>/dev/null || true)
         USAGE_LINE=""
         if [ -n "$USAGE_BREAKDOWN" ]; then
-            USAGE_LINE=$(echo "$USAGE_BREAKDOWN" | tr '\n' ', ' | sed 's/, $//')
+            USAGE_LINE=$(echo "$USAGE_BREAKDOWN" | paste -sd',' - | sed 's/,/, /g')
             USAGE_LINE=" ($USAGE_LINE)"
         fi
 

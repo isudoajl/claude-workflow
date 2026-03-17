@@ -4,7 +4,7 @@
 
 | ID | Name | Status | Completed At |
 |----|------|--------|-------------|
-| M1 | OMEGA Persona | PENDING | - |
+| M1 | OMEGA Persona | COMPLETE | 2026-03-17 |
 
 ## Modules (M1)
 1. Schema (`core/db/schema.sql`) — PENDING

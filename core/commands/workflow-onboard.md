@@ -34,10 +34,7 @@ sqlite3 .claude/memory.db "UPDATE workflow_runs SET status='completed', complete
 - If `onboarding_state.status = 'in_progress'` and `data` contains partial answers: resume from last incomplete step
 
 ### Step 2: Register workflow run
-```bash
-sqlite3 .claude/memory.db "INSERT INTO workflow_runs (type, description) VALUES ('onboard', 'User profile setup');"
-RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
-```
+Use the RUN_ID from the Pipeline Tracking section above. Do NOT insert a second workflow_runs row.
 
 ### Step 3: Conversational questions (3 total)
 1. **Name**: "What should I call you?"
