@@ -56,6 +56,53 @@ echo "║     Loaded automatically — do NOT skip this context     ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
+# --- OMEGA IDENTITY ---
+# Check if user_profile table exists (backward compatibility)
+PROFILE_TABLE_EXISTS=$(sqlite3 "$DB_PATH" "SELECT 1 FROM sqlite_master WHERE type='table' AND name='user_profile' LIMIT 1;" 2>/dev/null || true)
+
+if [ -n "$PROFILE_TABLE_EXISTS" ]; then
+    # Query profile
+    PROFILE_ROW=$(sqlite3 -separator '|' "$DB_PATH" "SELECT user_name, experience_level, communication_style FROM user_profile LIMIT 1;" 2>/dev/null || true)
+
+    if [ -n "$PROFILE_ROW" ]; then
+        # Parse profile fields
+        USER_NAME=$(echo "$PROFILE_ROW" | cut -d'|' -f1)
+        EXP_LEVEL=$(echo "$PROFILE_ROW" | cut -d'|' -f2)
+        COMM_STYLE=$(echo "$PROFILE_ROW" | cut -d'|' -f3)
+
+        # Experience auto-upgrade (fire-and-forget)
+        COMPLETED_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM workflow_runs WHERE status='completed';" 2>/dev/null || echo "0")
+        if [ "$EXP_LEVEL" = "intermediate" ] && [ "$COMPLETED_COUNT" -ge 30 ] 2>/dev/null; then
+            sqlite3 "$DB_PATH" "UPDATE user_profile SET experience_level='advanced';" 2>/dev/null || true
+            EXP_LEVEL="advanced"
+        elif [ "$EXP_LEVEL" = "beginner" ] && [ "$COMPLETED_COUNT" -ge 10 ] 2>/dev/null; then
+            sqlite3 "$DB_PATH" "UPDATE user_profile SET experience_level='intermediate';" 2>/dev/null || true
+            EXP_LEVEL="intermediate"
+        fi
+
+        # Update last_seen (fire-and-forget)
+        sqlite3 "$DB_PATH" "UPDATE user_profile SET last_seen=datetime('now');" 2>/dev/null || true
+
+        # Build compact usage summary
+        USAGE_SUMMARY=$(sqlite3 "$DB_PATH" "SELECT SUM(completed_runs) FROM v_workflow_usage;" 2>/dev/null || echo "0")
+        USAGE_BREAKDOWN=$(sqlite3 -separator '' "$DB_PATH" "SELECT completed_runs || ' ' || type FROM v_workflow_usage WHERE completed_runs > 0 ORDER BY completed_runs DESC LIMIT 4;" 2>/dev/null || true)
+        USAGE_LINE=""
+        if [ -n "$USAGE_BREAKDOWN" ]; then
+            USAGE_LINE=$(echo "$USAGE_BREAKDOWN" | tr '\n' ', ' | sed 's/, $//')
+            USAGE_LINE=" ($USAGE_LINE)"
+        fi
+
+        # Output identity block
+        echo "OMEGA IDENTITY: ${USER_NAME:-User} | Experience: $EXP_LEVEL | Style: $COMM_STYLE | Workflows: ${USAGE_SUMMARY:-0} completed${USAGE_LINE}"
+        echo ""
+    else
+        # Table exists but no profile row -- show onboarding prompt
+        echo "Welcome to OMEGA. Personalize your experience: /workflow:onboard"
+        echo "  Or set manually: sqlite3 .claude/memory.db \"INSERT INTO user_profile (user_name, experience_level, communication_style) VALUES ('Your Name', 'beginner', 'balanced');\""
+        echo ""
+    fi
+fi
+
 # --- CRITICAL HOTSPOTS ---
 if query_has_results "SELECT 1 FROM hotspots WHERE risk_level IN ('high', 'critical') LIMIT 1;"; then
     echo "⚠ HOTSPOTS (fragile files — be extra careful):"

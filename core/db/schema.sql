@@ -217,6 +217,33 @@ CREATE TABLE IF NOT EXISTS decay_log (
 );
 
 -- ============================================================
+-- USER PROFILE — per-project identity (single row by convention)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_profile (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_name TEXT,
+    experience_level TEXT DEFAULT 'beginner'
+        CHECK(experience_level IN ('beginner', 'intermediate', 'advanced')),
+    communication_style TEXT DEFAULT 'balanced'
+        CHECK(communication_style IN ('verbose', 'balanced', 'terse')),
+    created_at TEXT DEFAULT (datetime('now')),
+    last_seen TEXT DEFAULT (datetime('now'))
+);
+
+-- ============================================================
+-- ONBOARDING STATE — tracks onboarding flow progress
+-- ============================================================
+CREATE TABLE IF NOT EXISTS onboarding_state (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    step TEXT DEFAULT 'not_started',
+    status TEXT DEFAULT 'not_started'
+        CHECK(status IN ('not_started', 'in_progress', 'completed')),
+    data TEXT,                              -- JSON blob for partial state
+    started_at TEXT,
+    completed_at TEXT
+);
+
+-- ============================================================
 -- VIEWS — pre-built queries agents use frequently
 -- ============================================================
 
@@ -316,3 +343,14 @@ SELECT
 FROM workflow_runs w
 ORDER BY w.id DESC
 LIMIT 20;
+
+-- Workflow usage summary — feeds identity block and experience tracking
+CREATE VIEW IF NOT EXISTS v_workflow_usage AS
+SELECT
+    type,
+    COUNT(*) as total_runs,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_runs,
+    MAX(started_at) as last_run
+FROM workflow_runs
+GROUP BY type
+ORDER BY completed_runs DESC;

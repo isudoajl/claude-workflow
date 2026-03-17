@@ -220,6 +220,32 @@ Written by: maintenance queries. Read by: maintenance queries.
 | `action` | TEXT | archived, confidence_decayed, promoted, stale_flagged |
 | `reason` | TEXT | Why the decay happened |
 
+#### `user_profile` — Per-project identity (single row by convention)
+Written by: `/workflow:onboard` command. Read by: `briefing.sh`.
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `user_name` | TEXT | How the user wants to be addressed (nullable) |
+| `experience_level` | TEXT | beginner, intermediate, advanced (CHECK constrained) |
+| `communication_style` | TEXT | verbose, balanced, terse (CHECK constrained) |
+| `created_at` | TEXT | Auto-set on creation |
+| `last_seen` | TEXT | Updated by `briefing.sh` on every session |
+
+Single-row by convention, not by constraint. The onboarding command uses `INSERT OR REPLACE` to maintain one row. Experience level auto-upgrades during briefing: beginner to intermediate at 10 completed workflows, intermediate to advanced at 30.
+
+#### `onboarding_state` — Tracks onboarding flow progress
+Written by: `/workflow:onboard` command. Read by: `/workflow:onboard` (for resume).
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `step` | TEXT | Current step (defaults to 'not_started') |
+| `status` | TEXT | not_started, in_progress, completed (CHECK constrained) |
+| `data` | TEXT | JSON blob for partial answers (enables resume) |
+| `started_at` | TEXT | When onboarding was started |
+| `completed_at` | TEXT | When onboarding was completed |
+
+Enables resumability: if the user quits mid-onboard, partial answers are preserved in the `data` JSON field and the next invocation resumes from the last incomplete step.
+
 ### Views
 
 #### `v_file_briefing`
@@ -242,6 +268,9 @@ All active lessons sorted by confidence, with a `strength` classification: stron
 
 #### `v_domain_learning`
 Per-domain learning health: total outcomes, positive/neutral/negative counts, average score, and active lesson count. Used for monitoring self-learning effectiveness.
+
+#### `v_workflow_usage`
+Workflow usage summary: aggregates `workflow_runs` by type, showing total runs, completed runs, and last run date. Feeds the OMEGA Identity block in briefing and experience auto-upgrade tracking. Ordered by `completed_runs DESC`. Has no dependency on `user_profile` — works regardless of whether a profile exists.
 
 ## Briefing Queries by Agent
 

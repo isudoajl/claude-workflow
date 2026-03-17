@@ -97,7 +97,7 @@ Then inside Claude Code:
 
 #### Using `omg` CLI
 ```bash
-omg init                              # Core only (14 agents, 14 commands, 5 hooks, SQLite memory)
+omg init                              # Core only (14 agents, 15 commands, 5 hooks, SQLite memory)
 omg init --ext=blockchain             # Core + specific extension
 omg init --ext=blockchain,c2c-protocol # Core + multiple extensions
 omg init --ext=all                    # Core + all extensions
@@ -128,7 +128,7 @@ When you run setup.sh, the following is created/updated in your target project:
 your-project/
 ├── .claude/
 │   ├── agents/           <- 14 core agent definitions (+ extension agents)
-│   ├── commands/         <- 14 core commands (+ extension commands)
+│   ├── commands/         <- 15 core commands (+ extension commands)
 │   ├── hooks/            <- 5 automation hooks
 │   │   ├── briefing.sh           # Auto-injects memory context at session start
 │   │   ├── debrief-gate.sh       # Blocks git commit without self-scoring
@@ -168,7 +168,7 @@ The setup script is fully idempotent with change detection:
 omega/
 ├── core/                              # Every project gets this
 │   ├── agents/                        # 14 universal agents
-│   ├── commands/                      # 14 universal commands
+│   ├── commands/                      # 15 universal commands
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema
 │   │   └── queries/                   # Named query templates
@@ -207,8 +207,10 @@ Every target project gets `.claude/memory.db` — a persistent knowledge base th
 | `outcomes` | Self-learning Tier 1: raw self-scored results per action |
 | `lessons` | Self-learning Tier 2: distilled patterns from outcomes |
 | `decay_log` | Memory evolution audit trail |
+| `user_profile` | Per-project identity (name, experience level, communication style) |
+| `onboarding_state` | Tracks onboarding flow progress and resumability |
 
-**Agent protocol**: Before work -> query DB (briefing). During work -> log incrementally. After work -> close-out (verify completeness, distill lessons).
+**Agent protocol**: Before work -> query DB (briefing). During work -> log incrementally. After work -> close-out (verify completeness, distill lessons). The briefing hook also injects an **OMEGA Identity** block when a user profile exists — adapting agent communication style to the user's experience level.
 
 ### Self-Learning Loop
 
@@ -249,7 +251,7 @@ Five hooks enforce the memory protocol automatically:
 | **role-creator** | Meta-agent: designs new agent role definitions |
 | **role-auditor** | Meta-agent: adversarial audit of role definitions (read-only) |
 
-## Core Commands (14)
+## Core Commands (15)
 
 | Command | Description |
 |---------|-------------|
@@ -267,6 +269,7 @@ Five hooks enforce the memory protocol automatically:
 | `/workflow:create-role "desc"` | Design a new agent role |
 | `/workflow:audit-role "path" [--scope]` | Adversarial audit of role definitions |
 | `/workflow:diagnose "bug" [--scope] [--fix]` | Deep root cause diagnosis for hard bugs |
+| `/workflow:onboard [--update]` | Set up your OMEGA identity profile |
 
 ## Extension Packs
 

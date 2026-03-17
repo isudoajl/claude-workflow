@@ -627,6 +627,7 @@ echo "    /workflow:create-role \"desc\"          Design agent role"
 echo "    /workflow:audit-role \"path\"           Audit agent role"
 echo "    /workflow:diagnose \"bug\"               Deep root cause diagnosis"
 echo "    /workflow:wizard-ux \"desc\"            Design wizard UX"
+echo "    /workflow:onboard                     Personalize your profile"
 echo "    /workflow:resume                      Resume stopped workflow"
 
 if [ -n "$EXTENSIONS" ]; then
