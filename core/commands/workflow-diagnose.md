@@ -1,6 +1,6 @@
 ---
 name: workflow:diagnose
-description: Deep diagnostic investigation for hard bugs where the root cause is unknown. Uses hypothesis-driven reasoning instead of trial-and-error fixing. Escalation path when workflow:bugfix has failed.
+description: "Deep diagnostic investigation for hard bugs where the root cause is unknown. Use when: 'I can\\'t figure out why...', mysterious behavior, intermittent failure, flaky test, root cause unknown, 'bugfix didn\\'t work', 'we tried fixing it but...', heisenbug, race condition, deep investigation needed. Escalation path when workflow:bugfix has failed."
 ---
 
 # Workflow: Diagnose

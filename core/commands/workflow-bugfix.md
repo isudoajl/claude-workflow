@@ -1,6 +1,6 @@
 ---
 name: workflow:bugfix
-description: Fix a bug with a reduced chain. Accepts optional --scope to limit context.
+description: "Fix a bug with a reduced chain. Use when: something is broken, crash, error, defect, regression, 'X is not working', 'it fails when...', 'there\\'s a bug in...', unexpected behavior, wrong output, test failure, exception. Accepts optional --scope to limit context."
 ---
 
 # Workflow: Bugfix

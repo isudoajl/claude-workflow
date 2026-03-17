@@ -187,7 +187,7 @@ Before presenting the final role to the user:
 
 ### Phase 8: Companion Artifacts (if applicable)
 After the agent is approved:
-1. **Command file** — if the agent should be invocable as a slash command, create `.claude/commands/workflow-[name].md`
+1. **Command file** — if the agent should be invocable as a slash command, create `.claude/commands/workflow-[name].md`. The command's `description` frontmatter MUST follow the same rich "Use when:" trigger keyword pattern as agent descriptions. This is critical for Claude Code's native intent matching
 2. **Pipeline integration** — if the agent fits into an existing command chain, note which commands should be updated (but don't modify them without user approval)
 
 ## Output: Agent Definition Format
@@ -199,7 +199,7 @@ Every agent definition follows this structure. Sections marked **(MANDATORY)** m
 ```markdown
 ---
 name: [agent-name]                                              # MANDATORY
-description: [One-line — when to invoke, what it does]          # MANDATORY
+description: "[What it does. Use when: natural language triggers]" # MANDATORY — see Description Rule
 tools: [Comma-separated: Read, Write, Edit, Bash, Glob, etc.]  # MANDATORY
 model: [claude-opus-4-6 or claude-sonnet-4-6]                   # MANDATORY
 ---
@@ -278,7 +278,7 @@ All MANDATORY sections must be present in every role, though their depth varies:
 - **Study existing agents before creating** — consistency across agents prevents pipeline friction
 - **Research the domain** — a role for security auditing needs security expertise baked in, not generic instructions
 - **Names are descriptive** — the agent name should immediately convey its purpose
-- **Descriptions are invocation guides** — the description field tells orchestrators WHEN to use this agent
+- **Descriptions are invocation guides with trigger keywords** — every description field (both agents AND companion commands) MUST include a "Use when:" section listing natural language phrases a user might say. Claude Code matches user intent to commands/agents via these descriptions. A terse description like "Fix a bug" will fail to match "the login page is broken". Write: `"Fix a bug with a reduced chain. Use when: something is broken, crash, error, defect, 'X is not working', 'it fails when...', unexpected behavior."` This is the ONLY mechanism for intent routing — no rich description means no automatic invocation
 - **Challenge vague requests** — "make an agent that does X" often hides ambiguity that causes downstream failures
 - **Present before saving** — always get user approval before writing to disk
 - **One responsibility per agent** — if the role description contains "and also," consider splitting into two agents

@@ -1,6 +1,6 @@
 ---
 name: workflow:wizard-ux
-description: Design an intuitive installation wizard, setup flow, or onboarding sequence for TUI, GUI, Web, or CLI. Produces a complete wizard flow specification with step definitions, validation rules, UX copy, error recovery, and accessibility requirements.
+description: "Design an intuitive installation wizard, setup flow, or onboarding sequence for TUI, GUI, Web, or CLI. Use when: 'design a setup wizard', 'create an onboarding flow', 'installation experience', 'step-by-step setup', 'configuration wizard', multi-step form design. Produces a complete wizard flow specification with step definitions, validation rules, UX copy, error recovery, and accessibility requirements."
 ---
 
 # Workflow: Wizard UX Design

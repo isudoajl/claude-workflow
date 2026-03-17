@@ -1,6 +1,6 @@
 ---
 name: workflow:new-feature
-description: Add a feature to an existing project. Accepts optional --scope to limit context.
+description: "Add a feature to an existing project. Use when: adding new functionality, 'add support for...', 'I want to add...', 'implement X capability', new endpoint, new command, new module, extend the system, 'can we add...', 'we need a new...'. Accepts optional --scope to limit context."
 ---
 
 # Workflow: New Feature

@@ -1,6 +1,6 @@
 ---
 name: workflow:resume
-description: Resume a stopped or failed workflow from the last completed step. Accepts optional --from to specify a milestone or step.
+description: "Resume a stopped or failed workflow from the last completed step. Use when: 'continue where we left off', 'resume the workflow', 'pick up from...', context limit was hit, workflow was interrupted, 'finish what we started'. Accepts optional --from to specify a milestone or step."
 ---
 
 # Workflow: Resume

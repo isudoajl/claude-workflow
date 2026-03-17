@@ -1,6 +1,6 @@
 ---
 name: workflow:new
-description: Start a new project from scratch with the full workflow
+description: "Start a new project from scratch with the full workflow. Use when: building something new, greenfield project, creating from scratch, 'build me a...', 'I want to create...', 'let\\'s make a new...', starting fresh, no existing code."
 ---
 
 # Workflow: New Project

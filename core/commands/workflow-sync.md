@@ -1,6 +1,6 @@
 ---
 name: workflow:sync
-description: Detect and fix drift between codebase and specs/docs. Accepts optional --scope to limit to a milestone/module.
+description: "Detect and fix drift between codebase and specs/docs. Use when: 'specs are out of date', 'docs don\\'t match the code', 'sync the documentation', drift detection, stale specs, 'code changed but docs didn\\'t', consistency check between code and docs. Accepts optional --scope to limit to a milestone/module."
 ---
 
 # Workflow: Sync

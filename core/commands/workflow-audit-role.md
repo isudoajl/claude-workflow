@@ -1,6 +1,6 @@
 ---
 name: workflow:audit-role
-description: Adversarial audit of an agent role definition. Audits across 12 dimensions at 2 levels. Assumes broken until proven safe. Accepts a role file path or audits all roles. Accepts optional --scope to limit to specific dimensions.
+description: "Adversarial audit of an agent role definition. Use when: 'audit this agent', 'is this role safe?', 'check the agent definition', 'review the role for...', verify agent quality. Audits across 12 dimensions at 2 levels. Assumes broken until proven safe. Accepts a role file path or audits all roles. Accepts optional --scope to limit to specific dimensions."
 ---
 
 # Workflow: Audit Role

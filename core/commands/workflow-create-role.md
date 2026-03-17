@@ -1,6 +1,6 @@
 ---
 name: workflow:create-role
-description: Create a new agent role definition with automatic audit and remediation. Role-creator designs the role, role-auditor audits it adversarially, then findings are auto-fixed (max 2 cycles).
+description: "Create a new agent role definition with automatic audit and remediation. Use when: 'create a new agent', 'I need a custom agent for...', 'design a role for...', 'add an agent that...', new specialized agent. Role-creator designs the role, role-auditor audits it adversarially, then findings are auto-fixed (max 2 cycles)."
 ---
 
 # Workflow: Create Role

@@ -139,6 +139,7 @@ Cross-level interactions are flagged.
 4. Does the identity CONTRADICT any existing agent's identity? Read all `.claude/agents/*.md` and compare
 5. Is the agent name descriptive enough that an orchestrator knows when to invoke it from the name alone?
 6. Does the description field (YAML) accurately summarize what the body defines? Or does it overclaim/underclaim?
+7. Does the description field include "Use when:" with natural language trigger keywords? Claude Code uses description fields for intent matching — a description without trigger keywords means the agent/command will never be auto-invoked from user natural language. Flag missing triggers as **major**.
 
 **Flag**: `identity_flaw{section, flaw_type, evidence, consequence}`
 

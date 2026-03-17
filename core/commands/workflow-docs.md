@@ -1,6 +1,6 @@
 ---
 name: workflow:docs
-description: Generate/update specs and docs from the codebase. Accepts optional --scope to limit to a milestone/module.
+description: "Generate or update specs and documentation from the codebase. Use when: 'document this', 'update the docs', 'generate documentation', 'write specs', 'docs are outdated', 'we need documentation for...', API docs, technical writing. Accepts optional --scope to limit to a milestone/module."
 ---
 
 # Workflow: Documentation

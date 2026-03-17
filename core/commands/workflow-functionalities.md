@@ -1,6 +1,6 @@
 ---
 name: workflow:functionalities
-description: Analyze the codebase and produce a structured inventory of all functionalities. Accepts optional --scope to limit to a module/area.
+description: "Analyze the codebase and produce a structured inventory of all functionalities — endpoints, services, models, handlers. Use when: 'what can this system do?', 'list all endpoints', 'map the functionalities', 'inventory of features', 'what APIs exist?', codebase mapping. Accepts optional --scope to limit to a module/area."
 ---
 
 # Workflow: Functionalities
