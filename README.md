@@ -1,6 +1,6 @@
 # Claude Code Quality Workflow
 
-A multi-agent orchestration system for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers with **persistent institutional memory**. Instead of asking an AI to "build X" and hoping for the best, this workflow forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent that reads from and writes to a shared knowledge base.
+A multi-agent orchestration toolkit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers with **persistent institutional memory**. Instead of asking an AI to "build X" and hoping for the best, this toolkit forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent that reads from and writes to a shared knowledge base.
 
 ## The Problem
 
@@ -13,133 +13,243 @@ When you ask an AI to write code directly, it:
 - **Has no traceability** — requirements, tests, and code aren't linked, so gaps go unnoticed
 - **Forgets everything** — each session starts fresh with zero knowledge of past decisions, failures, or patterns
 
-This workflow solves all of that.
+This toolkit solves all of that.
 
 ## How It Works
 
-Thirteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
+Fourteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
 
 ```
 Your Idea
-  ↓
+  |
 [Pipeline registers in memory.db]
-  ↓
-Discovery     → Explores and challenges your idea through conversation
-  ↓
-Evaluator     → GO/NO-GO gate: scores necessity, impact, complexity, alternatives
-  ↓
-Analyst       → Questions your idea, defines requirements with acceptance criteria
-  ↓
-Architect     → Designs architecture with failure modes, security, performance budgets
-  ↓
-┌─── Per Milestone (auto-loop) ───────────────────────────────────────────────┐
-│ Test Writer   → Writes tests BEFORE code exists (TDD, priority-driven)      │
-│ Developer     → Implements minimum code to pass (module by module)           │
-│ Compiler      → Build + lint + test validation gate                          │
-│ QA            → End-to-end validation, acceptance criteria, exploratory tests │
-│ Reviewer      → Audits for bugs, security, performance, specs/docs drift     │
-└─────────────────────────────────────────────────────────────────────────────┘
-  ↓
-[Pipeline completes, memory.db already populated incrementally throughout]
+  |
+Discovery     -> Explores and challenges your idea through conversation
+  |
+Evaluator     -> GO/NO-GO gate: scores necessity, impact, complexity, alternatives
+  |
+Analyst       -> Questions your idea, defines requirements with acceptance criteria
+  |
+Architect     -> Designs architecture with failure modes, security, performance budgets
+  |
++--- Per Milestone (auto-loop) ------------------------------------------+
+| Test Writer   -> Writes tests BEFORE code exists (TDD, priority-driven) |
+| Developer     -> Implements minimum code to pass (module by module)     |
+| Compiler      -> Build + lint + test validation gate                    |
+| QA            -> End-to-end validation, acceptance criteria, exploratory |
+| Reviewer      -> Audits for bugs, security, performance, specs drift    |
++-------------------------------------------------------------------------+
+  |
+[Pipeline completes, memory.db populated incrementally throughout]
 ```
+
+## Prerequisites
+
+- **Claude Code** — `npm install -g @anthropic-ai/claude-code`
+- **Git** — the target project must be inside a git repository (setup.sh will `git init` if needed)
+- **SQLite3** — for institutional memory (`sqlite3` CLI must be in PATH)
+- **Python 3** — used by setup.sh to merge hooks into `settings.json`
+
+## Deployment
+
+This toolkit is **not an application** — it's deployed into target projects. You run the setup script from your target project's directory, and it copies agents, commands, hooks, and memory infrastructure into your project.
+
+### Quick Start
+
+```bash
+# Navigate to your target project
+cd /path/to/your-project
+
+# Deploy core toolkit
+bash /path/to/claude-workflow/scripts/setup.sh
+
+# Start Claude Code and use the workflow
+claude
+```
+
+Then inside Claude Code:
+```
+/workflow:new "build a REST API for user management"
+```
+
+### Setup Options
+
+```bash
+# Core only (14 agents, 14 commands, 5 hooks, SQLite memory)
+bash /path/to/claude-workflow/scripts/setup.sh
+
+# Core + specific extensions
+bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain
+bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain,omega
+
+# Core + all extensions
+bash /path/to/claude-workflow/scripts/setup.sh --ext=all
+
+# Skip SQLite initialization
+bash /path/to/claude-workflow/scripts/setup.sh --no-db
+
+# List available extensions
+bash /path/to/claude-workflow/scripts/setup.sh --list-ext
+
+# Show unchanged files individually
+bash /path/to/claude-workflow/scripts/setup.sh --verbose
+
+# Show help
+bash /path/to/claude-workflow/scripts/setup.sh --help
+```
+
+### What Gets Deployed
+
+When you run setup.sh, the following is created/updated in your target project:
+
+```
+your-project/
+├── .claude/
+│   ├── agents/           <- 14 core agent definitions (+ extension agents)
+│   ├── commands/         <- 14 core commands (+ extension commands)
+│   ├── hooks/            <- 5 automation hooks
+│   │   ├── briefing.sh           # Auto-injects memory context at session start
+│   │   ├── debrief-gate.sh       # Blocks git commit without self-scoring
+│   │   ├── incremental-gate.sh   # Blocks after 10 edits without outcomes
+│   │   ├── debrief-nudge.sh      # Periodic incremental logging reminder
+│   │   └── session-close.sh      # Promotes hotspot risk levels at session end
+│   ├── settings.json     <- Hook configuration (merged, not overwritten)
+│   ├── memory.db         <- SQLite institutional memory database
+│   └── db-queries/       <- Query reference files for agents
+├── specs/
+│   └── SPECS.md          <- Master spec index (created if missing)
+├── docs/
+│   └── DOCS.md           <- Master doc index (created if missing)
+└── CLAUDE.md             <- Workflow rules appended (project rules preserved)
+```
+
+### CLAUDE.md Handling
+
+The setup script **appends** the workflow rules section to your project's CLAUDE.md, separated by `---`. Your project-specific rules above the separator are preserved. On re-runs, the workflow rules section is replaced in-place — your project rules are never touched.
+
+If no CLAUDE.md exists, one is created with a placeholder for project-specific rules plus the workflow rules.
+
+### Safe to Re-run
+
+The setup script is fully idempotent with change detection:
+- Files are compared before copying — unchanged files are skipped
+- The DB schema migrates without data loss
+- CLAUDE.md workflow rules are replaced, not duplicated
+- Hook configuration is merged into existing settings.json
+- Output shows `+` (new), `~` (updated), `=` (unchanged) for every file
 
 ## Architecture
 
 ### Core + Extensions
 
-The toolkit separates **universal foundation** (core) from **domain-specific packs** (extensions):
-
 ```
 claude-workflow/
 ├── core/                              # Every project gets this
-│   ├── agents/                        # 13 universal agents
-│   ├── commands/                      # 13 universal commands
-│   └── db/                            # Institutional memory layer
-│       ├── schema.sql                 # SQLite schema
-│       └── queries/                   # Named query templates
-│           ├── briefing.sql           # Pre-work queries
-│           ├── debrief.sql            # Incremental logging + close-out templates
-│           └── maintenance.sql        # Periodic cleanup
+│   ├── agents/                        # 14 universal agents
+│   ├── commands/                      # 14 universal commands
+│   ├── db/                            # Institutional memory layer
+│   │   ├── schema.sql                 # SQLite schema
+│   │   └── queries/                   # Named query templates
+│   │       ├── briefing.sql
+│   │       ├── debrief.sql
+│   │       └── maintenance.sql
+│   └── hooks/                         # 5 automation hooks
 │
 ├── extensions/                        # Opt-in per project
 │   ├── blockchain/                    # Ethereum, Solana, Cosmos, Substrate
-│   │   ├── agents/                    # blockchain-network, blockchain-debug, stress-tester
-│   │   └── commands/                  # 3 commands
 │   ├── omega/                         # OMEGA framework
-│   │   ├── agents/                    # omega-topology-architect, skill-creator
-│   │   └── commands/                  # 1 command
 │   └── c2c-protocol/                  # C2C protocol research
-│       ├── agents/                    # proto-auditor, proto-architect
-│       └── commands/                  # 3 commands
 │
 └── scripts/
     ├── setup.sh                       # Deploy to target projects
-    └── db-init.sh                     # Initialize SQLite
+    └── db-init.sh                     # Initialize/migrate SQLite
 ```
 
 ### Institutional Memory (SQLite)
 
 Every target project gets `.claude/memory.db` — a persistent knowledge base that survives context compression and session boundaries:
 
-| Table | Purpose | Written By | Read By |
-|-------|---------|-----------|---------|
-| `workflow_runs` | Pipeline execution traces | Orchestrator commands | All agents |
-| `changes` | What files were changed and why | developer, architect | analyst, reviewer |
-| `decisions` | Design decisions with rationale + rejected alternatives | architect, analyst, developer | All agents |
-| `failed_approaches` | What was tried and why it failed | developer, architect | developer, architect |
-| `bugs` | Symptoms, root cause, fix, affected files | qa, developer | analyst, test-writer |
-| `hotspots` | Files that keep breaking (risk levels, touch counts) | All agents | All agents |
-| `findings` | Reviewer/QA findings with status tracking | reviewer, qa | developer, test-writer |
-| `dependencies` | Component relationships | architect, reviewer | architect, reviewer |
-| `requirements` | Requirement lifecycle (defined → tested → verified) | analyst, test-writer, qa | All agents |
-| `patterns` | Successful patterns to reuse | developer, architect | developer, architect |
-| `outcomes` | Self-learning Tier 1: raw self-scored results per action | All pipeline agents | All agents (briefing) |
-| `lessons` | Self-learning Tier 2: distilled patterns from outcomes | All pipeline agents | All agents (briefing) |
-| `decay_log` | Memory evolution audit trail | maintenance | maintenance |
+| Table | Purpose |
+|-------|---------|
+| `workflow_runs` | Pipeline execution traces |
+| `changes` | What files were changed and why |
+| `decisions` | Design decisions with rationale + rejected alternatives |
+| `failed_approaches` | What was tried and why it failed |
+| `bugs` | Symptoms, root cause, fix, affected files |
+| `hotspots` | Files that keep breaking (risk levels, touch counts) |
+| `findings` | Reviewer/QA findings with status tracking |
+| `dependencies` | Component relationships |
+| `requirements` | Requirement lifecycle (defined -> tested -> verified) |
+| `patterns` | Successful patterns to reuse |
+| `outcomes` | Self-learning Tier 1: raw self-scored results per action |
+| `lessons` | Self-learning Tier 2: distilled patterns from outcomes |
+| `decay_log` | Memory evolution audit trail |
 
-**Agent protocol**: Before work → query DB (briefing + learning context). During work → log incrementally (changes, decisions, failures, outcomes as they happen). After work → close-out (verify completeness, distill lessons). **Enforced via 5 Claude Code hooks**: briefing is auto-injected at session start, git commits are blocked without self-scoring, file edits are blocked after 10 modifications without outcomes, periodic nudges remind about incremental logging, and hotspot risk levels are promoted at session end.
+**Agent protocol**: Before work -> query DB (briefing). During work -> log incrementally. After work -> close-out (verify completeness, distill lessons).
 
 ### Self-Learning Loop
 
-Agents don't just record what happened — they evaluate *how well it worked* and distill patterns into permanent rules:
+Agents don't just record what happened — they evaluate *how well it worked* and distill patterns:
 
-```
-Agent starts → briefing injects recent outcomes + active lessons
-  → Agent works → logs changes, decisions, failures, outcomes INCREMENTALLY
-  → Agent close-out: verifies completeness, distills lessons
-  → Next agent/session gets updated learning context
-```
+- **Tier 1 (Outcomes)**: After every significant action, the agent self-scores: +1 (helpful), 0 (neutral), -1 (unhelpful). The 15 most recent outcomes for the scope are injected into every future briefing.
+- **Tier 2 (Lessons)**: When 3+ outcomes share a theme, agents distill them into permanent rules with confidence tracking and a cap of 10 active lessons per domain.
+- **Cross-agent learning**: The developer's -1 on a retry-heavy module informs the architect to design smaller milestones. The test-writer's +1 on edge-case-first testing reinforces that approach.
 
-- **Tier 1 (Outcomes)**: Immediately after every significant action, the agent self-scores: +1 (helpful), 0 (neutral), -1 (unhelpful). Scored incrementally during work, not batched at the end. The 15 most recent outcomes for the scope are injected into every future briefing.
-- **Tier 2 (Lessons)**: At close-out, when patterns emerge from 3+ repeated outcomes, agents distill them into permanent rules with content-based deduplication, confidence tracking, and a cap of 10 active lessons per domain.
-- **Cross-agent learning**: The developer's -1 score on a retry-heavy module informs the architect to design smaller milestones next time. The test-writer's +1 on edge-case-first testing reinforces that approach across sessions.
-- **Context-compaction resilient**: Because entries are logged incrementally (not batched), institutional memory data survives context window compaction — the most common cause of lost debrief data.
+### Automation Hooks
 
-**Why this matters**: Without institutional memory, every session is a fresh hire. The developer wastes cycles on approaches that already failed. The reviewer misses that a file was flagged fragile three sessions ago. The analyst re-specifies requirements that already exist. The DB eliminates this.
+Five hooks enforce the memory protocol automatically:
 
-## Core Agents (13)
+| Hook | Event | Purpose |
+|------|-------|---------|
+| `briefing.sh` | UserPromptSubmit | Auto-injects institutional memory context (once per session) |
+| `debrief-gate.sh` | PreToolUse (Bash) | Blocks `git commit` if no outcomes are logged |
+| `incremental-gate.sh` | PreToolUse (Write/Edit) | Blocks after 10 file edits without logging outcomes |
+| `debrief-nudge.sh` | PostToolUse | Periodic reminder to log incrementally |
+| `session-close.sh` | Notification | Promotes hotspot risk levels at session end |
+
+## Core Agents (14)
 
 | Agent | Role |
 |-------|------|
 | **discovery** | Pre-pipeline conversation: explores, challenges, clarifies raw ideas |
-| **analyst** | Business analysis: requirements, acceptance criteria, MoSCoW, traceability, impact |
+| **analyst** | Business analysis: requirements, acceptance criteria, MoSCoW, traceability |
 | **architect** | System design: failure modes, security, performance budgets, milestones |
 | **test-writer** | TDD red phase: writes failing tests before code, priority-driven |
 | **developer** | Implementation: module by module, minimum code to pass tests |
 | **qa** | End-to-end validation, acceptance criteria verification, exploratory testing |
 | **reviewer** | Audit: bugs, security, performance, tech debt, specs/docs drift (read-only) |
-| **feature-evaluator** | GO/NO-GO gate: 7-dimension scoring before committing pipeline resources |
+| **feature-evaluator** | GO/NO-GO gate: 7-dimension scoring before committing resources |
 | **functionality-analyst** | Codebase inventory: maps endpoints, services, models, handlers (read-only) |
 | **codebase-expert** | Deep comprehension: 6-layer progressive exploration (read-only) |
 | **wizard-ux** | Wizard/setup flow design for TUI/GUI/Web/CLI |
+| **diagnostician** | Deep diagnostic reasoning: hypothesis-driven root cause analysis |
 | **role-creator** | Meta-agent: designs new agent role definitions |
 | **role-auditor** | Meta-agent: adversarial audit of role definitions (read-only) |
+
+## Core Commands (14)
+
+| Command | Description |
+|---------|-------------|
+| `/workflow:new "idea"` | Full pipeline for greenfield projects |
+| `/workflow:new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
+| `/workflow:improve "desc" [--scope]` | Refactor/optimize (no architect step) |
+| `/workflow:bugfix "bug" [--scope]` | Bug fix with reproduction test |
+| `/workflow:audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
+| `/workflow:docs [--scope]` | Generate/update specs and docs |
+| `/workflow:sync [--scope]` | Detect and fix specs/docs drift |
+| `/workflow:functionalities [--scope]` | Map codebase functionalities |
+| `/workflow:understand [--scope]` | Deep codebase comprehension |
+| `/workflow:resume [--from]` | Resume stopped workflow |
+| `/workflow:wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
+| `/workflow:create-role "desc"` | Design a new agent role |
+| `/workflow:audit-role "path" [--scope]` | Adversarial audit of role definitions |
+| `/workflow:diagnose "bug" [--scope] [--fix]` | Deep root cause diagnosis for hard bugs |
 
 ## Extension Packs
 
 ### Blockchain (3 agents, 3 commands)
-- **blockchain-network** — P2P networking, node operations, RPC infrastructure, monitoring, security
-- **blockchain-debug** — Firefighter: diagnoses active connectivity problems using 7-phase methodology
+- **blockchain-network** — P2P networking, node operations, RPC infrastructure, monitoring
+- **blockchain-debug** — Diagnoses active connectivity problems using 7-phase methodology
 - **stress-tester** — Black-box adversarial testing of blockchain CLI/RPC endpoints
 
 ### OMEGA (2 agents, 1 command)
@@ -150,50 +260,10 @@ Agent starts → briefing injects recent outcomes + active lessons
 - **proto-auditor** — Audits protocol specs across 12 dimensions at 3 levels
 - **proto-architect** — Generates patches from audit findings via 6-step pipeline
 
-## Core Commands (13)
-
-| Command | Description |
-|---------|-------------|
-| `/workflow:new "idea"` | Full pipeline for greenfield projects |
-| `/workflow:new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
-| `/workflow:improve "desc" [--scope]` | Refactor/optimize (no architect step) |
-| `/workflow:bugfix "bug" [--scope]` | Bug fix with reproduction test |
-| `/workflow:audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
-| `/workflow:docs [--scope]` | Generate/update specs & docs |
-| `/workflow:sync [--scope]` | Detect and fix specs/docs drift |
-| `/workflow:functionalities [--scope]` | Map codebase functionalities |
-| `/workflow:understand [--scope]` | Deep codebase comprehension |
-| `/workflow:resume [--from]` | Resume stopped milestone-based workflow |
-| `/workflow:wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
-| `/workflow:create-role "desc"` | Design a new agent role |
-| `/workflow:audit-role "path" [--scope]` | Adversarial audit of role definitions |
-
-## Setup
-
-Navigate to your **target project** and run:
-
-```bash
-bash /path/to/claude-workflow/scripts/setup.sh
-```
-
-One command deploys everything: 13 agents, 13 commands, automation hooks (auto-briefing/debrief), SQLite memory DB (with self-learning), query templates, scaffolding, and **appends** the workflow rules to your project's CLAUDE.md (preserving your project-specific rules).
-
-```bash
-# With extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain,omega
-
-# All extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=all
-```
-
-**Safe to re-run** — agents/commands update, CLAUDE.md workflow rules refresh, DB schema migrates, your data is preserved.
-
-For the complete deployment reference (prerequisites, what gets deployed, CLAUDE.md handling, verification, troubleshooting), see **[docs/setup-guide.md](docs/setup-guide.md)**.
-
 ## Guardrails
 
 - **Prerequisite gates**: Every agent verifies upstream output exists before proceeding
-- **Iteration limits**: QA↔Developer max 3, Reviewer↔Developer max 2, Audit fix max 5 per finding
+- **Iteration limits**: QA<->Developer max 3, Reviewer<->Developer max 2, Audit fix max 5 per finding
 - **60% context budget**: Agents stop at 60% context usage, save state, continue via `/workflow:resume`
 - **Inter-step validation**: Commands verify each agent produced output before invoking the next
 - **Error recovery**: Failed chains save state to `docs/.workflow/chain-state.md` + memory.db
