@@ -4,18 +4,18 @@
 # Usage:
 #   bash setup.sh                           # core only
 #   bash setup.sh --ext=blockchain          # core + blockchain extension
-#   bash setup.sh --ext=blockchain,omega    # core + multiple extensions
+#   bash setup.sh --ext=blockchain,c2c-protocol  # core + multiple extensions
 #   bash setup.sh --ext=all                 # core + all extensions
 #   bash setup.sh --no-db                   # skip SQLite initialization
 #   bash setup.sh --list-ext                # list available extensions
 #   bash setup.sh --verbose                 # show unchanged files individually
 #
 # Run from the TARGET project directory, or pass the path:
-#   bash /path/to/claude-workflow/scripts/setup.sh
+#   bash /path/to/omega/scripts/setup.sh
 
 set -e
 
-# Detect script directory (the claude-workflow repo root)
+# Detect script directory (the OMEGA repo root)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Parse arguments
@@ -93,7 +93,7 @@ copy_if_changed() {
     fi
 }
 
-echo "Setting up Claude Code Quality Workflow..."
+echo "Setting up OMEGA Ω..."
 echo ""
 
 # Check Claude Code
@@ -466,28 +466,36 @@ fi
 echo ""
 echo "  Configuring workflow rules..."
 
-# Extract the workflow rules section (everything from "# Claude Code Quality Workflow" onwards)
+# Extract the workflow rules section (everything from "# OMEGA Ω" onwards)
 WORKFLOW_RULES_FILE="$SCRIPT_DIR/CLAUDE.md"
-WORKFLOW_MARKER="# Claude Code Quality Workflow"
+WORKFLOW_MARKER="# OMEGA Ω"
+OLD_WORKFLOW_MARKER="# Claude Code Quality Workflow"
 
 if [ -f "$WORKFLOW_RULES_FILE" ]; then
     # Extract the source workflow rules for comparison
     SOURCE_RULES=$(sed -n "/$WORKFLOW_MARKER/,\$p" "$WORKFLOW_RULES_FILE")
 
     if [ -f "./CLAUDE.md" ]; then
-        # Check if workflow rules are already appended
+        # Check if workflow rules are already appended (check both new and legacy markers)
+        ACTIVE_MARKER=""
         if grep -q "$WORKFLOW_MARKER" ./CLAUDE.md 2>/dev/null; then
-            # Extract current workflow rules from target for comparison
-            CURRENT_RULES=$(sed -n "/$WORKFLOW_MARKER/,\$p" ./CLAUDE.md)
+            ACTIVE_MARKER="$WORKFLOW_MARKER"
+        elif grep -q "$OLD_WORKFLOW_MARKER" ./CLAUDE.md 2>/dev/null; then
+            ACTIVE_MARKER="$OLD_WORKFLOW_MARKER"
+        fi
 
-            if [ "$CURRENT_RULES" = "$SOURCE_RULES" ]; then
+        if [ -n "$ACTIVE_MARKER" ]; then
+            # Extract current workflow rules from target for comparison
+            CURRENT_RULES=$(sed -n "/$ACTIVE_MARKER/,\$p" ./CLAUDE.md)
+
+            if [ "$ACTIVE_MARKER" = "$WORKFLOW_MARKER" ] && [ "$CURRENT_RULES" = "$SOURCE_RULES" ]; then
                 # Rules are identical -- skip rewriting
                 echo "   = Workflow rules already current"
             else
-                # Rules differ -- replace them
+                # Rules differ (or upgrading from legacy marker) -- replace them
                 # Remove old workflow rules (everything from the marker to EOF) and re-append
                 # Find the line number of the marker
-                MARKER_LINE=$(grep -n "$WORKFLOW_MARKER" ./CLAUDE.md | head -1 | cut -d: -f1)
+                MARKER_LINE=$(grep -n "$ACTIVE_MARKER" ./CLAUDE.md | head -1 | cut -d: -f1)
                 if [ -n "$MARKER_LINE" ]; then
                     # Also remove the separator line before the marker (the --- line)
                     PREV_LINE=$((MARKER_LINE - 1))
@@ -533,7 +541,7 @@ if [ -f "$WORKFLOW_RULES_FILE" ]; then
         # No CLAUDE.md exists — create one with just the workflow rules
         echo "# CLAUDE.md" > ./CLAUDE.md
         echo "" >> ./CLAUDE.md
-        echo "This file provides guidance to Claude Code when working with code in this repository." >> ./CLAUDE.md
+        echo "This file provides guidance to Claude Code (powered by OMEGA) when working with code in this repository." >> ./CLAUDE.md
         echo "" >> ./CLAUDE.md
         echo "## Project-Specific Rules" >> ./CLAUDE.md
         echo "" >> ./CLAUDE.md
@@ -547,7 +555,7 @@ if [ -f "$WORKFLOW_RULES_FILE" ]; then
         CLAUDE_MD_STATUS="created"
     fi
 else
-    echo "   WARNING: Toolkit CLAUDE.md not found at $WORKFLOW_RULES_FILE — skipping"
+    echo "   WARNING: OMEGA CLAUDE.md not found at $WORKFLOW_RULES_FILE — skipping"
 fi
 
 # ============================================================
@@ -632,9 +640,6 @@ if [ -n "$EXTENSIONS" ]; then
                 echo "    /workflow:blockchain-network \"desc\"   Node/P2P infrastructure"
                 echo "    /workflow:blockchain-debug \"desc\"     Debug connectivity"
                 echo "    /workflow:stress-test \"desc\"          Stress test CLI/RPC"
-                ;;
-            omega)
-                echo "    /workflow:omega-setup \"desc\"          Configure OMEGA"
                 ;;
             c2c-protocol)
                 echo "    /workflow:c2c                         C2C protocol POC"

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## About This Repository
 
-This is a **multi-agent workflow toolkit** for Claude Code — not an application. It consists of core agents, commands, an institutional memory layer (SQLite), and optional extension packs for domain-specific work. All of these are designed to be **deployed into target projects** to enable structured TDD workflows with persistent institutional memory.
+This is **OMEGA Ω** — a multi-agent orchestration toolkit for Claude Code. It consists of core agents, commands, an institutional memory layer (SQLite), and optional extension packs for domain-specific work. All of these are designed to be **deployed into target projects** to enable structured TDD workflows with persistent institutional memory.
 
 ### Development
 
@@ -13,12 +13,12 @@ There is no build system, test suite, or runtime. To test changes:
 2. Deploy to a target project: `bash scripts/setup.sh [--ext=name]` (run from the target project directory)
 3. Run the workflow commands in the target project via Claude Code
 
-The setup script copies agents and commands into the target's `.claude/agents/` and `.claude/commands/` (flattened). It creates `specs/`, `docs/` scaffolding if missing, initializes the SQLite institutional memory database at `.claude/memory.db`, and **appends** the workflow rules section (everything below `# Claude Code Quality Workflow`) to the target project's CLAUDE.md — preserving any project-specific rules that already exist above the `---` separator.
+The setup script copies agents and commands into the target's `.claude/agents/` and `.claude/commands/` (flattened). It creates `specs/`, `docs/` scaffolding if missing, initializes the SQLite institutional memory database at `.claude/memory.db`, and **appends** the workflow rules section (everything below `# OMEGA Ω`) to the target project's CLAUDE.md — preserving any project-specific rules that already exist above the `---` separator.
 
 ### Repository Structure
 
 ```
-claude-workflow/
+omega/
 ├── core/                              # Universal foundation (every project)
 │   ├── agents/                        # 14 core agents
 │   │   ├── discovery.md
@@ -67,9 +67,6 @@ claude-workflow/
 │   ├── blockchain/
 │   │   ├── agents/                    # blockchain-network, blockchain-debug, stress-tester
 │   │   └── commands/                  # workflow-blockchain-network, workflow-blockchain-debug, workflow-stress-test
-│   ├── omega/
-│   │   ├── agents/                    # omega-topology-architect, skill-creator
-│   │   └── commands/                  # workflow-omega-setup
 │   └── c2c-protocol/
 │       ├── agents/                    # proto-auditor, proto-architect
 │       └── commands/                  # workflow-c2c, workflow-proto-audit, workflow-proto-improve
@@ -113,7 +110,6 @@ All agents use `claude-opus-4-6` and include mandatory **briefing/incremental lo
 | Extension | Agents | Commands | Target Domain |
 |-----------|--------|----------|---------------|
 | `blockchain` | blockchain-network, blockchain-debug, stress-tester | workflow-blockchain-network, workflow-blockchain-debug, workflow-stress-test | Ethereum, Solana, Cosmos, Substrate |
-| `omega` | omega-topology-architect, skill-creator | workflow-omega-setup | OMEGA framework |
 | `c2c-protocol` | proto-auditor, proto-architect | workflow-c2c, workflow-proto-audit, workflow-proto-improve | C2C protocol research |
 
 ### Core Commands
@@ -162,7 +158,7 @@ Every target project gets `.claude/memory.db` — a SQLite database that accumul
 ```bash
 bash scripts/setup.sh                           # core only
 bash scripts/setup.sh --ext=blockchain           # core + blockchain
-bash scripts/setup.sh --ext=blockchain,omega     # core + multiple extensions
+bash scripts/setup.sh --ext=blockchain,c2c-protocol  # core + multiple extensions
 bash scripts/setup.sh --ext=all                  # core + all extensions
 bash scripts/setup.sh --no-db                    # skip SQLite initialization
 bash scripts/setup.sh --list-ext                 # list available extensions
@@ -198,10 +194,10 @@ Everything below this line defines the workflow behavior when this CLAUDE.md is 
 
 ---
 
-# Claude Code Quality Workflow
+# OMEGA Ω
 
 ## Philosophy
-This project uses a multi-agent workflow designed to produce the highest quality code possible.
+This project uses OMEGA, a multi-agent workflow designed to produce the highest quality code possible.
 Each agent has a specific role and the code passes through multiple validation layers before being considered complete.
 Every agent reads from and writes to a shared institutional memory (SQLite) — no agent acts alone, without backpressure.
 
@@ -215,7 +211,7 @@ When specs or docs conflict with the codebase, the codebase wins. Agents must fl
 
 ## Institutional Memory
 
-Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation. **This protocol is not optional** — it is the foundation that gives Claude Code persistent knowledge across sessions.
+Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation. **This protocol is not optional** — it is the foundation that gives OMEGA persistent knowledge across sessions.
 
 ### DB Detection
 At the start of **every session and every workflow**, check if the DB exists:
@@ -575,9 +571,9 @@ Test-writer and reviewer adapt their patterns to the project's language (detecte
 ### Scope Parameter
 All workflow commands accept an optional scope to limit context usage:
 ```
-/workflow:new-feature "add retry logic" --scope="omega-providers"
-/workflow:audit --scope="milestone 3: omega-core"
-/workflow:sync --scope="omega-memory"
+/workflow:new-feature "add retry logic" --scope="providers"
+/workflow:audit --scope="milestone 3: core"
+/workflow:sync --scope="memory"
 /workflow:bugfix "scheduler crash" --scope="backend/src/gateway/scheduler.rs"
 ```
 

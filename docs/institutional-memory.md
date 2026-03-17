@@ -4,7 +4,7 @@
 
 ## The Problem It Solves
 
-Every Claude Code session starts fresh. Context compresses, sessions end, and all accumulated understanding disappears. This means:
+Every Claude Code session starts fresh without OMEGA. Context compresses, sessions end, and all accumulated understanding disappears. This means:
 
 - **The developer tries approaches that already failed** — wasting cycles rediscovering failures
 - **The reviewer doesn't know a file was flagged fragile last week** — misses recurring issues

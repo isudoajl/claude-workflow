@@ -11,7 +11,7 @@ The protocol specs live in `c2c-protocol/` at the repository root. The POC agent
 ## Install
 
 ```bash
-bash /path/to/claude-workflow/scripts/setup.sh --ext=c2c-protocol
+bash /path/to/omega/scripts/setup.sh --ext=c2c-protocol
 ```
 
 ## Agents

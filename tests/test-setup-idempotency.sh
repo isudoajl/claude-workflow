@@ -276,7 +276,7 @@ Toolkit-level docs.
 
 ---
 
-# Claude Code Quality Workflow
+# OMEGA Ω
 
 ## Philosophy
 This project uses a multi-agent workflow.
@@ -404,7 +404,7 @@ test_first_run_creates_claude_md() {
 
     local content
     content=$(cat "$TARGET_DIR/CLAUDE.md")
-    assert_contains "$content" "# Claude Code Quality Workflow" "CLAUDE.md contains workflow rules marker"
+    assert_contains "$content" "# OMEGA Ω" "CLAUDE.md contains workflow rules marker"
     assert_contains "$content" "## Philosophy" "CLAUDE.md contains Philosophy section"
     assert_contains "$content" "## Global Rules" "CLAUDE.md contains Global Rules section"
     # Check that separator exists in CLAUDE.md by looking at lines
@@ -470,7 +470,7 @@ test_second_run_claude_md_no_duplication() {
     content=$(cat "$TARGET_DIR/CLAUDE.md")
 
     local marker_count
-    marker_count=$(echo "$content" | grep -c "# Claude Code Quality Workflow" || true)
+    marker_count=$(echo "$content" | grep -c "# OMEGA Ω" || true)
     assert_eq "1" "$marker_count" "After 2nd run, CLAUDE.md has exactly 1 workflow marker"
 
     local philosophy_count
@@ -486,7 +486,7 @@ test_third_run_claude_md_still_no_duplication() {
     content=$(cat "$TARGET_DIR/CLAUDE.md")
 
     local marker_count
-    marker_count=$(echo "$content" | grep -c "# Claude Code Quality Workflow" || true)
+    marker_count=$(echo "$content" | grep -c "# OMEGA Ω" || true)
     assert_eq "1" "$marker_count" "After 3rd run, CLAUDE.md has exactly 1 workflow marker"
 }
 
@@ -643,7 +643,7 @@ EOF
     assert_contains "$content" "snake_case" "Custom convention preserved"
 
     # Workflow rules appended
-    assert_contains "$content" "# Claude Code Quality Workflow" "Workflow rules appended"
+    assert_contains "$content" "# OMEGA Ω" "Workflow rules appended"
 }
 
 test_claude_md_update_preserves_project_rules() {
@@ -659,7 +659,7 @@ test_claude_md_update_preserves_project_rules() {
 
     # Workflow rules still there, not duplicated
     local marker_count
-    marker_count=$(echo "$content" | grep -c "# Claude Code Quality Workflow" || true)
+    marker_count=$(echo "$content" | grep -c "# OMEGA Ω" || true)
     assert_eq "1" "$marker_count" "After 2nd run with custom content, exactly 1 workflow marker"
 }
 
@@ -676,7 +676,7 @@ test_claude_md_created_from_scratch() {
     content=$(cat "$TARGET_DIR/CLAUDE.md")
     assert_contains "$content" "# CLAUDE.md" "Created CLAUDE.md has heading"
     assert_contains "$content" "Project-Specific Rules" "Created CLAUDE.md has placeholder for project rules"
-    assert_contains "$content" "# Claude Code Quality Workflow" "Created CLAUDE.md has workflow rules"
+    assert_contains "$content" "# OMEGA Ω" "Created CLAUDE.md has workflow rules"
 }
 
 # ============================================================
@@ -1091,7 +1091,7 @@ Toolkit-level docs.
 
 ---
 
-# Claude Code Quality Workflow
+# OMEGA Ω
 
 ## Philosophy
 This project uses an UPDATED multi-agent workflow.

@@ -67,7 +67,7 @@ Read in this order to understand the current state:
 2. **Existing configuration** — look for client-specific config files: `config.toml` (Geth, Reth), `beacon.yaml` (Prysm), `*.toml` (Lighthouse), `config.json` (Nethermind), `app.toml`/`config.toml` (Cosmos SDK)
 3. **Monitoring setup** — Glob for `prometheus*.yml`, `grafana/`, `alertmanager*.yml`, `*.rules` to understand existing observability
 4. **Scripts and automation** — Glob for `scripts/*.sh`, `Makefile`, CI/CD configs to understand operational procedures
-5. **specs/ and docs/** — if the project follows the workflow toolkit conventions, read indexes first
+5. **specs/ and docs/** — if the project follows the OMEGA conventions, read indexes first
 6. **Codebase** — if the project contains node client code (Rust, Go, etc.), read for context but focus on configuration and networking code
 
 ## Context Management

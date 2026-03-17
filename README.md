@@ -1,6 +1,6 @@
-# Claude Code Quality Workflow
+# OMEGA Ω
 
-A multi-agent orchestration toolkit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers with **persistent institutional memory**. Instead of asking an AI to "build X" and hoping for the best, this toolkit forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent that reads from and writes to a shared knowledge base.
+A multi-agent orchestration toolkit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that produces high-quality code through structured validation layers with **persistent institutional memory**. Instead of asking an AI to "build X" and hoping for the best, OMEGA forces every piece of code through questioning, architecture design, test-driven development, implementation, QA validation, and review — each handled by a specialized agent that reads from and writes to a shared knowledge base.
 
 ## The Problem
 
@@ -13,7 +13,7 @@ When you ask an AI to write code directly, it:
 - **Has no traceability** — requirements, tests, and code aren't linked, so gaps go unnoticed
 - **Forgets everything** — each session starts fresh with zero knowledge of past decisions, failures, or patterns
 
-This toolkit solves all of that.
+OMEGA solves all of that.
 
 ## How It Works
 
@@ -52,7 +52,7 @@ Architect     -> Designs architecture with failure modes, security, performance 
 
 ## Deployment
 
-This toolkit is **not an application** — it's deployed into target projects. You run the setup script from your target project's directory, and it copies agents, commands, hooks, and memory infrastructure into your project.
+OMEGA is **not an application** — it's deployed into target projects. You run the setup script from your target project's directory, and it copies agents, commands, hooks, and memory infrastructure into your project.
 
 ### Quick Start
 
@@ -61,7 +61,7 @@ This toolkit is **not an application** — it's deployed into target projects. Y
 cd /path/to/your-project
 
 # Deploy core toolkit
-bash /path/to/claude-workflow/scripts/setup.sh
+bash /path/to/omega/scripts/setup.sh
 
 # Start Claude Code and use the workflow
 claude
@@ -76,26 +76,26 @@ Then inside Claude Code:
 
 ```bash
 # Core only (14 agents, 14 commands, 5 hooks, SQLite memory)
-bash /path/to/claude-workflow/scripts/setup.sh
+bash /path/to/omega/scripts/setup.sh
 
 # Core + specific extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain,omega
+bash /path/to/omega/scripts/setup.sh --ext=blockchain
+bash /path/to/omega/scripts/setup.sh --ext=blockchain,c2c-protocol
 
 # Core + all extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=all
+bash /path/to/omega/scripts/setup.sh --ext=all
 
 # Skip SQLite initialization
-bash /path/to/claude-workflow/scripts/setup.sh --no-db
+bash /path/to/omega/scripts/setup.sh --no-db
 
 # List available extensions
-bash /path/to/claude-workflow/scripts/setup.sh --list-ext
+bash /path/to/omega/scripts/setup.sh --list-ext
 
 # Show unchanged files individually
-bash /path/to/claude-workflow/scripts/setup.sh --verbose
+bash /path/to/omega/scripts/setup.sh --verbose
 
 # Show help
-bash /path/to/claude-workflow/scripts/setup.sh --help
+bash /path/to/omega/scripts/setup.sh --help
 ```
 
 ### What Gets Deployed
@@ -143,7 +143,7 @@ The setup script is fully idempotent with change detection:
 ### Core + Extensions
 
 ```
-claude-workflow/
+omega/
 ├── core/                              # Every project gets this
 │   ├── agents/                        # 14 universal agents
 │   ├── commands/                      # 14 universal commands
@@ -157,7 +157,6 @@ claude-workflow/
 │
 ├── extensions/                        # Opt-in per project
 │   ├── blockchain/                    # Ethereum, Solana, Cosmos, Substrate
-│   ├── omega/                         # OMEGA framework
 │   └── c2c-protocol/                  # C2C protocol research
 │
 └── scripts/
@@ -252,10 +251,6 @@ Five hooks enforce the memory protocol automatically:
 - **blockchain-debug** — Diagnoses active connectivity problems using 7-phase methodology
 - **stress-tester** — Black-box adversarial testing of blockchain CLI/RPC endpoints
 
-### OMEGA (2 agents, 1 command)
-- **omega-topology-architect** — Maps business domains to OMEGA primitives
-- **skill-creator** — Creates OMEGA skill definitions
-
 ### C2C Protocol (2 agents, 3 commands)
 - **proto-auditor** — Audits protocol specs across 12 dimensions at 3 levels
 - **proto-architect** — Generates patches from audit findings via 6-step pipeline
@@ -280,4 +275,4 @@ When anything conflicts, the codebase wins. Agents flag discrepancies and update
 
 ## License
 
-This toolkit is designed for use with Claude Code by Anthropic.
+OMEGA is designed for use with Claude Code by Anthropic.

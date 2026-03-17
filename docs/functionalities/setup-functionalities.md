@@ -5,7 +5,7 @@
 
 ## Overview
 
-Deployment tool that copies the workflow toolkit's agents and commands into a target project. Creates scaffolding for `specs/` and `docs/` if missing.
+Deployment tool that copies OMEGA's agents and commands into a target project. Creates scaffolding for `specs/` and `docs/` if missing.
 
 ## Functionalities
 

@@ -1,6 +1,6 @@
 # Setup Guide
 
-> The single source of truth for deploying the workflow toolkit to any project.
+> The single source of truth for deploying OMEGA to any project.
 
 ## Prerequisites
 
@@ -10,10 +10,10 @@
 
 ## Quick Start
 
-Navigate to your **target project** (not the toolkit repo) and run:
+Navigate to your **target project** (not the OMEGA repo) and run:
 
 ```bash
-bash /path/to/claude-workflow/scripts/setup.sh
+bash /path/to/omega/scripts/setup.sh
 ```
 
 That's it. One command deploys everything:
@@ -47,7 +47,7 @@ The resulting CLAUDE.md structure in your target project:
 ├─────────────────────────────────────────┤
 │ ---                                     │  ← Separator
 ├─────────────────────────────────────────┤
-│ # Claude Code Quality Workflow          │  ← Appended/updated by setup.sh
+│ # OMEGA Ω                               │  ← Appended/updated by setup.sh
 │                                         │
 │ Philosophy, source of truth hierarchy,  │
 │ institutional memory protocol,          │
@@ -65,25 +65,24 @@ The resulting CLAUDE.md structure in your target project:
 
 ```bash
 # Single extension
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain
+bash /path/to/omega/scripts/setup.sh --ext=blockchain
 
 # Multiple extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain,omega
+bash /path/to/omega/scripts/setup.sh --ext=blockchain,c2c-protocol
 
 # All extensions
-bash /path/to/claude-workflow/scripts/setup.sh --ext=all
+bash /path/to/omega/scripts/setup.sh --ext=all
 ```
 
 ### Available Extensions
 
 ```bash
-bash /path/to/claude-workflow/scripts/setup.sh --list-ext
+bash /path/to/omega/scripts/setup.sh --list-ext
 ```
 
 | Extension | Agents | Commands | When to use |
 |-----------|--------|----------|-------------|
 | `blockchain` | 3 | 3 | Ethereum/Solana/Cosmos node operations, P2P networking, RPC infrastructure |
-| `omega` | 2 | 1 | OMEGA framework projects |
 | `c2c-protocol` | 2 | 3 | Agent-to-agent protocol research |
 
 ## All Options
@@ -134,7 +133,7 @@ your-project/
 
 ## How Hooks Work (Automated Briefing/Incremental Logging Enforcement)
 
-The toolkit deploys five Claude Code hooks that automate and enforce the institutional memory protocol:
+OMEGA deploys five Claude Code hooks that automate and enforce the institutional memory protocol:
 
 ### `briefing.sh` (UserPromptSubmit)
 Runs on the first user prompt of each session (uses session_id to fire only once). It:
@@ -212,14 +211,14 @@ The setup script is **safe to re-run** at any time:
 | `memory.db` | Schema migrated (new tables added, existing data preserved) |
 | Query reference files | Overwritten with latest |
 
-To update an existing project to the latest toolkit:
+To update an existing project to the latest OMEGA:
 
 ```bash
-cd /path/to/claude-workflow
+cd /path/to/omega
 git pull
 
 cd /path/to/your-project
-bash /path/to/claude-workflow/scripts/setup.sh
+bash /path/to/omega/scripts/setup.sh
 ```
 
 ## Verifying the Installation
@@ -252,8 +251,8 @@ sqlite3 .claude/memory.db "SELECT COUNT(*) FROM outcomes; SELECT COUNT(*) FROM l
 
 Verify CLAUDE.md has workflow rules:
 ```bash
-grep "Claude Code Quality Workflow" CLAUDE.md
-# Should match — confirms workflow rules are present
+grep "OMEGA Ω" CLAUDE.md
+# Should match — confirms OMEGA workflow rules are present
 ```
 
 ## Troubleshooting
@@ -262,7 +261,7 @@ grep "Claude Code Quality Workflow" CLAUDE.md
 |---------|----------|
 | `sqlite3: command not found` | Install: `brew install sqlite3` (macOS) or `sudo apt install sqlite3` (Ubuntu) |
 | Agents not showing in Claude Code | Verify `.claude/agents/*.md` files exist. Restart Claude Code |
-| Memory DB errors | Re-initialize: `bash /path/to/claude-workflow/scripts/db-init.sh .` |
-| CLAUDE.md workflow rules missing | Re-run setup: `bash /path/to/claude-workflow/scripts/setup.sh` |
+| Memory DB errors | Re-initialize: `bash /path/to/omega/scripts/db-init.sh .` |
+| CLAUDE.md workflow rules missing | Re-run setup: `bash /path/to/omega/scripts/setup.sh` |
 | Self-learning tables missing | Re-run setup — schema migration adds new tables to existing DB |
 | Project CLAUDE.md overwritten | It shouldn't be — setup.sh appends, never overwrites. If it happened, check git history to restore |

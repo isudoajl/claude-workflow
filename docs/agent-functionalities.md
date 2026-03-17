@@ -1,6 +1,6 @@
 # Agent Functionality Inventory
 
-Complete inventory of every functionality, input, output, and fail-safe control for all 14 agents in the workflow toolkit.
+Complete inventory of every functionality, input, output, and fail-safe control for all 14 agents in OMEGA.
 
 ---
 

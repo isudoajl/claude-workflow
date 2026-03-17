@@ -2,11 +2,11 @@
 
 > v2 — Core/Extensions with Institutional Memory (March 2026)
 
-## What This Toolkit Is
+## What OMEGA Is
 
-A multi-agent orchestration system for Claude Code. It forces every piece of code through structured validation layers — questioning, architecture, TDD, implementation, QA, review — each handled by a specialized agent. Every agent reads from and writes to a shared SQLite knowledge base, creating persistent institutional memory across sessions.
+OMEGA Ω is a multi-agent orchestration system for Claude Code. It forces every piece of code through structured validation layers — questioning, architecture, TDD, implementation, QA, review — each handled by a specialized agent. Every agent reads from and writes to a shared SQLite knowledge base, creating persistent institutional memory across sessions.
 
-It is **not** an application. It is a set of agent definitions, command orchestrators, a memory schema, and a deployment script designed to be copied into any project.
+OMEGA is **not** an application. It is a set of agent definitions, command orchestrators, a memory schema, and a deployment script designed to be copied into any project.
 
 ## What Changed (v1 → v2)
 
@@ -18,12 +18,12 @@ It is **not** an application. It is a set of agent definitions, command orchestr
 | Agents act independently | Mandatory briefing/incremental logging/close-out + self-learning — agents log as they work and distill patterns |
 | `workflow-feature.md` + `workflow-new-feature.md` (duplicate) | Consolidated: only `workflow-new-feature.md` |
 | `workflow-improve.md` + `workflow-improve-functionality.md` (duplicate) | Consolidated: only `workflow-improve.md` |
-| `setup.sh` copies everything blindly | `setup.sh --ext=blockchain,omega` — selective deployment |
+| `setup.sh` copies everything blindly | `setup.sh --ext=blockchain` — selective deployment |
 
 ## Repository Structure
 
 ```
-claude-workflow/
+omega/
 ├── core/                              # Universal foundation
 │   ├── agents/                        # 13 agents every project needs
 │   ├── commands/                      # 13 workflow orchestrators
@@ -42,7 +42,6 @@ claude-workflow/
 │
 ├── extensions/                        # Domain-specific packs (opt-in)
 │   ├── blockchain/                    # 3 agents, 3 commands
-│   ├── omega/                         # 2 agents, 1 command
 │   └── c2c-protocol/                  # 2 agents, 3 commands
 │
 ├── scripts/
@@ -61,7 +60,7 @@ claude-workflow/
 The toolkit repo is the **source**. Target projects are **consumers**. The setup script flattens `core/` + selected `extensions/` into the target's `.claude/` directory:
 
 ```
-claude-workflow (source)                target-project (consumer)
+omega (source)                         target-project (consumer)
 ─────────────────────────              ─────────────────────────
 core/agents/analyst.md          →      .claude/agents/analyst.md
 core/agents/developer.md        →      .claude/agents/developer.md
@@ -71,7 +70,7 @@ core/db/schema.sql              →      .claude/memory.db (initialized)
 core/db/queries/*.sql           →      .claude/db-queries/*.sql
 ```
 
-Claude Code reads agents from `.claude/agents/` and commands from `.claude/commands/` — it requires them flat. The source repo organizes by category; the setup script flattens on deploy.
+Claude Code reads agents from `.claude/agents/` (OMEGA flattens them there) and commands from `.claude/commands/` — it requires them flat. The source repo organizes by category; the setup script flattens on deploy.
 
 ## Data Flow
 
@@ -176,7 +175,6 @@ An agent is core if it is useful in **any** software project regardless of domai
 An agent is an extension if it requires **domain-specific knowledge** that only applies to certain projects:
 
 - **blockchain**: Ethereum/Solana node operations, P2P networking, consensus — irrelevant to a web app
-- **omega**: OMEGA framework primitives (projects, skills, topologies) — irrelevant outside OMEGA
 - **c2c-protocol**: Agent-to-agent communication protocol research — experimental
 
 ### Creating New Extensions

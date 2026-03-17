@@ -5,7 +5,7 @@
 ## Install
 
 ```bash
-bash /path/to/claude-workflow/scripts/setup.sh --ext=blockchain
+bash /path/to/omega/scripts/setup.sh --ext=blockchain
 ```
 
 ## Agents

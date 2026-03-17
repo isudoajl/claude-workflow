@@ -1,6 +1,6 @@
 # FUNCTIONALITIES.md — Codebase Functionality Inventory
 
-> Master index of all functionalities in the claude-workflow toolkit.
+> Master index of all functionalities in OMEGA Ω.
 > Generated: 2026-02-28
 
 ## Summary

@@ -297,38 +297,6 @@ Read-only diagnostics by default. Destructive actions require explicit user appr
 
 ---
 
-### OMEGA Extension (2 agents)
-
-#### OMEGA Topology Architect
-
-**File:** `extensions/omega/agents/omega-topology-architect.md`
-**Model:** claude-opus-4-6
-**Tools:** Read, Write, Grep, Glob
-
-| | |
-|-|-|
-| **Role** | Maps business domains to OMEGA primitives (projects, skills, topologies, schedules, heartbeats) |
-| **Output** | `~/.omega/projects/<name>/ROLE.md` and related config files |
-| **Invoked by** | `workflow:omega-setup` |
-
-Proposes minimum viable configurations and executes only after human approval.
-
----
-
-#### Skill Creator
-
-**File:** `extensions/omega/agents/skill-creator.md`
-**Model:** claude-opus-4-6
-**Tools:** Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
-
-| | |
-|-|-|
-| **Role** | Creates OMEGA skill definitions: researches domain tools, CLIs, APIs, produces `SKILL.md` with frontmatter, instructions, supporting resources |
-| **Output** | `~/.omega/skills/<name>/SKILL.md` |
-| **Invoked by** | `workflow:omega-setup` (indirect) or standalone |
-
----
-
 ### C2C Protocol Extension (2 agents)
 
 #### Proto Auditor
