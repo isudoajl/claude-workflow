@@ -17,7 +17,7 @@ OMEGA solves all of that.
 
 ## How It Works
 
-Fourteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
+Fifteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
 
 ```
 Your Idea
@@ -97,7 +97,7 @@ Then inside Claude Code:
 
 #### Using `omg` CLI
 ```bash
-omg init                              # Core only (14 agents, 15 commands, 5 hooks, SQLite memory)
+omg init                              # Core only (15 agents, 16 commands, 5 hooks, SQLite memory)
 omg init --ext=blockchain             # Core + specific extension
 omg init --ext=blockchain,c2c-protocol # Core + multiple extensions
 omg init --ext=all                    # Core + all extensions
@@ -127,8 +127,8 @@ When you run setup.sh, the following is created/updated in your target project:
 ```
 your-project/
 ├── .claude/
-│   ├── agents/           <- 14 core agent definitions (+ extension agents)
-│   ├── commands/         <- 15 core commands (+ extension commands)
+│   ├── agents/           <- 15 core agent definitions (+ extension agents)
+│   ├── commands/         <- 16 core commands (+ extension commands)
 │   ├── protocols/        <- 4 on-demand protocol reference files
 │   ├── hooks/            <- 5 automation hooks
 │   ├── settings.json     <- Hook configuration (merged, not overwritten)
@@ -163,8 +163,8 @@ The setup script is fully idempotent with change detection:
 ```
 omega/
 ├── core/                              # Every project gets this
-│   ├── agents/                        # 14 universal agents
-│   ├── commands/                      # 15 universal commands
+│   ├── agents/                        # 15 universal agents
+│   ├── commands/                      # 16 universal commands
 │   ├── protocols/                     # 4 on-demand reference files
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema
@@ -229,7 +229,7 @@ Five hooks enforce the memory protocol automatically:
 | `debrief-nudge.sh` | PostToolUse | Periodic reminder to log incrementally |
 | `session-close.sh` | Notification | Promotes hotspot risk levels at session end |
 
-## Core Agents (14)
+## Core Agents (15)
 
 | Agent | Role |
 |-------|------|
@@ -245,10 +245,11 @@ Five hooks enforce the memory protocol automatically:
 | **codebase-expert** | Deep comprehension: 6-layer progressive exploration (read-only) |
 | **wizard-ux** | Wizard/setup flow design for TUI/GUI/Web/CLI |
 | **diagnostician** | Deep diagnostic reasoning: hypothesis-driven root cause analysis |
+| **omega-router** | Intelligent dispatch: classifies requests, finds/creates specialists, assembles pipelines |
 | **role-creator** | Meta-agent: designs new agent role definitions |
 | **role-auditor** | Meta-agent: adversarial audit of role definitions (read-only) |
 
-## Core Commands (15)
+## Core Commands (16)
 
 | Command | Description |
 |---------|-------------|
@@ -263,6 +264,7 @@ Five hooks enforce the memory protocol automatically:
 | `/workflow:understand [--scope]` | Deep codebase comprehension |
 | `/workflow:resume [--from]` | Resume stopped workflow |
 | `/workflow:wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
+| `/workflow:consult "request" [--critical]` | Intelligent specialist routing: find/create domain experts |
 | `/workflow:create-role "desc"` | Design a new agent role |
 | `/workflow:audit-role "path" [--scope]` | Adversarial audit of role definitions |
 | `/workflow:diagnose "bug" [--scope] [--fix]` | Deep root cause diagnosis for hard bugs |

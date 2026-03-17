@@ -13,7 +13,7 @@ OMEGA is **not** an application. It is a set of agent definitions, command orche
 | v1 | v2 |
 |----|-----|
 | Flat `.claude/agents/` and `.claude/commands/` | `core/` + `extensions/` source organization |
-| All 20 agents copied to every project | Core (13) always; extensions opt-in via `--ext=` |
+| All 20 agents copied to every project | Core (15) always; extensions opt-in via `--ext=` |
 | No cross-session memory | SQLite `.claude/memory.db` with 14 tables + 7 views |
 | Agents act independently | Mandatory briefing/incremental logging/close-out + self-learning — agents log as they work and distill patterns |
 | `workflow-feature.md` + `workflow-new-feature.md` (duplicate) | Consolidated: only `workflow-new-feature.md` |
@@ -25,8 +25,8 @@ OMEGA is **not** an application. It is a set of agent definitions, command orche
 ```
 omega/
 ├── core/                              # Universal foundation
-│   ├── agents/                        # 13 agents every project needs
-│   ├── commands/                      # 13 workflow orchestrators
+│   ├── agents/                        # 15 agents every project needs
+│   ├── commands/                      # 16 workflow orchestrators
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema (tables, views, indexes)
 │   │   └── queries/                   # Named query templates
@@ -172,7 +172,8 @@ Session 3: /workflow:audit --scope="scheduler"
 An agent is core if it is useful in **any** software project regardless of domain:
 
 - **Pipeline agents**: discovery, analyst, architect, test-writer, developer, qa, reviewer
-- **Utility agents**: feature-evaluator, functionality-analyst, codebase-expert, wizard-ux
+- **Utility agents**: feature-evaluator, functionality-analyst, codebase-expert, wizard-ux, diagnostician
+- **Dispatch agent**: omega-router (intelligent specialist routing)
 - **Meta agents**: role-creator, role-auditor
 
 ### What Makes an Agent an "Extension"

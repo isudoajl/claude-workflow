@@ -1,8 +1,8 @@
 # Agent Inventory
 
-> All 20 agents: 13 core + 7 extensions. Each with tools, inputs, outputs, and memory protocol.
+> All 22 agents: 15 core + 7 extensions. Each with tools, inputs, outputs, and memory protocol.
 
-## Core Agents (13)
+## Core Agents (15)
 
 All core agents include **mandatory briefing/incremental logging/close-out** for institutional memory. Agents log to memory.db incrementally during work (not batched at the end), ensuring data survives context compaction. They skip the memory protocol gracefully if `.claude/memory.db` does not exist.
 
@@ -133,7 +133,7 @@ The only agent that engages in extended back-and-forth with the user. Produces a
 
 ---
 
-### Utility Agents (4)
+### Utility Agents (5)
 
 These execute standalone or as gates in the pipeline.
 
@@ -204,6 +204,50 @@ Advisory — user always has final say. NO-GO can be overridden.
 | **Invoked by** | `workflow:wizard-ux` |
 
 Produces specifications consumed by architect → test-writer → developer. Does NOT write implementation code.
+
+---
+
+#### Diagnostician
+
+**File:** `core/agents/diagnostician.md`
+**Model:** claude-opus-4-6
+**Tools:** Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch
+
+| | |
+|-|-|
+| **Role** | Deep diagnostic reasoning: hypothesis-driven root cause analysis for hard bugs using Explorer/Skeptic/Analogist loop |
+| **Input** | Bug description + scope; failed approaches from memory.db |
+| **Output** | `docs/.workflow/diagnosis-report.md`, `docs/.workflow/diagnosis-reasoning.md` |
+| **Briefing reads** | Failed approaches (primary evidence source), hotspots, bugs, findings, patterns |
+| **Debrief writes** | Root cause analysis, confirmed/eliminated hypotheses, diagnostic outcomes |
+| **Invoked by** | `workflow:diagnose` |
+
+The opposite of the Developer — builds system models and designs experiments instead of trying fixes. Uses failed approaches as logical constraints to eliminate hypotheses. Escalation path when `workflow:bugfix` has failed.
+
+---
+
+### Dispatch Agent (1)
+
+Routes requests to the right specialist.
+
+---
+
+#### OMEGA Router
+
+**File:** `core/agents/omega-router.md`
+**Model:** claude-opus-4-6
+**Tools:** Read, Glob, Grep, Bash
+
+| | |
+|-|-|
+| **Role** | Intelligent dispatch: classifies requests by domain and complexity, searches for matching specialist agents, produces structured routing decisions |
+| **Input** | User's natural language request |
+| **Output** | `docs/.workflow/routing-decision.md` |
+| **Briefing reads** | Past routing decisions, specialist creation history, routing outcomes, routing lessons |
+| **Debrief writes** | Routing decisions, routing outcomes |
+| **Invoked by** | `workflow:consult` |
+
+Three-tier routing: Tier 1 (handle directly), Tier 2 (delegate to existing or create specialist), Tier 3 (assemble multi-agent reasoning pipeline). For Tier 3, composes existing core agents (discovery, reviewer, diagnostician) with specialist agents for adversarial tension.
 
 ---
 
