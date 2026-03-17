@@ -10,6 +10,7 @@ cat > /dev/null
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 DB_PATH="$PROJECT_DIR/.claude/memory.db"
+BRIEFING_FLAG="$PROJECT_DIR/.claude/hooks/.briefing_done"
 COUNTER_FILE="$PROJECT_DIR/.claude/hooks/.nudge_counter"
 
 # If no DB, stay silent
@@ -17,18 +18,21 @@ if [ ! -f "$DB_PATH" ]; then
     exit 0
 fi
 
-# Check if outcomes were logged since the latest workflow_run started (per-session)
-LATEST_RUN_START=$(sqlite3 "$DB_PATH" "SELECT started_at FROM workflow_runs ORDER BY id DESC LIMIT 1;" 2>/dev/null || echo "")
-
-if [ -n "$LATEST_RUN_START" ]; then
-    OUTCOME_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM outcomes WHERE created_at >= '$LATEST_RUN_START';" 2>/dev/null || echo "0")
-else
-    # No workflow_runs — check last 30 minutes as fallback
-    OUTCOME_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM outcomes WHERE created_at >= datetime('now', '-30 minutes');" 2>/dev/null || echo "0")
+# Get the briefing timestamp for this session
+SESSION_START=""
+if [ -f "$BRIEFING_FLAG" ]; then
+    STORED_DATA=$(cat "$BRIEFING_FLAG" 2>/dev/null || echo "")
+    SESSION_START=$(echo "$STORED_DATA" | cut -d'|' -f2)
 fi
 
+if [ -z "$SESSION_START" ]; then
+    SESSION_START=$(sqlite3 "$DB_PATH" "SELECT datetime('now', '-30 minutes');" 2>/dev/null || echo "")
+fi
+
+# Check if outcomes were logged since this session's briefing
+OUTCOME_COUNT=$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM outcomes WHERE created_at >= '$SESSION_START';" 2>/dev/null || echo "0")
+
 if [ "$OUTCOME_COUNT" -gt 0 ]; then
-    # Debrief happened this session — reset counter and stay silent
     rm -f "$COUNTER_FILE" 2>/dev/null
     exit 0
 fi
@@ -43,13 +47,12 @@ else
 fi
 echo "$COUNT" > "$COUNTER_FILE"
 
-# Only nudge every 5th tool call (not every one — that's too noisy)
+# Only nudge every 5th tool call
 if [ $((COUNT % 5)) -ne 0 ]; then
     exit 0
 fi
 
-# Output nudge — this gets injected into Claude's context
 echo ""
-echo "[DEBRIEF REMINDER: $COUNT tool calls this session without self-scoring any outcomes. Run your debrief. Git commits will be blocked until you do.]"
+echo "[DEBRIEF REMINDER: $COUNT tool calls this session without self-scoring. Git commits will be blocked until you do.]"
 
 exit 0

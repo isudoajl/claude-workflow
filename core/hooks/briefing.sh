@@ -17,15 +17,17 @@ CURRENT_SESSION=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(s
 
 # Only brief once per session — skip if same session already briefed
 if [ -f "$BRIEFING_FLAG" ]; then
-    STORED_SESSION=$(cat "$BRIEFING_FLAG" 2>/dev/null || echo "")
+    STORED_DATA=$(cat "$BRIEFING_FLAG" 2>/dev/null || echo "")
+    STORED_SESSION=$(echo "$STORED_DATA" | cut -d'|' -f1)
     if [ "$CURRENT_SESSION" = "$STORED_SESSION" ] && [ -n "$CURRENT_SESSION" ]; then
         exit 0
     fi
 fi
 
-# New session — store session_id and proceed with briefing
+# New session — store session_id and timestamp, proceed with briefing
 mkdir -p "$(dirname "$BRIEFING_FLAG")"
-echo "$CURRENT_SESSION" > "$BRIEFING_FLAG"
+BRIEFING_TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S")
+echo "${CURRENT_SESSION}|${BRIEFING_TIMESTAMP}" > "$BRIEFING_FLAG"
 
 # Graceful exit if no DB
 if [ ! -f "$DB_PATH" ]; then
