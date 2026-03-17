@@ -42,6 +42,12 @@ The role-creator follows this sequence:
    - Clarity check (unambiguous to another LLM)
    - Boundary check (sharp enough to prevent scope creep)
    - Failure check (handles missing prerequisites, empty input, context exhaustion)
+   - **Institutional memory check** — verify the role definition includes:
+     - A **Briefing** section with concrete `sqlite3` queries that read from `memory.db` before work (hotspots, failed approaches, findings, decisions, patterns, bugs)
+     - A **Debrief** section with concrete `sqlite3` inserts that write back to `memory.db` after work (changes, decisions, failed approaches, hotspots, outcomes)
+     - DB detection guard (`test -f .claude/memory.db`) so the role degrades gracefully without a DB
+     - If the role is **read-only** and produces no findings, decisions, or code changes (e.g., a pure utility/query agent), the debrief may be minimal but must still log outcomes
+     - If this check fails → the role **cannot proceed to Phase 2** until briefing/debrief sections are added
 
 7. **Present and confirm**
    - Show the complete agent definition to the user
@@ -118,4 +124,5 @@ Every role produced must have:
 - Hard rules (non-negotiable constraints)
 - Anti-patterns (explicit "don't do this" list)
 - Failure handling (missing input, context limits, upstream failures)
+- **Institutional memory integration** (briefing queries + debrief inserts + DB detection guard)
 - **Passed adversarial audit** with verdict of hardened or better
