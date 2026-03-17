@@ -1,14 +1,24 @@
 #!/bin/bash
 # ============================================================
-# AUTOMATIC BRIEFING — SessionStart hook
+# AUTOMATIC BRIEFING — UserPromptSubmit hook
 # Injects institutional memory + self-learning context into
-# every Claude Code session. Output goes to stdout and is
-# automatically added to Claude's context.
+# Claude Code sessions. Uses a flag file to only fire ONCE
+# per session (not on every user message).
+# Output goes to stdout → injected into Claude's context.
 # ============================================================
 
-# Resolve project directory from hook input or fallback
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 DB_PATH="$PROJECT_DIR/.claude/memory.db"
+BRIEFING_FLAG="$PROJECT_DIR/.claude/hooks/.briefing_done"
+
+# Only brief once per session — skip if flag exists
+if [ -f "$BRIEFING_FLAG" ]; then
+    exit 0
+fi
+
+# Create the flag so we don't brief again
+mkdir -p "$(dirname "$BRIEFING_FLAG")"
+echo "$(date -u +%Y-%m-%dT%H:%M:%S)" > "$BRIEFING_FLAG"
 
 # Graceful exit if no DB
 if [ ! -f "$DB_PATH" ]; then
@@ -97,10 +107,12 @@ fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "DEBRIEF OBLIGATION: Before this session ends, you MUST:"
 echo "  1. Create a workflow_run: INSERT INTO workflow_runs (type, description) VALUES ('manual', '...');"
+echo "     RUN_ID=\$(sqlite3 .claude/memory.db \"SELECT last_insert_rowid();\")"
 echo "  2. Log changes, decisions, failed approaches to memory.db"
 echo "  3. Self-score your significant actions (INSERT INTO outcomes)"
 echo "  4. Check for lesson distillation (3+ outcomes with same pattern)"
 echo "  5. Close the run: UPDATE workflow_runs SET status='completed', completed_at=datetime('now') WHERE id=\$RUN_ID;"
+echo "  NOTE: Git commits will be BLOCKED until you self-score at least one outcome."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 exit 0

@@ -1,8 +1,8 @@
 #!/bin/bash
 # ============================================================
-# DEBRIEF NUDGE — Stop hook
-# After every Claude response, checks if debrief is overdue.
-# Throttled: only reminds every 5th response to avoid noise.
+# DEBRIEF NUDGE — PostToolUse hook
+# After tool executions, checks if debrief is overdue.
+# Throttled: only reminds every 5th tool call to avoid noise.
 # ============================================================
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
@@ -24,7 +24,8 @@ if [ "$OUTCOME_COUNT" -gt 0 ]; then
     exit 0
 fi
 
-# Increment response counter
+# Increment tool call counter
+mkdir -p "$(dirname "$COUNTER_FILE")"
 if [ -f "$COUNTER_FILE" ]; then
     COUNT=$(cat "$COUNTER_FILE" 2>/dev/null || echo "0")
     COUNT=$((COUNT + 1))
@@ -33,13 +34,13 @@ else
 fi
 echo "$COUNT" > "$COUNTER_FILE"
 
-# Only nudge every 5th response (not every response — that's too noisy)
+# Only nudge every 5th tool call (not every one — that's too noisy)
 if [ $((COUNT % 5)) -ne 0 ]; then
     exit 0
 fi
 
 # Output nudge — this gets injected into Claude's context
 echo ""
-echo "[DEBRIEF REMINDER: You have made $COUNT responses without self-scoring any outcomes. Run your debrief before this session ends. Git commits will be blocked until you do.]"
+echo "[DEBRIEF REMINDER: $COUNT tool calls without self-scoring any outcomes. Run your debrief before this session ends. Git commits will be blocked until you do.]"
 
 exit 0

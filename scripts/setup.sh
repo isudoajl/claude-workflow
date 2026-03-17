@@ -240,10 +240,10 @@ import json, sys
 with open('$SETTINGS_FILE', 'r') as f:
     settings = json.load(f)
 settings['hooks'] = {
-    'SessionStart': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '.claude/hooks/briefing.sh', 'timeout': 30}]}],
-    'SessionEnd': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '.claude/hooks/session-close.sh', 'timeout': 15}]}],
-    'PreToolUse': [{'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '.claude/hooks/debrief-gate.sh', 'timeout': 5}]}],
-    'Stop': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '.claude/hooks/debrief-nudge.sh', 'timeout': 5}]}]
+    'UserPromptSubmit': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '\"\\$CLAUDE_PROJECT_DIR\"/.claude/hooks/briefing.sh', 'timeout': 30}]}],
+    'PreToolUse': [{'matcher': 'Bash', 'hooks': [{'type': 'command', 'command': '\"\\$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-gate.sh', 'timeout': 5}]}],
+    'PostToolUse': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '\"\\$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-nudge.sh', 'timeout': 5}]}],
+    'Notification': [{'matcher': '', 'hooks': [{'type': 'command', 'command': '\"\\$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-close.sh', 'timeout': 10}]}]
 }
 with open('$SETTINGS_FILE', 'w') as f:
     json.dump(settings, f, indent=2)
@@ -256,26 +256,14 @@ with open('$SETTINGS_FILE', 'w') as f:
             cat > "$SETTINGS_FILE" << 'HOOKEOF'
 {
   "hooks": {
-    "SessionStart": [
+    "UserPromptSubmit": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/briefing.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/briefing.sh",
             "timeout": 30
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/session-close.sh",
-            "timeout": 15
           }
         ]
       }
@@ -286,20 +274,32 @@ with open('$SETTINGS_FILE', 'w') as f:
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/debrief-gate.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-gate.sh",
             "timeout": 5
           }
         ]
       }
     ],
-    "Stop": [
+    "PostToolUse": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/debrief-nudge.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-nudge.sh",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-close.sh",
+            "timeout": 10
           }
         ]
       }
@@ -314,26 +314,14 @@ else
     cat > "$SETTINGS_FILE" << 'HOOKEOF'
 {
   "hooks": {
-    "SessionStart": [
+    "UserPromptSubmit": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/briefing.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/briefing.sh",
             "timeout": 30
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".claude/hooks/session-close.sh",
-            "timeout": 15
           }
         ]
       }
@@ -344,20 +332,32 @@ else
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/debrief-gate.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-gate.sh",
             "timeout": 5
           }
         ]
       }
     ],
-    "Stop": [
+    "PostToolUse": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/debrief-nudge.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/debrief-nudge.sh",
             "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-close.sh",
+            "timeout": 10
           }
         ]
       }
