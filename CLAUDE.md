@@ -55,10 +55,10 @@ claude-workflow/
 │   │       ├── debrief.sql            # Post-work inserts/updates
 │   │       └── maintenance.sql        # Periodic cleanup and health checks
 │   └── hooks/                         # Automation hooks (deployed to .claude/hooks/)
-│       ├── briefing.sh                # SessionStart: auto-injects memory context
-│       ├── session-close.sh           # SessionEnd: closes open runs, promotes hotspots
-│       ├── debrief-gate.sh            # PreToolUse: blocks git commit without debrief
-│       └── debrief-nudge.sh           # Stop: periodic reminder to debrief
+│       ├── briefing.sh                # UserPromptSubmit: auto-injects memory context (once per session)
+│       ├── debrief-gate.sh            # PreToolUse (Bash): blocks git commit without this session's debrief
+│       ├── debrief-nudge.sh           # PostToolUse: periodic debrief reminder every 5th tool call
+│       └── session-close.sh           # Notification: promotes hotspot risk levels
 │
 ├── extensions/                        # Domain-specific packs (opt-in)
 │   ├── blockchain/

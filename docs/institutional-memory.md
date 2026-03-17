@@ -29,9 +29,9 @@ The institutional memory eliminates this by giving every agent a queryable knowl
 ```
 
 **Every agent, every time:**
-1. **Briefing** — queries the DB for context relevant to its scope (hotspots, failed approaches, open findings, decisions, patterns, outcomes, lessons). **Automated via SessionStart hook** — the briefing runs automatically and injects context into every session without relying on AI compliance.
+1. **Briefing** — queries the DB for context relevant to its scope (hotspots, failed approaches, open findings, decisions, patterns, outcomes, lessons). **Automated via UserPromptSubmit hook** — the briefing runs automatically and injects context into every session without relying on AI compliance.
 2. **Work** — performs its normal job, informed by the briefing
-3. **Debrief** — writes back what it learned (changes, decisions, failures, bugs, findings, patterns, self-scores). The SessionStart hook injects a debrief reminder, but the AI must still execute the debrief SQL inserts (self-scoring requires judgment).
+3. **Debrief** — writes back what it learned (changes, decisions, failures, bugs, findings, patterns, self-scores). The briefing hook injects a debrief reminder, and git commits are **blocked** until at least one outcome is logged. The AI must still execute the debrief SQL inserts (self-scoring requires judgment), but it cannot ship code without doing so.
 
 ### Automation via Hooks
 
@@ -39,10 +39,10 @@ The briefing/debrief protocol was originally voluntary — agents were told to r
 
 | Hook | Event | What it does | Enforcement |
 |------|-------|-------------|------------|
-| `briefing.sh` | SessionStart | Queries memory.db, outputs context to stdout → injected into conversation | **Automatic** — AI sees it, can't skip it |
-| `session-close.sh` | SessionEnd | Closes open workflow_runs, promotes hotspot risk levels | **Automatic** — runs silently |
-| `debrief-gate.sh` | PreToolUse (Bash) | Blocks `git commit` unless outcomes have been logged | **Blocking** — AI cannot commit without debriefing |
-| `debrief-nudge.sh` | Stop | Reminds AI to debrief (every 5th response if no outcomes logged) | **Reminder** — periodic nudge |
+| `briefing.sh` | UserPromptSubmit | Queries memory.db, injects context on first prompt per session (uses session_id) | **Automatic** — AI sees it, can't skip it |
+| `debrief-gate.sh` | PreToolUse (Bash) | Blocks `git commit` unless outcomes logged since session start (uses briefing timestamp) | **Blocking** — AI cannot commit without debriefing |
+| `debrief-nudge.sh` | PostToolUse | Reminds AI to debrief (every 5th tool call if no outcomes logged this session) | **Reminder** — periodic nudge |
+| `session-close.sh` | Notification | Promotes hotspot risk levels based on touch counts | **Automatic** — runs silently |
 
 Hook scripts live in `.claude/hooks/` and are configured in `.claude/settings.json`. All are deployed automatically by `setup.sh`.
 

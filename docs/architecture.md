@@ -34,8 +34,10 @@ claude-workflow/
 │   │       ├── debrief.sql            # What agents run AFTER work
 │   │       └── maintenance.sql        # Periodic cleanup & health
 │   └── hooks/                         # Claude Code automation hooks
-│       ├── briefing.sh                # SessionStart: auto-injects memory context
-│       └── session-close.sh           # SessionEnd: closes open runs
+│       ├── briefing.sh                # UserPromptSubmit: auto-injects memory context
+│       ├── debrief-gate.sh            # PreToolUse: blocks git commit without debrief
+│       ├── debrief-nudge.sh           # PostToolUse: periodic debrief reminder
+│       └── session-close.sh           # Notification: promotes hotspot risk levels
 │
 ├── extensions/                        # Domain-specific packs (opt-in)
 │   ├── blockchain/                    # 3 agents, 3 commands
@@ -232,7 +234,7 @@ The original design relied on agents voluntarily running briefing queries and de
 
 | Voluntary compliance | Hooks |
 |-|-|
-| Agent must remember to run briefing | Briefing runs automatically on SessionStart |
+| Agent must remember to run briefing | Briefing runs automatically on first prompt (UserPromptSubmit) |
 | Agent must remember to debrief | Debrief reminder injected into every session |
 | "MANDATORY" is aspirational text | Hook execution is infrastructure-level |
 | AI skips it under cognitive load | Hook runs regardless of what the AI is doing |
@@ -241,10 +243,10 @@ Four hooks cover the full lifecycle:
 
 | Hook | Enforcement |
 |-|-|
-| `briefing.sh` (SessionStart) | Automatic — context injected, can't miss it |
-| `session-close.sh` (SessionEnd) | Automatic — runs silently |
-| `debrief-gate.sh` (PreToolUse) | **Blocking** — git commits fail without self-scoring |
-| `debrief-nudge.sh` (Stop) | Reminder — periodic nudge every 5th response |
+| `briefing.sh` (UserPromptSubmit) | Automatic — context injected on first prompt per session |
+| `debrief-gate.sh` (PreToolUse/Bash) | **Blocking** — git commits fail without this session's self-scoring |
+| `debrief-nudge.sh` (PostToolUse) | Reminder — periodic nudge every 5th tool call |
+| `session-close.sh` (Notification) | Automatic — promotes hotspot risk levels |
 
 Self-scoring and lesson distillation still require AI judgment, but the AI literally cannot commit code without doing it first. This is the closest analog to Omega's gateway — the infrastructure forces the protocol.
 

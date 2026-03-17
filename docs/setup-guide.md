@@ -23,7 +23,7 @@ That's it. One command deploys everything:
 | 13 agents | `.claude/agents/` | Core pipeline agents |
 | 13 commands | `.claude/commands/` | Workflow orchestrators |
 | Workflow rules | `CLAUDE.md` | **Appended** to existing CLAUDE.md (never overwrites) |
-| Automation hooks | `.claude/hooks/` | SessionStart (auto-briefing), SessionEnd (auto-close) |
+| Automation hooks | `.claude/hooks/` | 4 hooks: auto-briefing, commit gate, debrief nudge, cleanup |
 | Hook config | `.claude/settings.json` | Registers hooks with Claude Code |
 | Memory DB | `.claude/memory.db` | SQLite with 14 tables, 7 views (incl. self-learning) |
 | Query references | `.claude/db-queries/` | Briefing, debrief, maintenance SQL templates |
@@ -114,8 +114,10 @@ your-project/
 │   │   ├── ... (13 core commands)
 │   │   └── workflow-blockchain-network.md  (if --ext=blockchain)
 │   ├── hooks/                 ← Automation hooks
-│   │   ├── briefing.sh        ← SessionStart: injects memory context automatically
-│   │   └── session-close.sh   ← SessionEnd: closes open runs, promotes hotspots
+│   │   ├── briefing.sh        ← UserPromptSubmit: injects memory context on first prompt
+│   │   ├── debrief-gate.sh   ← PreToolUse (Bash): blocks git commit without debrief
+│   │   ├── debrief-nudge.sh  ← PostToolUse: periodic debrief reminder
+│   │   └── session-close.sh   ← Notification: promotes hotspot risk levels
 │   ├── settings.json          ← Hook configuration (registers hooks with Claude Code)
 │   ├── memory.db              ← Institutional memory + self-learning (SQLite)
 │   ├── db-queries/            ← Query reference files
@@ -133,8 +135,8 @@ your-project/
 
 The toolkit deploys two Claude Code hooks that automate the institutional memory protocol:
 
-### `briefing.sh` (SessionStart)
-Runs automatically at the start of every Claude Code session. It:
+### `briefing.sh` (UserPromptSubmit)
+Runs on the first user prompt of each session (uses session_id to fire only once). It:
 - Queries `memory.db` for hotspots, failed approaches, open findings, decisions, patterns
 - Queries self-learning context (recent outcomes, active lessons)
 - Outputs everything to stdout, which Claude Code injects into the conversation context
@@ -142,41 +144,41 @@ Runs automatically at the start of every Claude Code session. It:
 
 **This is what makes the system work without relying on AI memory.** Claude sees the institutional context automatically — no "remember to run briefing" needed.
 
-### `session-close.sh` (SessionEnd)
-Runs automatically when the session ends. It:
-- Closes any workflow_runs still marked as 'running' (sets status to 'partial')
+### `session-close.sh` (Notification)
+Runs on notifications. It:
 - Promotes hotspot risk levels based on touch counts
 
 ### `debrief-gate.sh` (PreToolUse — Bash)
 Runs before every Bash tool call. For non-commit commands, exits instantly (no overhead). When it detects `git commit`:
-- Checks if any outcomes (self-scores) were logged today
+- Reads the briefing timestamp from `.briefing_done` (set by briefing.sh at session start)
+- Checks if any outcomes (self-scores) were logged **after** that timestamp (this session only)
 - If **no** → **blocks the commit** (exit 2) with instructions to debrief first
 - If **yes** → allows the commit through
 
-This is the hard enforcement. The AI cannot commit code without first self-scoring its work.
+This is the hard enforcement. Each session must debrief independently — outcomes from previous sessions don't count.
 
-### `debrief-nudge.sh` (Stop)
-Runs after every Claude response. Throttled to avoid noise:
-- Checks if any outcomes were logged today
+### `debrief-nudge.sh` (PostToolUse)
+Runs after every tool execution. Throttled to avoid noise:
+- Checks if any outcomes were logged since this session's briefing timestamp
 - If yes → silent
-- If no → reminds every 5th response (not every response)
+- If no → reminds every 5th tool call (not every one)
 - Resets when debrief is completed
 
 ### Enforcement summary
 
 | Hook | Event | Enforcement level |
 |------|-------|------------------|
-| `briefing.sh` | SessionStart | **Automatic** — context injected, AI can't miss it |
-| `session-close.sh` | SessionEnd | **Automatic** — runs silently |
-| `debrief-gate.sh` | PreToolUse (Bash) | **Blocking** — git commits fail without debrief |
-| `debrief-nudge.sh` | Stop | **Reminder** — periodic nudge every 5th response |
+| `briefing.sh` | UserPromptSubmit | **Automatic** — context injected on first prompt per session |
+| `debrief-gate.sh` | PreToolUse (Bash) | **Blocking** — git commits fail without this session's debrief |
+| `debrief-nudge.sh` | PostToolUse | **Reminder** — periodic nudge every 5th tool call |
+| `session-close.sh` | Notification | **Automatic** — promotes hotspot risk levels |
 
 ### Verifying hooks are active
 In Claude Code, run:
 ```
 /hooks
 ```
-You should see `SessionStart` and `SessionEnd` listed.
+You should see `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, and `Notification` listed with hook counts.
 
 ## What Is NOT Deployed
 
