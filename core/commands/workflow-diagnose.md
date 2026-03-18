@@ -1,6 +1,6 @@
 ---
 name: workflow:diagnose
-description: "Deep diagnostic investigation for hard bugs where the root cause is unknown. Use when: 'I can\\'t figure out why...', mysterious behavior, intermittent failure, flaky test, root cause unknown, 'bugfix didn\\'t work', 'we tried fixing it but...', heisenbug, race condition, deep investigation needed. Escalation path when workflow:bugfix has failed."
+description: "Deep diagnostic investigation for hard bugs where the root cause is unknown. Use when: 'I can\\'t figure out why...', mysterious behavior, intermittent failure, flaky test, root cause unknown, 'bugfix didn\\'t work', 'we tried fixing it but...', heisenbug, race condition, deep investigation needed. Escalation path when workflow:bugfix has failed. Use --incident=INC-NNN to resume an existing incident."
 ---
 
 # Workflow: Diagnose
@@ -9,6 +9,7 @@ For bugs that have resisted multiple fix attempts. This is NOT a faster bugfix �
 
 Optional: `--scope="file, module, or subsystem"` to focus the investigation.
 Optional: `--fix` to also implement the fix after diagnosis (otherwise stops at the diagnosis report).
+Optional: `--incident=INC-NNN` to resume an existing incident ticket.
 
 ## When to Use This Instead of workflow:bugfix
 
@@ -28,6 +29,40 @@ RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
 
 Close at end: `UPDATE workflow_runs SET status='completed|failed|partial', completed_at=datetime('now') WHERE id=$RUN_ID;`
 Pass `$RUN_ID` to the diagnostician agent.
+
+## Incident Tracking
+
+Every diagnosis is tracked as an incident. Read `.claude/protocols/incident-protocol.md` for full reference.
+
+### If `--incident=INC-NNN` is provided (resuming):
+1. Query the full incident timeline — this is PRIMARY EVIDENCE for the diagnostician:
+```bash
+sqlite3 -header -column .claude/memory.db "SELECT entry_type, content, result, agent, created_at FROM incident_entries WHERE incident_id='INC-NNN' ORDER BY id;"
+sqlite3 -header -column .claude/memory.db "SELECT title, description, symptoms, root_cause FROM incidents WHERE incident_id='INC-NNN';"
+```
+2. Update status: `UPDATE incidents SET status='investigating' WHERE incident_id='INC-NNN';`
+3. Pass the timeline to the Diagnostician — failed attempts become the constraint table.
+
+### If no `--incident` (new investigation):
+1. Auto-create an incident:
+```bash
+INC_ID=$(sqlite3 .claude/memory.db "SELECT 'INC-' || printf('%03d', COALESCE(MAX(CAST(SUBSTR(incident_id, 5) AS INTEGER)), 0) + 1) FROM incidents;")
+sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, description, symptoms, run_id) VALUES ('$INC_ID', 'SHORT_TITLE', 'SCOPE_OR_DOMAIN', 'USER_DESCRIPTION', 'SYMPTOMS_IF_ANY', $RUN_ID);"
+```
+2. Tell the user: "Tracking as **$INC_ID**. Resume in future sessions with `/workflow:diagnose --incident=$INC_ID`"
+
+### During diagnosis:
+The Diagnostician MUST log entries as it works:
+- **hypothesis**: each hypothesis generated → `INSERT INTO incident_entries (incident_id, entry_type, content, agent) VALUES ('$INC_ID', 'hypothesis', 'HYPOTHESIS_TEXT', 'diagnostician');`
+- **discovery**: each piece of evidence found → entry_type `'discovery'`
+- **attempt**: each diagnostic test run → entry_type `'attempt'`, result `'worked'`/`'failed'`
+
+### On resolution (Step 7):
+1. Close the incident with root cause:
+```bash
+sqlite3 .claude/memory.db "UPDATE incidents SET status='resolved', root_cause='ROOT_CAUSE', resolution='HOW_FIXED', resolved_at=datetime('now') WHERE incident_id='$INC_ID';"
+```
+2. **Extract behavioral learning** if the bug revealed a flaw in Claude's reasoning process.
 
 ## Step 1: Diagnostician
 

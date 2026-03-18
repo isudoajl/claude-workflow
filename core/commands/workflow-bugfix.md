@@ -1,11 +1,12 @@
 ---
 name: workflow:bugfix
-description: "Fix a bug with a reduced chain. Use when: something is broken, crash, error, defect, regression, 'X is not working', 'it fails when...', 'there\\'s a bug in...', unexpected behavior, wrong output, test failure, exception. Accepts optional --scope to limit context."
+description: "Fix a bug with a reduced chain. Use when: something is broken, crash, error, defect, regression, 'X is not working', 'it fails when...', 'there\\'s a bug in...', unexpected behavior, wrong output, test failure, exception. Accepts optional --scope to limit context. Use --incident=INC-NNN to resume an existing incident."
 ---
 
 # Workflow: Bugfix
 
 Optional: `--scope="file or module"` to point directly at the suspected area.
+Optional: `--incident=INC-NNN` to resume work on an existing incident ticket.
 
 ## Pipeline Tracking (Institutional Memory)
 If `.claude/memory.db` exists, register this workflow run:
@@ -17,6 +18,40 @@ RUN_ID=$(sqlite3 .claude/memory.db "SELECT last_insert_rowid();")
 
 Close at end: `UPDATE workflow_runs SET status='completed|failed', completed_at=datetime('now') WHERE id=$RUN_ID;`
 Pass `$RUN_ID` to every agent.
+
+## Incident Tracking
+
+Every bugfix is tracked as an incident. Read `.claude/protocols/incident-protocol.md` for full reference.
+
+### If `--incident=INC-NNN` is provided (resuming):
+1. Query the incident timeline to load full context of what was tried:
+```bash
+sqlite3 -header -column .claude/memory.db "SELECT entry_type, content, result FROM incident_entries WHERE incident_id='INC-NNN' ORDER BY id;"
+```
+2. Update status to `investigating`:
+```bash
+sqlite3 .claude/memory.db "UPDATE incidents SET status='investigating' WHERE incident_id='INC-NNN';"
+```
+3. Pass the incident timeline to the Analyst as context — do NOT retry approaches that already failed.
+
+### If no `--incident` (new bug):
+1. Auto-create an incident:
+```bash
+INC_ID=$(sqlite3 .claude/memory.db "SELECT 'INC-' || printf('%03d', COALESCE(MAX(CAST(SUBSTR(incident_id, 5) AS INTEGER)), 0) + 1) FROM incidents;")
+sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, description, symptoms, run_id) VALUES ('$INC_ID', 'SHORT_TITLE', 'SCOPE_OR_DOMAIN', 'USER_DESCRIPTION', 'SYMPTOMS_IF_ANY', $RUN_ID);"
+```
+2. Tell the user: "Tracking as **$INC_ID**. Resume in future sessions with `/workflow:bugfix --incident=$INC_ID`"
+
+### During the pipeline:
+Log significant steps as incident entries (attempts, discoveries, clues). Each agent should INSERT entries as they work.
+
+### On resolution (Step 8):
+1. Close the incident:
+```bash
+sqlite3 .claude/memory.db "INSERT INTO incident_entries (incident_id, entry_type, content, result, agent, run_id) VALUES ('$INC_ID', 'resolution', 'WHAT_FIXED_IT', 'worked', 'developer', $RUN_ID);"
+sqlite3 .claude/memory.db "UPDATE incidents SET status='resolved', root_cause='ROOT_CAUSE', resolution='HOW_FIXED', resolved_at=datetime('now') WHERE incident_id='$INC_ID';"
+```
+2. **Extract behavioral learning**: Ask — did this bug reveal a flaw in HOW Claude reasons? If yes, INSERT into `behavioral_learnings`. Example: if Claude guessed instead of analyzing, the learning is "Always verify X before claiming Y."
 
 ## Fail-Safe Controls
 
