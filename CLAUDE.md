@@ -66,7 +66,7 @@ Every workflow reads from and writes to `.claude/memory.db`. **This protocol is 
 - **Briefing before action**: Every agent queries memory.db (hotspots, failed approaches, findings, decisions, patterns, bugs) before starting work.
 - **Log incrementally**: Write to memory.db immediately after each significant action. Never batch for the end — context compaction loses batched entries.
 - **Self-score every action**: Rate significant actions (-1/0/+1) immediately after completing them.
-- **Close-out when done**: Verify completeness, distill lessons from patterns (3+ similar outcomes → lesson).
+- **Close-out when done**: Verify completeness, distill lessons from patterns (3+ similar outcomes → lesson). Apply the episodic filter before every distillation: only record a lesson if a future agent would *act differently* because of it — not just know what happened.
 - **Pipeline tracking**: Every `/workflow:*` command registers a `workflow_runs` entry at start, updates status at end.
 - **Non-pipeline work**: Even informal work gets a `workflow_runs` entry with type `'manual'`.
 - **Error tolerance**: If sqlite3 fails, log the error and continue working. Never block work for a DB failure.
@@ -93,7 +93,7 @@ The briefing hook may inject an identity block. **Full reference:** `.claude/pro
 12. **Briefing before action** — every agent queries memory.db before starting work
 13. **Log incrementally during work** — every agent writes to memory.db immediately after each significant action
 14. **Self-score every action** — every agent rates its own significant actions (-1/0/+1) immediately
-15. **Distill lessons from patterns** — when 3+ outcomes share a theme, distill into a permanent lesson
+15. **Distill lessons from patterns** — when 3+ outcomes share a theme, distill into a permanent lesson only if it passes the episodic filter: a future agent must *act differently* because of it, not just know what happened
 
 ## Fail-Safe Controls
 

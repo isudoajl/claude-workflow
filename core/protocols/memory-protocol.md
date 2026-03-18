@@ -169,6 +169,7 @@ sqlite3 .claude/memory.db "INSERT INTO outcomes (run_id, agent, score, domain, a
 - Be **honest** — a -1 is more valuable than a false +1
 - Include **specific context** in the lesson text, not vague statements
 - Bad: `"it worked"` → Good: `"Option<T> pattern avoided unwrap panic in concurrent queue access"`
+- The `lesson` field must be **transferable insight** — something a future agent would act *differently* on. Narrating what you did ("I used rsync to deploy") is episodic, not a lesson. If there's no transfer value, leave the lesson field as an empty string or a dash.
 
 **During briefing**, inject recent outcomes:
 ```bash
@@ -192,6 +193,7 @@ sqlite3 .claude/memory.db "INSERT INTO lessons (domain, content, source_agent) V
 - You notice **3+ outcomes in the same domain** sharing a theme
 - You confirm an approach that **consistently works** (+1) or **consistently fails** (-1)
 - You discover a **non-obvious pattern** that future agents would benefit from
+- **Episodic filter (apply before every distillation):** ask "Would a future Claude, reading this cold, make a *better decision* because of it?" If the answer is "it would know what happened" rather than "it would act differently" — skip distillation. Episodic logs belong in `outcomes.action`, not in lessons.
 
 **Lesson constraints:**
 - **Cap of 10 active lessons per domain** — oldest/lowest-confidence pruned during maintenance
