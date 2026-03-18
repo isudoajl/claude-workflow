@@ -112,8 +112,37 @@ if ! git rev-parse --is-inside-work-tree &> /dev/null 2>&1; then
 fi
 
 # ============================================================
+# STALE FILE CLEANUP (renamed workflow-* → omega-*)
+# ============================================================
+TOTAL_REMOVED=0
+cleanup_stale() {
+    local dir="$1"
+    local prefix="$2"
+    [ -d "$dir" ] || return
+    for old_file in "$dir"/${prefix}-*.md; do
+        [ -f "$old_file" ] || continue
+        local base=$(basename "$old_file")
+        local new_name=$(echo "$base" | sed "s/^${prefix}-/omega-/")
+        # Only remove if the omega-* replacement exists in source or was just deployed
+        if [ -f "$dir/$new_name" ] || [ -f "$SCRIPT_DIR/core/commands/$new_name" ] || [ -f "$SCRIPT_DIR/core/agents/$new_name" ]; then
+            rm "$old_file"
+            echo "   - $base (replaced by $new_name)"
+            TOTAL_REMOVED=$((TOTAL_REMOVED + 1))
+        fi
+    done
+}
+
+echo "  Cleaning up stale files..."
+cleanup_stale ".claude/commands" "workflow"
+cleanup_stale ".claude/agents" "workflow"
+if [ "$TOTAL_REMOVED" -eq 0 ]; then
+    echo "   (none found)"
+fi
+
+# ============================================================
 # CORE AGENTS
 # ============================================================
+echo ""
 echo "  Copying core agents..."
 mkdir -p .claude/agents
 SECTION_UNCHANGED=0
