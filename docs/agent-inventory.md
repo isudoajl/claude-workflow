@@ -220,11 +220,11 @@ Produces specifications consumed by architect → test-writer → developer. Doe
 | **Role** | Deep diagnostic reasoning: hypothesis-driven root cause analysis for hard bugs using Explorer/Skeptic/Analogist loop |
 | **Input** | Bug description + scope; failed approaches from memory.db |
 | **Output** | `docs/.workflow/diagnosis-report.md`, `docs/.workflow/diagnosis-reasoning.md` |
-| **Briefing reads** | Failed approaches (primary evidence source), hotspots, bugs, findings, patterns |
+| **Briefing reads** | Incident entries + failed approaches (primary evidence), prior system models, hotspots, bugs, findings, patterns |
 | **Debrief writes** | Root cause analysis, confirmed/eliminated hypotheses, diagnostic outcomes |
 | **Invoked by** | `omega:diagnose` |
 
-The opposite of the Developer — builds system models and designs experiments instead of trying fixes. Uses failed approaches as logical constraints to eliminate hypotheses. Escalation path when `omega:bugfix` has failed. Fix implementation (Phase 7) follows skeleton-first discipline: signatures/stubs → compile gate → fill logic.
+The opposite of the Developer — builds system models and designs experiments instead of trying fixes. Uses incident entries AND failed approaches as logical constraints to eliminate hypotheses. Persists system models as `system_model` incident entries so future sessions can resume without rebuilding. Escalation path when `omega:bugfix` has failed (auto-escalated after 3+ root causes via hydra detection). Fix implementation (Phase 7) follows skeleton-first discipline: signatures/stubs → compile gate → fill logic.
 
 ---
 

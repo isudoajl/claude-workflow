@@ -343,6 +343,7 @@ Over time, your project accumulates the exact specialists it needs. A fintech pr
 - **Prerequisite gates**: Every agent verifies upstream output exists before proceeding
 - **Read-only agent boundaries**: Research agents (codebase-expert, functionality-analyst) never offer to implement — they report findings and suggest appropriate commands
 - **Iteration limits**: QA<->Developer max 3, Reviewer<->Developer max 2, Audit fix max 5 per finding
+- **Hydra detection**: Bugfix auto-escalates to diagnostician after 3+ distinct root causes on the same incident (prevents symptom-chasing loops)
 - **60% context budget**: Agents stop at 60% context usage, save state, continue via `/omega:resume`
 - **Inter-step validation**: Commands verify each agent produced output before invoking the next
 - **Error recovery**: Failed chains save state to `docs/.workflow/chain-state.md` + memory.db

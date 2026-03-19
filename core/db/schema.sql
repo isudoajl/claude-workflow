@@ -260,7 +260,7 @@ CREATE INDEX IF NOT EXISTS idx_incidents_domain ON incidents(domain);
 CREATE TABLE IF NOT EXISTS incident_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     incident_id TEXT NOT NULL,             -- References incidents.incident_id
-    entry_type TEXT NOT NULL,              -- attempt, discovery, clue, hypothesis, note, resolution
+    entry_type TEXT NOT NULL,              -- attempt, discovery, root_cause, clue, hypothesis, note, system_model, escalation, resolution
     content TEXT NOT NULL,                 -- What was tried/discovered/noted
     result TEXT,                           -- worked, failed, partial (for attempts); NULL for non-attempts
     agent TEXT,                            -- Which agent made this entry

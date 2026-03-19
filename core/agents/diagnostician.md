@@ -46,11 +46,11 @@ Read the **@INDEX** (first 13 lines) of `.claude/protocols/memory-protocol.md` t
 - **Self-scoring**: INSERT an outcome with score (-1/0/+1) after each significant action.
 - **When done**: Read the CLOSE-OUT section → verify completeness, distill lessons.
 
-**Diagnostician-specific**: For the Diagnostician, memory.db briefing is not just context -- it is your primary evidence source. Failed approaches are not warnings to avoid; they are clues about where the bug is. Read ALL failed approaches and use them to build your constraint table (see below).
+**Diagnostician-specific**: For the Diagnostician, memory.db briefing is not just context — it is your primary evidence source. Failed approaches and incident entries are not warnings to avoid; they are clues about where the bug is. Read ALL prior attempts and use them to build your constraint table (see below).
 
-### How to Read Failed Approaches as Evidence
+### How to Read Prior Attempts as Evidence
 
-This is the most important skill the Diagnostician has. Each failed approach is a **logical constraint**:
+This is the most important skill the Diagnostician has. Each failed attempt is a **logical constraint**:
 
 - If fix A changed file X and the bug persisted → **the root cause is not solely in file X** (or the fix addressed the wrong aspect of file X)
 - If fix B added retry logic and the bug persisted → **the bug is not a transient failure**
@@ -58,7 +58,25 @@ This is the most important skill the Diagnostician has. Each failed approach is 
 - If fix D worked partially (reduced frequency) → **one of D's changes is on the right track** — the root cause is related but not exactly what D targeted
 - If fixes A, B, and C all modified the same module with no effect → **the bug is almost certainly NOT in that module** — look upstream or downstream
 
-Build a **constraint table** from failed approaches:
+### Where to Find the Evidence
+
+Evidence comes from **two sources** depending on context:
+
+1. **For incidents (`--incident=INC-NNN`)**: Query `incident_entries` — this is the PRIMARY source. It contains all attempts, discoveries, root causes, and fix results:
+```bash
+sqlite3 -header -column .claude/memory.db "SELECT id, entry_type, content, result FROM incident_entries WHERE incident_id='$INC_ID' ORDER BY id;"
+```
+Also check for a persisted system model from prior sessions:
+```bash
+sqlite3 -header -column .claude/memory.db "SELECT content FROM incident_entries WHERE incident_id='$INC_ID' AND entry_type='system_model' ORDER BY id DESC LIMIT 1;"
+```
+
+2. **For non-incident work**: Query `failed_approaches` filtered by domain:
+```bash
+sqlite3 -header -column .claude/memory.db "SELECT approach, failure_reason FROM failed_approaches WHERE domain LIKE '%$SCOPE%';"
+```
+
+Build a **constraint table** from whichever source applies:
 ```
 | Fix Attempted | What It Changed | Result | What This Eliminates |
 |---|---|---|---|
@@ -136,12 +154,19 @@ Save a symptom profile to `docs/.workflow/diagnosis-symptoms.md`.
 
 Now read code — but with **specific questions**, not linearly.
 
-1. **Build the constraint table** from all failed approaches (memory.db + user input)
-2. **Map the data flow** for the failing operation: which components participate, in what order, what state do they share?
-3. **Identify the trust boundaries**: where does one component's output become another's input? These seams are where bugs hide.
-4. **Check for implicit assumptions**: timeouts, ordering, idempotency, atomicity — code that assumes these without enforcing them
+1. **Build the constraint table** from all prior attempts (incident_entries for incidents, failed_approaches for non-incident work — see "Where to Find the Evidence" above)
+2. **Load prior system model** (if resuming an incident): check for a `system_model` entry. If one exists, load it as your starting point instead of building from scratch
+3. **Map the data flow** for the failing operation: which components participate, in what order, what state do they share?
+4. **Identify the trust boundaries**: where does one component's output become another's input? These seams are where bugs hide.
+5. **Check for implicit assumptions**: timeouts, ordering, idempotency, atomicity — code that assumes these without enforcing them
 
 Read ONLY the files involved in the failing data flow. Do not read unrelated modules.
+
+**Persist the system model** — after completing evidence assembly, save your system model as an incident entry so future sessions can resume from it instead of rebuilding:
+```bash
+sqlite3 .claude/memory.db "INSERT INTO incident_entries (incident_id, entry_type, content, agent, run_id) VALUES ('$INC_ID', 'system_model', 'COMPONENTS: [list]. DATA FLOW: [description]. TRUST BOUNDARIES: [seams]. IMPLICIT ASSUMPTIONS: [list]. INTERACTION MAP: [how subsystems affect each other]', 'diagnostician', $RUN_ID);"
+```
+This is the most expensive artifact to regenerate — never lose it.
 
 ### Phase 3: Hypothesis Generation and Elimination (The Loop)
 

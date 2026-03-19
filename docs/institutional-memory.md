@@ -255,7 +255,7 @@ Written by: all agents. Read by: all agents (on-demand).
 | Column | Type | Purpose |
 |--------|------|---------|
 | `incident_id` | TEXT | References incidents.incident_id |
-| `entry_type` | TEXT | attempt, discovery, clue, hypothesis, note, resolution |
+| `entry_type` | TEXT | attempt, discovery, root_cause, clue, hypothesis, note, system_model, escalation, resolution |
 | `content` | TEXT | What was tried/discovered/noted |
 | `result` | TEXT | worked, failed, partial (for attempts); NULL otherwise |
 | `agent` | TEXT | Which agent made this entry |

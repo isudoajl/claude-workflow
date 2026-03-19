@@ -1,13 +1,13 @@
 <!-- @INDEX
 WHEN-TO-CREATE-AN-INCIDENT               17-25
 CREATING-AN-INCIDENT                     26-36
-ADDING-ENTRIES-TO-AN-INCIDENT            37-72
-RESOLVING-AN-INCIDENT                    73-88
-CLOSING-AN-INCIDENT                      89-96
-QUERYING-INCIDENTS                       97-118
-LINKING-RELATED-INCIDENTS                119-125
-EXTRACTING-BEHAVIORAL-LEARNINGS-FROM-INCIDENTS 126-149
-TAGGING-INCIDENTS                        150-156
+ADDING-ENTRIES-TO-AN-INCIDENT            37-77
+RESOLVING-AN-INCIDENT                    78-93
+CLOSING-AN-INCIDENT                      94-101
+QUERYING-INCIDENTS                       102-123
+LINKING-RELATED-INCIDENTS                124-130
+EXTRACTING-BEHAVIORAL-LEARNINGS-FROM-INCIDENTS 131-154
+TAGGING-INCIDENTS                        155-161
 @/INDEX -->
 
 # Incident Tracking Protocol
@@ -64,11 +64,16 @@ VALUES ('INC-001', 'note', 'Context, discussion, or reference', NULL, 'manual', 
 | Type | When | `result` field |
 |------|------|---------------|
 | `attempt` | After trying a fix or approach | `worked`, `failed`, `partial` |
-| `discovery` | After finding relevant information | NULL |
+| `discovery` | After finding relevant information | `confirmed`, `new_bug`, `catastrophic`, or NULL |
+| `root_cause` | After confirming or identifying a distinct root cause | `confirmed`, `new_bug` |
 | `hypothesis` | After forming a theory about root cause | NULL |
 | `clue` | After observing something potentially relevant | NULL |
 | `note` | General context, references, discussion | NULL |
+| `system_model` | After building/updating a holistic model of subsystem interactions | NULL |
+| `escalation` | When bugfix pipeline escalates to diagnostician | `escalated` |
 | `resolution` | When the fix is confirmed | `worked` |
+
+**When to use `root_cause` vs `discovery`:** Use `root_cause` when you have identified a distinct cause that requires its own fix. Use `discovery` with `result='new_bug'` when a fix attempt reveals a completely new bug. The hydra detection mechanism counts both to detect cascading-bug patterns.
 
 ## Resolving an Incident
 

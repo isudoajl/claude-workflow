@@ -24,15 +24,17 @@ Pass `$RUN_ID` to every agent.
 Every bugfix is tracked as an incident. Read the **@INDEX** (first 12 lines) of `.claude/protocols/incident-protocol.md` to find the section you need, then Read ONLY that section with offset/limit.
 
 ### If `--incident=INC-NNN` is provided (resuming):
-1. Query the incident timeline to load full context of what was tried:
+1. Set the incident ID variable: `INC_ID="INC-NNN"` (from the `--incident` argument)
+2. Query the incident timeline to load full context of what was tried:
 ```bash
-sqlite3 -header -column .claude/memory.db "SELECT entry_type, content, result FROM incident_entries WHERE incident_id='INC-NNN' ORDER BY id;"
+sqlite3 -header -column .claude/memory.db "SELECT entry_type, content, result FROM incident_entries WHERE incident_id='$INC_ID' ORDER BY id;"
 ```
-2. Update status to `investigating`:
+3. **Run hydra detection** (see Fail-Safe Controls below) — HALT if 3+ root causes already exist.
+4. Update status to `investigating`:
 ```bash
-sqlite3 .claude/memory.db "UPDATE incidents SET status='investigating' WHERE incident_id='INC-NNN';"
+sqlite3 .claude/memory.db "UPDATE incidents SET status='investigating' WHERE incident_id='$INC_ID';"
 ```
-3. Pass the incident timeline to the Analyst as context — do NOT retry approaches that already failed.
+5. Pass the incident timeline to the Analyst as context — do NOT retry approaches that already failed.
 
 ### If no `--incident` (new bug):
 1. Auto-create an incident:
@@ -60,6 +62,26 @@ Before starting the chain, verify the bug is reproducible:
 1. If the bug description includes reproduction steps, try them first
 2. If the bug cannot be reproduced from the description alone, the Analyst should note this and proceed with code analysis to identify the probable cause
 3. If no relevant code can be found from the bug description (even with Grep), STOP and ask the user for more context
+
+### Hydra Detection (Cascading Root Cause Escalation)
+When resuming an incident (`--incident=INC-NNN`), count distinct root causes already discovered:
+```bash
+RC_COUNT=$(sqlite3 .claude/memory.db "SELECT COUNT(*) FROM incident_entries WHERE incident_id='$INC_ID' AND entry_type IN ('root_cause', 'discovery') AND result IN ('confirmed', 'catastrophic', 'new_bug');")
+```
+**If RC_COUNT >= 3, HALT the bugfix pipeline immediately** and report:
+
+> **Hydra pattern detected** — $RC_COUNT distinct root causes discovered on $INC_ID. Each fix reveals a new bug in a different subsystem interaction. This is a systemic architecture issue, not an isolated bug.
+>
+> **Escalate to:** `/omega:diagnose --incident=$INC_ID --fix`
+>
+> The Diagnostician will build a holistic system model of how the affected subsystems interact before attempting any more fixes. This prevents further symptom-chasing.
+
+Log the escalation:
+```bash
+sqlite3 .claude/memory.db "INSERT INTO incident_entries (incident_id, entry_type, content, result, agent, run_id) VALUES ('$INC_ID', 'escalation', 'Hydra pattern: $RC_COUNT root causes. Bugfix pipeline cannot resolve systemic interaction bugs. Escalating to diagnostician.', 'escalated', 'orchestrator', $RUN_ID);"
+```
+
+**Also during the pipeline:** After each milestone, if the fix reveals a NEW distinct root cause (not a regression of the same bug), increment the count. If the count reaches 3 during this session, HALT with the same message.
 
 ### Iteration Limits (per milestone)
 - **QA ↔ Developer iterations (Steps 4-5):** Maximum **3 iterations** per milestone. If QA still finds the bug is not fully fixed after 3 rounds, STOP and report to user: "QA iteration limit reached (3/3) for milestone M[N]. Bug status: [description]. Requires human decision."
