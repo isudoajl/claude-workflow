@@ -1,3 +1,17 @@
+<!-- @INDEX
+DB-DETECTION                             19-28
+PIPELINE-START                           29-38
+BRIEFING                                 39-68
+INCREMENTAL-LOGGING                      69-123
+CLOSE-OUT                                124-135
+PIPELINE-END                             136-149
+NON-PIPELINE-SESSIONS                    150-163
+SELF-LEARNING                            164-256
+BEHAVIORAL-LEARNINGS                     257-309
+INCIDENT-TRACKING                        310-338
+ERROR-HANDLING                           339-342
+@/INDEX -->
+
 # Institutional Memory Protocol
 
 Every workflow reads from and writes to `.claude/memory.db`. This is the backpressure mechanism that prevents agents from acting in isolation. **This protocol is not optional** — it is the foundation that gives OMEGA persistent knowledge across sessions.

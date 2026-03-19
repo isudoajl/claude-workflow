@@ -44,7 +44,7 @@ Either method deploys everything:
 |------|-------|-------|
 | 15 agents | `.claude/agents/` | Core pipeline + dispatch agents |
 | 16 commands | `.claude/commands/` | Workflow orchestrators |
-| 4 protocols | `.claude/protocols/` | On-demand reference files (memory, fail-safes, context, identity) |
+| 5 protocols + index | `.claude/protocols/` | On-demand reference files with @INDEX lazy-load blocks |
 | Workflow rules | `CLAUDE.md` | **Appended** to existing CLAUDE.md (never overwrites) |
 | Automation hooks | `.claude/hooks/` | 5 hooks: auto-briefing, commit gate, incremental gate, debrief nudge, session close |
 | Hook config | `.claude/settings.json` | Registers hooks with Claude Code |

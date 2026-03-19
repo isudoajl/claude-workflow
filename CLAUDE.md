@@ -59,7 +59,7 @@ When specs or docs conflict with the codebase, the codebase wins. Agents must fl
 
 Every workflow reads from and writes to `.claude/memory.db`. **This protocol is not optional.**
 
-**Full protocol reference:** Read `.claude/protocols/memory-protocol.md` for complete briefing queries, incremental logging templates, close-out procedures, self-learning, and pipeline tracking.
+**Full protocol reference:** Read the **@INDEX** (first 13 lines) of `.claude/protocols/memory-protocol.md` to find section line ranges, then Read ONLY needed sections with offset/limit. For cross-file lookup: `.claude/protocols/PROTOCOLS-INDEX.md`.
 
 **Core rules (always in effect):**
 - **DB Detection**: `test -f .claude/memory.db` at session/workflow start. If missing, skip memory ops gracefully.
@@ -67,7 +67,7 @@ Every workflow reads from and writes to `.claude/memory.db`. **This protocol is 
 - **Briefing before action**: Every agent queries memory.db for scope-specific context (hotspots, failed approaches, findings, decisions, patterns) before starting work.
 - **Log incrementally**: Write to memory.db immediately after each significant action. Never batch for the end — context compaction loses batched entries.
 - **Self-score every action**: Rate significant actions (-1/0/+1) immediately after completing them.
-- **Track bugs as incidents**: Every bug gets a ticket (INC-NNN). Use `--incident=INC-NNN` on bugfix/diagnose to resume. When a user mentions "INC-NNN", query its timeline and resume. Read `.claude/protocols/incident-protocol.md`.
+- **Track bugs as incidents**: Every bug gets a ticket (INC-NNN). Use `--incident=INC-NNN` on bugfix/diagnose to resume. When a user mentions "INC-NNN", query its timeline and resume. Read the @INDEX of `.claude/protocols/incident-protocol.md` for section lookup.
 - **Extract behavioral learnings**: When the user corrects your approach or an incident reveals a flaw in your reasoning, extract a behavioral rule. These are about HOW you should think, not domain-specific patterns.
 - **Close-out when done**: Verify completeness, distill lessons, extract behavioral learnings, track bugs as incidents. Apply the episodic filter: only record if a future agent would *act differently*.
 - **Pipeline tracking**: Every `/omega:*` command registers a `workflow_runs` entry at start, updates status at end.
@@ -76,7 +76,7 @@ Every workflow reads from and writes to `.claude/memory.db`. **This protocol is 
 
 ## Identity
 
-The briefing hook may inject an identity block. **Full reference:** `.claude/protocols/identity.md`
+The briefing hook may inject an identity block. **Full reference:** Read @INDEX of `.claude/protocols/identity.md` for section lookup.
 
 **Core rule:** Protocol always overrides identity. Identity influences communication style, not functional behavior. Experience levels: beginner/intermediate/advanced. Communication styles: verbose/balanced/terse.
 
@@ -100,24 +100,22 @@ The briefing hook may inject an identity block. **Full reference:** `.claude/pro
 
 ## Fail-Safe Controls
 
-**Full reference:** `.claude/protocols/fail-safes.md`
+**Full reference:** Read @INDEX of `.claude/protocols/fail-safes.md` for section lookup.
 
 **Core rules:** Prerequisite gates (every agent verifies upstream output exists). Iteration limits (QA↔Dev: 3, Reviewer↔Dev: 2, Audit fix: 5). Error recovery saves state to `docs/.workflow/chain-state.md`. Developer max 5 retries per module.
 
 ## Context Efficiency (ENFORCED)
 
-**Full reference:** `.claude/protocols/context-budget.md`
+**Full reference:** Read @INDEX of `.claude/protocols/context-budget.md` for section lookup.
 
-**This file (CLAUDE.md) MUST stay under 10,000 characters.** It is loaded into every conversation and every subagent. Every character here costs tokens in every session. The same principle applies to agent files, command files, and any file that is auto-loaded.
+**CLAUDE.md MUST stay under 10,000 characters.** Every character costs tokens in every session and subagent.
 
 **Rules:**
-- **NEVER inline detailed templates, SQL examples, scoring tables, or step-by-step procedures into CLAUDE.md.** Put them in `core/protocols/` (deployed to `.claude/protocols/`) and reference them with a one-line pointer.
-- **NEVER inline detailed protocols into agent files.** Agent files should contain the agent's role, rules, and a pointer to `.claude/protocols/memory-protocol.md` for the memory protocol. Not the full SQL templates.
-- **NEVER duplicate content across files.** If two agents need the same protocol, both reference the same protocol file. Do not copy-paste protocol sections.
-- **Before adding content to any auto-loaded file** (CLAUDE.md, agent .md, command .md), ask: "Will every session need this, or can it be loaded on demand?" If on-demand, put it in a protocol file or a doc file and reference it.
-- **Prefer pointers over inline content.** A one-line reference like `Read .claude/protocols/X.md` costs ~20 tokens. An inlined protocol costs 2,000+.
-- **60% context budget per agent.** Read indexes first. Query memory.db before reading files. Scope narrowing via `--scope`. Chunk large operations by milestone/domain.
-- **Never read the entire codebase at once** — always scope to the relevant area.
+- **NEVER inline** templates, SQL, or procedures into auto-loaded files. Put them in `core/protocols/` and reference with a pointer.
+- **NEVER duplicate** content across files. Two agents needing the same protocol both reference one file.
+- **Lazy-load protocol sections.** Every protocol file has an `@INDEX` block (first N lines) mapping section→line ranges. Read the index, then `Read` with offset/limit for the section you need. Never read entire protocol files. Run `scripts/build-protocol-index.sh` after editing protocols.
+- **60% context budget per agent.** Read indexes first. Query memory.db before files. Scope via `--scope`. Chunk by milestone/domain.
+- **Never read the entire codebase** — always scope to the relevant area.
 
 ## Traceability Chain
 ```

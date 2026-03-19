@@ -1,3 +1,15 @@
+<!-- @INDEX
+WHEN-TO-CREATE-AN-INCIDENT               17-25
+CREATING-AN-INCIDENT                     26-36
+ADDING-ENTRIES-TO-AN-INCIDENT            37-72
+RESOLVING-AN-INCIDENT                    73-88
+CLOSING-AN-INCIDENT                      89-96
+QUERYING-INCIDENTS                       97-118
+LINKING-RELATED-INCIDENTS                119-125
+EXTRACTING-BEHAVIORAL-LEARNINGS-FROM-INCIDENTS 126-149
+TAGGING-INCIDENTS                        150-156
+@/INDEX -->
+
 # Incident Tracking Protocol
 
 Incidents are the structured way to track bugs in OMEGA. Each bug gets a ticket number (INC-NNN) and all related knowledge — attempts, discoveries, clues, resolution — lives under it. This replaces scattered `bugs` and `failed_approaches` entries for bug tracking.

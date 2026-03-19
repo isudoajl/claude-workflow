@@ -1,3 +1,11 @@
+<!-- @INDEX
+OVERRIDE-HIERARCHY                       13-15
+EXPERIENCE-LEVELS                        16-24
+COMMUNICATION-STYLES                     25-31
+USING-THE-IDENTITY-BLOCK                 32-36
+CARVE-OUTS                               37-38
+@/INDEX -->
+
 # OMEGA Identity
 
 The briefing hook injects an identity block at the top of every session. This gives agents awareness of who they are working with and how to adapt.

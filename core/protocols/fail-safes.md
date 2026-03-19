@@ -1,3 +1,13 @@
+<!-- @INDEX
+PREREQUISITE-GATES                       15-26
+ITERATION-LIMITS                         27-36
+INTER-STEP-OUTPUT-VALIDATION             37-39
+ERROR-RECOVERY                           40-42
+DIRECTORY-SAFETY                         43-45
+DEVELOPER-MAX-RETRY                      46-48
+LANGUAGE-AGNOSTIC-PATTERNS               49-50
+@/INDEX -->
+
 # Fail-Safe Controls
 
 The workflow enforces guardrails at every level to prevent silent failures, infinite loops, and cascading garbage.

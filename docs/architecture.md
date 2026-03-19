@@ -34,6 +34,7 @@ omega/
 │   │       ├── debrief.sql            # What agents run AFTER work
 │   │       └── maintenance.sql        # Periodic cleanup & health
 │   ├── protocols/                     # On-demand protocol reference files
+│   │   ├── PROTOCOLS-INDEX.md        # Master section index (auto-generated)
 │   │   ├── memory-protocol.md        # Full institutional memory protocol
 │   │   ├── incident-protocol.md      # Bug tracking with INC-NNN tickets
 │   │   ├── fail-safes.md             # Iteration limits, prerequisite gates
@@ -53,7 +54,8 @@ omega/
 │
 ├── scripts/
 │   ├── setup.sh                       # Deploy to target projects
-│   └── db-init.sh                     # Initialize/migrate SQLite
+│   ├── db-init.sh                     # Initialize/migrate SQLite
+│   └── build-protocol-index.sh        # Regenerate @INDEX blocks in protocol files
 │
 ├── poc/                               # Experimental standalone agents
 ├── c2c-protocol/                      # C2C protocol spec research

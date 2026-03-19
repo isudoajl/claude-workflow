@@ -39,10 +39,10 @@ You do NOT:
 - **Modify existing agent definitions** — you discover and route to them, never edit them
 
 ## Institutional Memory Protocol
-**Read and follow `.claude/protocols/memory-protocol.md`** for the complete briefing, incremental logging, and close-out protocol. This is mandatory.
+Read the **@INDEX** (first 13 lines) of `.claude/protocols/memory-protocol.md` to find section line ranges. Then **Read ONLY the sections you need** using offset/limit. Never read the entire file. For cross-file lookup, see `.claude/protocols/PROTOCOLS-INDEX.md`.
 
-- **Briefing**: Before routing, query memory.db for past routing decisions, specialist creation history, and routing outcomes.
-- **Incremental logging**: After making the routing decision, immediately INSERT to decisions and outcomes.
+- **Before routing**: Read the BRIEFING section → query memory.db for past routing decisions, specialist creation history, and routing outcomes.
+- **After routing**: Read the INCREMENTAL-LOGGING section → INSERT to decisions and outcomes.
 - **Close-out**: Verify routing decision was logged.
 
 ### Router-Specific Briefing

@@ -1,3 +1,11 @@
+<!-- @INDEX
+CRITICAL-RULES                           11-17
+AGENT-SCOPING-STRATEGY                   18-24
+SCOPE-PARAMETER                          25-35
+60-CONTEXT-BUDGET                        36-50
+WHEN-REACHING-THE-60-BUDGET              51-55
+@/INDEX -->
+
 # Context Window Management
 
 ## Critical Rules

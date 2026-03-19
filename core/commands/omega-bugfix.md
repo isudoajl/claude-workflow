@@ -21,7 +21,7 @@ Pass `$RUN_ID` to every agent.
 
 ## Incident Tracking
 
-Every bugfix is tracked as an incident. Read `.claude/protocols/incident-protocol.md` for full reference.
+Every bugfix is tracked as an incident. Read the **@INDEX** (first 12 lines) of `.claude/protocols/incident-protocol.md` to find the section you need, then Read ONLY that section with offset/limit.
 
 ### If `--incident=INC-NNN` is provided (resuming):
 1. Query the incident timeline to load full context of what was tried:

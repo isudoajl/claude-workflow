@@ -165,7 +165,7 @@ omega/
 ├── core/                              # Every project gets this
 │   ├── agents/                        # 15 universal agents
 │   ├── commands/                      # 16 universal commands
-│   ├── protocols/                     # 5 on-demand reference files
+│   ├── protocols/                     # 5 on-demand reference files (with @INDEX lazy-load)
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema
 │   │   └── queries/                   # Named query templates
@@ -182,7 +182,8 @@ omega/
 │
 └── scripts/
     ├── setup.sh                       # Legacy shell installer
-    └── db-init.sh                     # Initialize/migrate SQLite
+    ├── db-init.sh                     # Initialize/migrate SQLite
+    └── build-protocol-index.sh        # Regenerate @INDEX blocks after protocol edits
 ```
 
 ### Institutional Memory (SQLite)
