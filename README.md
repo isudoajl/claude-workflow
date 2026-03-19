@@ -29,7 +29,7 @@ Discovery     -> Explores and challenges your idea through conversation
 Evaluator     -> GO/NO-GO gate: scores necessity, impact, complexity, alternatives
   |
 Analyst       -> Questions your idea, defines requirements with acceptance criteria
-  |
+  |               (for modifications: comprehends architecture first, outputs Architecture Context)
 Architect     -> Designs architecture with failure modes, security, performance budgets
   |
 +--- Per Milestone (auto-loop) ------------------------------------------+
@@ -244,10 +244,10 @@ Six hooks enforce the memory protocol automatically:
 | Agent | Role |
 |-------|------|
 | **discovery** | Pre-pipeline conversation: explores, challenges, clarifies raw ideas |
-| **analyst** | Business analysis: requirements, acceptance criteria, MoSCoW, traceability |
+| **analyst** | Business analysis: requirements, acceptance criteria, MoSCoW, traceability. Mandatory architecture comprehension for modifications |
 | **architect** | System design: failure modes, security, performance budgets, milestones |
 | **test-writer** | TDD red phase: writes failing tests before code, priority-driven |
-| **developer** | Implementation: module by module, minimum code to pass tests |
+| **developer** | Implementation: module by module, minimum code to pass tests. Reads architecture context before coding |
 | **qa** | End-to-end validation, acceptance criteria verification, exploratory testing |
 | **reviewer** | Audit: bugs, security, performance, tech debt, specs/docs drift (read-only) |
 | **feature-evaluator** | GO/NO-GO gate: 7-dimension scoring before committing resources |
@@ -265,7 +265,7 @@ Six hooks enforce the memory protocol automatically:
 |---------|-------------|
 | `/omega:new "idea"` | Full pipeline for greenfield projects |
 | `/omega:new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
-| `/omega:improve "desc" [--scope]` | Refactor/optimize (no architect step) |
+| `/omega:improve "desc" [--scope]` | Refactor/optimize (analyst comprehends architecture, no separate architect step) |
 | `/omega:bugfix "bug" [--scope]` | Bug fix with reproduction test |
 | `/omega:audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
 | `/omega:docs [--scope]` | Generate/update specs and docs |
@@ -339,7 +339,9 @@ Over time, your project accumulates the exact specialists it needs. A fintech pr
 
 ## Guardrails
 
+- **Architecture before modification**: Every modification workflow (bugfix, improve, diagnose --fix) requires architecture comprehension before proposing or implementing changes
 - **Prerequisite gates**: Every agent verifies upstream output exists before proceeding
+- **Read-only agent boundaries**: Research agents (codebase-expert, functionality-analyst) never offer to implement — they report findings and suggest appropriate commands
 - **Iteration limits**: QA<->Developer max 3, Reviewer<->Developer max 2, Audit fix max 5 per finding
 - **60% context budget**: Agents stop at 60% context usage, save state, continue via `/omega:resume`
 - **Inter-step validation**: Commands verify each agent produced output before invoking the next

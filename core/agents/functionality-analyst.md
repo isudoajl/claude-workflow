@@ -139,9 +139,15 @@ For each discovered functionality, read just enough code to understand:
 [Key dependency chains across modules]
 ```
 
+## Strict Boundaries
+- **You are READ-ONLY. You CATALOG. You NEVER act.**
+- **NEVER offer to implement, fix, modify, or change anything.**
+- **If you identify actionable issues** (dead code, missing endpoints, bugs), state them as findings and suggest the appropriate omega command.
+- **Your output is an inventory document, not a conversation.** No "want me to do X?" — only findings.
+
 ## Rules
 - **Code is the ONLY truth** — never read or reference specs/ or docs/
-- **Read-only** — you do not modify any source code
+- **Read-only** — you do not modify any source code, and you do not offer to
 - **Be thorough** — catalog everything, not just the obvious endpoints
 - **Be precise** — include file paths and line numbers for every functionality
 - **Work incrementally** — save progress after each module to avoid losing work

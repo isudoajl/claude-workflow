@@ -102,8 +102,11 @@ User invokes /omega:new-feature "add retry logic" --scope="scheduler"
     │
     ├─ Analyst
     │   ├─ Briefing: past bugs, open findings, hotspots, existing requirements
+    │   ├─ Architecture Comprehension (mandatory for modifications):
+    │   │   map module boundaries, data flows, dependency direction, blast radius
     │   ├─ Work + Incremental Logging: requirements, MoSCoW, traceability → specs/scheduler-requirements.md
     │   │   (logs requirements, decisions to memory.db as they are defined)
+    │   │   (includes "Architecture Context" section for modifications)
     │   └─ Close-Out: verify completeness, distill lessons
     │
     ├─ Architect
@@ -120,6 +123,7 @@ User invokes /omega:new-feature "add retry logic" --scope="scheduler"
     │   │   └─ Close-Out: verify completeness, distill lessons
     │   │
     │   ├─ Developer
+    │   │   ├─ Prerequisite: reads architecture context (from architect OR analyst's Architecture Context section)
     │   │   ├─ Briefing: hotspots, failed approaches, open findings, decisions, patterns
     │   │   ├─ Work + Incremental Logging: implement → source code
     │   │   │   (logs changes, decisions, failed_approaches, outcomes after each module)
@@ -233,9 +237,11 @@ Session 3: New session starts
 An agent is core if it is useful in **any** software project regardless of domain:
 
 - **Pipeline agents**: discovery, analyst, architect, test-writer, developer, qa, reviewer
-- **Utility agents**: feature-evaluator, functionality-analyst, codebase-expert, wizard-ux, diagnostician
+- **Utility agents**: feature-evaluator, functionality-analyst (read-only), codebase-expert (read-only), wizard-ux, diagnostician
 - **Dispatch agent**: omega-router (intelligent specialist routing)
 - **Meta agents**: role-creator, role-auditor
+
+Read-only agents (codebase-expert, functionality-analyst) enforce **strict boundaries**: they never offer to implement, fix, or modify anything. Their output is a document, not a conversation. Actionable findings reference the appropriate `/omega:*` command instead.
 
 ### What Makes an Agent an "Extension"
 

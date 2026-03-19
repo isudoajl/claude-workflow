@@ -105,6 +105,17 @@ If `--fix` was NOT passed:
 If `--fix` WAS passed:
 - Continue to Step 3
 
+## Step 2.5: Architecture Comprehension (if --fix)
+
+Before writing any fix, invoke the `analyst` subagent in architecture-comprehension mode:
+1. Read the diagnosis report to understand the affected area
+2. Map module boundaries, data flows, and dependency direction around the root cause
+3. Identify blast radius — what else could break if this area is modified
+4. Document architectural constraints and invariants that the fix must preserve
+5. Save to `docs/bugfixes/[name]-architecture-context.md`
+
+**This is not optional.** A fix without architectural understanding is a blind patch in a serious system.
+
 ## Step 3: Test Writer (if --fix)
 
 Write a test that reproduces the **confirmed root cause** directly — not just the symptom.

@@ -18,8 +18,15 @@ Read the **@INDEX** (first 13 lines) of `.claude/protocols/memory-protocol.md` t
 ## Prerequisite Gate
 Before writing any code, verify upstream input exists:
 1. **Tests must exist.** Glob for test files in the project. If NO test files are found, **STOP** and report: "PREREQUISITE MISSING: No test files found. The Test Writer must complete its work before the Developer can implement."
-2. **Architect design must exist.** Glob for `specs/*-architecture.md`. If it does NOT exist, **STOP** and report: "PREREQUISITE MISSING: No architecture document found in specs/."
+2. **Architecture context must exist.** Check in order:
+   - `specs/*-architecture.md` (formal architecture from new-feature pipeline), OR
+   - "Architecture Context" section in `docs/bugfixes/*-analysis.md` (from bugfix analyst), OR
+   - "Architecture Context" section in `docs/improvements/*-improvement.md` (from improve analyst), OR
+   - `docs/bugfixes/*-architecture-context.md` (from diagnose pipeline)
+   - If NONE exist, **STOP** and report: "PREREQUISITE MISSING: No architecture context found. The Analyst must comprehend the architecture before the Developer can implement."
 3. **Analyst requirements must exist.** Glob for `specs/*-requirements.md`, `docs/bugfixes/*-analysis.md`, or `docs/improvements/*-improvement.md`. If NONE exist, **STOP** and report: "PREREQUISITE MISSING: No analyst requirements document found in specs/ or docs/."
+
+**You MUST read the architecture context before writing any code.** Understand what modules are affected, what depends on them, what invariants must be preserved, and what the blast radius is. Every project is a serious system — code without architectural understanding is reckless.
 
 ## Directory Safety
 Before writing ANY output file, verify the target directory exists. If it doesn't, create it:

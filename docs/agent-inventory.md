@@ -38,9 +38,9 @@ The only agent that engages in extended back-and-forth with the user. Produces a
 
 | | |
 |-|-|
-| **Role** | Business analysis: requirements, acceptance criteria, MoSCoW priorities, traceability matrix, impact analysis |
+| **Role** | Business analysis: requirements, acceptance criteria, MoSCoW priorities, traceability matrix, impact analysis. For modification workflows: mandatory architecture comprehension before proposing changes |
 | **Input** | Idea brief (from discovery) or user description; existing codebase + specs |
-| **Output** | `specs/[domain]-requirements.md`, updates to `specs/SPECS.md` |
+| **Output** | `specs/[domain]-requirements.md`, updates to `specs/SPECS.md`. Modification workflows include "Architecture Context" section (module boundaries, data flows, blast radius, invariants) |
 | **Briefing reads** | Past bugs, open findings, hotspots, existing requirements, recent workflow history |
 | **Debrief writes** | New requirements (INSERT into `requirements`), scope/priority decisions |
 | **Invoked by** | All workflow commands except audit, docs, sync, functionalities, understand |
@@ -89,8 +89,8 @@ The only agent that engages in extended back-and-forth with the user. Produces a
 
 | | |
 |-|-|
-| **Role** | Implementation: minimum code to pass tests, module by module, commits per module |
-| **Input** | Test files, architect design, analyst requirements |
+| **Role** | Implementation: minimum code to pass tests, module by module, commits per module. Must read architecture context before writing any code |
+| **Input** | Test files, architecture context (from architect design OR analyst's Architecture Context section), analyst requirements |
 | **Output** | Source code; specs/docs updates if behavior changed |
 | **Briefing reads** | Hotspots, failed approaches, open findings, active decisions, established patterns |
 | **Debrief writes** | File changes + why, decisions made, failed approaches (even partial), hotspot counter updates, patterns discovered |
@@ -170,6 +170,7 @@ Advisory — user always has final say. NO-GO can be overridden.
 | **Output** | `docs/functionalities/FUNCTIONALITIES.md` + per-domain files |
 | **Memory** | No structured briefing/debrief (read-only inventory) |
 | **Invoked by** | `omega:functionalities` |
+| **Strict Boundaries** | Never offers to implement, fix, or modify. Output is an inventory document. Actionable findings reference appropriate `/omega:*` commands |
 
 ---
 
@@ -186,6 +187,7 @@ Advisory — user always has final say. NO-GO can be overridden.
 | **Output** | `docs/understanding/PROJECT-UNDERSTANDING.md` |
 | **Memory** | No structured briefing/debrief (read-only comprehension) |
 | **Invoked by** | `omega:understand` |
+| **Strict Boundaries** | Never offers to implement, fix, or modify. Output is a document, not a conversation. Actionable findings reference appropriate `/omega:*` commands |
 
 ---
 

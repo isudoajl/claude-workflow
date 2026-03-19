@@ -84,14 +84,16 @@ If any agent fails mid-chain:
 3. The user can resume by re-invoking the failed step's agent manually
 
 ## Step 1: Analyst
-Analyze the reported bug.
+Analyze the reported bug. **The Analyst MUST comprehend the architecture of the affected area before proposing any fix** (see Analyst's "Architecture Comprehension" mandate). A bugfix that doesn't understand the architecture is a blind patch.
+
 1. If `--scope` provided, read only that file/module and its spec
 2. If no `--scope`, use Grep to locate the relevant code from the bug description
 3. Read only the affected code and related spec files
-4. Identify the probable cause
-5. Perform impact analysis — what else might be affected by the fix
-6. Flag if the bug reveals a specs/docs drift
-7. Generate requirements with IDs, priorities, and acceptance criteria for the fix
+4. **Comprehend the architecture**: map module boundaries, data flows, dependency direction, and blast radius of the affected area. Document in "Architecture Context" section
+5. Identify the probable cause — informed by architectural understanding, not just symptom analysis
+6. Perform impact analysis — what else might be affected by the fix. This MUST be based on the architecture context, not grep-level guessing
+7. Flag if the bug reveals a specs/docs drift
+8. Generate requirements with IDs, priorities, and acceptance criteria for the fix
 
 Save output to `docs/bugfixes/[name]-analysis.md`.
 

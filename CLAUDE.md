@@ -85,7 +85,7 @@ The briefing hook may inject an identity block. **Full reference:** Read @INDEX 
 1. **NEVER write code without tests first** (strict TDD)
 2. **NEVER assume** — if something is unclear, the analyst must ask
 3. **Module by module** — do not implement everything at once
-4. **Document before coding** — architecture is defined first
+4. **Understand architecture before ANY modification** — every change requires comprehending module boundaries, data flows, dependencies, and blast radius. No exceptions for "small" fixes
 5. **Every assumption must be explicit** — technical + human-readable summary
 6. **Codebase is king** — when in doubt, read the actual code
 7. **Keep specs/ and docs/ in sync** — every code change must update relevant specs and docs
@@ -97,6 +97,7 @@ The briefing hook may inject an identity block. **Full reference:** Read @INDEX 
 13. **Log incrementally during work** — every agent writes to memory.db immediately after each significant action
 14. **Self-score every action** — every agent rates its own significant actions (-1/0/+1) immediately
 15. **Distill lessons from patterns** — when 3+ outcomes share a theme, distill into a permanent lesson only if it passes the episodic filter: a future agent must *act differently* because of it, not just know what happened
+16. **Read-only agents stay in their lane** — research agents (codebase-expert, functionality-analyst) NEVER offer to implement. They report findings and suggest appropriate commands
 
 ## Fail-Safe Controls
 

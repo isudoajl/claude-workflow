@@ -56,6 +56,16 @@ The codebase-expert focuses on the specified area:
 3. Note external dependencies and what depends on the scoped area
 4. Save to `docs/understanding/[scope]-understanding.md`
 
+## Output Guardrails
+The codebase-expert MUST NOT:
+- Offer to implement, fix, or modify anything
+- Suggest "want me to do X?" or "I can implement that"
+- End with a list of things it will do next
+
+It MUST:
+- End with the document, not a conversation
+- If actionable issues are found, suggest the appropriate omega command (bugfix, improve, diagnose, sync)
+
 ## Understanding Covers
 - Tech stack and framework identification
 - Architecture and module boundaries

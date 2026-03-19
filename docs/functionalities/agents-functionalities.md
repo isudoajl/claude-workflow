@@ -12,14 +12,14 @@ All agent definitions are Markdown files with YAML frontmatter (`name`, `descrip
 | # | Agent | File | Lines | Model | Tools | Read-Only | Primary Output |
 |---|-------|------|-------|-------|-------|-----------|----------------|
 | 1 | Discovery | `.claude/agents/discovery.md` | 1-275 | Opus | Read, Grep, Glob, WebFetch, WebSearch | No | `docs/.workflow/idea-brief.md` |
-| 2 | Analyst | `.claude/agents/analyst.md` | 1-191 | Opus | Read, Grep, Glob, WebFetch, WebSearch | No | `specs/[domain]-requirements.md` |
+| 2 | Analyst | `.claude/agents/analyst.md` | 1-229 | Opus | Read, Grep, Glob, WebFetch, WebSearch | No | `specs/[domain]-requirements.md` (+ Architecture Context section for modifications) |
 | 3 | Architect | `.claude/agents/architect.md` | 1-207 | Opus | Read, Write, Edit, Grep, Glob | No | `specs/[domain]-architecture.md` |
 | 4 | Test Writer | `.claude/agents/test-writer.md` | 1-220 | Opus | Read, Write, Edit, Bash, Glob, Grep | No | Test files + traceability update |
-| 5 | Developer | `.claude/agents/developer.md` | 1-121 | Opus | Read, Write, Edit, Bash, Glob, Grep | No | Source code + specs/docs updates + commits |
+| 5 | Developer | `.claude/agents/developer.md` | 1-175 | Opus | Read, Write, Edit, Bash, Glob, Grep | No | Source code + specs/docs updates + commits |
 | 6 | QA | `.claude/agents/qa.md` | 1-307 | Opus | Read, Write, Edit, Bash, Glob, Grep | No | `docs/qa/[domain]-qa-report.md` |
 | 7 | Reviewer | `.claude/agents/reviewer.md` | 1-164 | Opus | Read, Grep, Glob | Yes | Review/audit report |
-| 8 | Functionality Analyst | `.claude/agents/functionality-analyst.md` | 1-151 | Opus | Read, Grep, Glob | Yes | `docs/functionalities/FUNCTIONALITIES.md` |
-| 9 | Codebase Expert | `.claude/agents/codebase-expert.md` | 1-281 | Opus | Read, Grep, Glob | Yes | `docs/understanding/PROJECT-UNDERSTANDING.md` |
+| 8 | Functionality Analyst | `.claude/agents/functionality-analyst.md` | 1-157 | Opus | Read, Grep, Glob | Yes (strict) | `docs/functionalities/FUNCTIONALITIES.md` |
+| 9 | Codebase Expert | `.claude/agents/codebase-expert.md` | 1-293 | Opus | Read, Grep, Glob | Yes (strict) | `docs/understanding/PROJECT-UNDERSTANDING.md` |
 | 10 | Proto-Auditor | `.claude/agents/proto-auditor.md` | 1-416 | Opus | Read, Grep, Glob | Yes | `c2c-protocol/audits/audit-[protocol]-[date].md` |
 | 11 | Proto-Architect | `.claude/agents/proto-architect.md` | 1-219 | Opus | Read, Write, Edit, Grep, Glob | No | `c2c-protocol/patches/patches-[protocol]-[date].md` |
 | 12 | Role Creator | `.claude/agents/role-creator.md` | 1-335 | Opus | Read, Write, Grep, Glob, WebSearch, WebFetch | No | `.claude/agents/[name].md` |
@@ -37,6 +37,7 @@ Every agent follows a consistent structure:
 - **Context Management**: strategy for protecting context window
 - **Process**: step-by-step methodology with named phases
 - **Output**: template and save location
+- **Strict Boundaries** (read-only agents): never offer to implement, fix, or modify; actionable findings reference `/omega:*` commands
 - **Rules**: hard constraints
 - **Anti-Patterns**: explicit "don't do this" list
 - **Failure Handling**: scenario-response table
@@ -47,6 +48,7 @@ Every agent follows a consistent structure:
 Discovery ──→ docs/.workflow/idea-brief.md ──→ Feature Evaluator, Analyst
 Feature Evaluator ──→ docs/.workflow/feature-evaluation.md ──→ omega-new-feature (gate)
 Analyst ──→ specs/[domain]-requirements.md ──→ Architect, Test Writer, Developer, QA
+Analyst ──→ Architecture Context section (modifications) ──→ Developer (bugfix/improve/diagnose)
 Architect ──→ specs/[domain]-architecture.md ──→ Test Writer, Developer
 Test Writer ──→ test files ──→ Developer
 Developer ──→ source code ──→ QA, Reviewer

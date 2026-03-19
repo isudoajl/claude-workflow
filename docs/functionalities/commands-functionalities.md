@@ -1,7 +1,7 @@
 # Command Definitions — Functionality Inventory
 
-> Domain: `.claude/commands/` (14 slash command orchestrators)
-> Generated: 2026-02-28
+> Domain: `.claude/commands/` (17 slash command orchestrators)
+> Generated: 2026-02-28, updated 2026-03-19
 
 ## Overview
 
@@ -29,7 +29,9 @@ All command definitions are Markdown files with YAML frontmatter (`name`, `descr
 ## Shared Fail-Safe Controls
 
 All multi-step commands share these controls:
+- **Architecture Comprehension**: Modification workflows (bugfix, improve, diagnose --fix) require the Analyst to comprehend architecture before proposing changes. The Developer must read architecture context before writing code
 - **Iteration Limits**: QA ↔ Developer max 3 iterations; Reviewer ↔ Developer max 2 iterations
 - **Inter-Step Output Validation**: Each step verifies the previous step produced expected output files
 - **Error Recovery**: Failed chains save state to `docs/.workflow/chain-state.md`
 - **Scope Parameter**: All commands accept `--scope` to limit context window usage
+- **Read-Only Agent Guardrails**: `omega:understand` and `omega:functionalities` enforce output guardrails — agents must not offer to implement

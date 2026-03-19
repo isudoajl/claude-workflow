@@ -9,7 +9,7 @@ The user wants to improve code that already works — refactoring, performance o
 This is NOT for adding new features or fixing bugs. The behavior should stay the same; the implementation gets better.
 Optional: `--scope="area"` to limit which part of the codebase is analyzed.
 
-**Note: This workflow does NOT invoke the Architect.** The architecture already exists — only the implementation changes.
+**CRITICAL: Every modification requires architectural understanding first.** Even "just a refactor" can break invariants, violate contracts, or cascade through dependent modules. The Analyst MUST comprehend the architecture of the affected area before proposing any improvement (see Analyst's "Architecture Comprehension" mandate). The Developer MUST read this architecture context before writing a single line of code.
 
 ## Pipeline Tracking (Institutional Memory)
 If `.claude/memory.db` exists, register this workflow run:
@@ -56,17 +56,23 @@ Invoke the `analyst` subagent. It MUST:
 1. Read `specs/SPECS.md` index (not all files)
 2. If `--scope` provided, read only that area's specs and code
 3. If no `--scope`, determine minimal scope from the improvement description
-4. Read the **actual code** in the scoped area — focus on:
+4. **Comprehend the architecture** of the affected area (mandatory — see Analyst's "Architecture Comprehension" mandate):
+   - Map module boundaries, data flows, and dependency direction
+   - Identify what depends on the code being improved — both directly and indirectly
+   - Document architectural constraints and invariants that the improvement must preserve
+   - Save as "Architecture Context" section in the output document
+5. Read the **actual code** in the scoped area — focus on:
    - Code smells (duplication, long functions, deep nesting, unclear naming)
    - Performance issues (unnecessary allocations, O(n^2) where O(n) is possible, blocking calls)
    - Complexity (can this be simplified without losing functionality?)
    - Pattern violations (code that doesn't match the project's established conventions)
-5. Perform impact analysis — what other modules depend on the code being improved
-6. Ask clarifying questions about the desired improvement direction
-7. Generate a requirements document with IDs, priorities, and acceptance criteria that specifies:
+6. Perform impact analysis — informed by architecture context, not just grep-level code reading
+7. Ask clarifying questions about the desired improvement direction
+8. Generate a requirements document with IDs, priorities, and acceptance criteria that specifies:
    - What the current code does (behavior to preserve)
    - What specifically will be improved
    - What will NOT change (explicit boundaries)
+   - What architectural invariants must be preserved
 
 Save output to `docs/improvements/[domain]-improvement.md`.
 
