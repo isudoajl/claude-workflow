@@ -13,8 +13,8 @@ All command definitions are Markdown files with YAML frontmatter (`name`, `descr
 |---|---------|------|------|-------------|---------------|
 | 1 | `omega:new` | `.claude/commands/omega-new.md` | Full Chain | discovery → analyst → architect → test-writer → developer → QA → reviewer | Yes |
 | 2 | `omega:new-feature` | `.claude/commands/omega-new-feature.md` | Full Chain | (discovery) → feature-evaluator → analyst → architect → test-writer → developer → QA → reviewer | Yes |
-| 3 | `omega:improve-functionality` | `.claude/commands/omega-improve-functionality.md` | Reduced Chain | analyst → test-writer → developer → QA → reviewer | Yes |
-| 4 | `omega:bugfix` | `.claude/commands/omega-bugfix.md` | Reduced Chain | analyst → test-writer → developer → QA → reviewer | Yes |
+| 3 | `omega:improve` | `.claude/commands/omega-improve.md` | Reduced Chain (milestone loop) | analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer] | Yes |
+| 4 | `omega:bugfix` | `.claude/commands/omega-bugfix.md` | Reduced Chain (milestone loop) | analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer] | Yes |
 | 5 | `omega:audit` | `.claude/commands/omega-audit.md` | Single Agent | reviewer | Yes |
 | 6 | `omega:docs` | `.claude/commands/omega-docs.md` | Single Agent | architect | Yes |
 | 7 | `omega:sync` | `.claude/commands/omega-sync.md` | Single Agent | architect | Yes |

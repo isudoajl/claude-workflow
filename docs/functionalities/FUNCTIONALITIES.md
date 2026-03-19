@@ -32,8 +32,8 @@
 ```
 omega:new               → discovery → analyst → architect → test-writer → developer → QA → reviewer
 omega:new-feature       → (discovery) → feature-evaluator → analyst → architect → test-writer → developer → QA → reviewer
-omega:improve-functionality → analyst → test-writer → developer → QA → reviewer
-omega:bugfix            → analyst → test-writer → developer → QA → reviewer
+omega:improve           → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
+omega:bugfix            → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
 omega:audit             → reviewer
 omega:docs              → architect
 omega:sync              → architect

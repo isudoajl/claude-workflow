@@ -86,6 +86,8 @@ Claude Code reads agents from `.claude/agents/` (OMEGA flattens them there) and 
 
 ### Single Pipeline Execution
 
+All modification commands (`new-feature`, `improve`, `bugfix`) use the same milestone loop pattern. The Analyst assesses scope and defines milestones for large changes (4+ modules). Each milestone gets its own independent agent invocations (test-writer → developer → compilation gate → QA → reviewer) and commits independently.
+
 ```
 User invokes /omega:new-feature "add retry logic" --scope="scheduler"
     │
