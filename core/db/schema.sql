@@ -1,5 +1,5 @@
 -- Claude Workflow Institutional Memory Schema
--- Version: 1.2.0 — Added behavioral learnings and incident tracking
+-- Version: 1.3.0 — Added Cortex collective intelligence layer
 -- Every workflow execution writes to this DB. Every agent reads from it before acting.
 
 PRAGMA journal_mode = WAL;
@@ -49,7 +49,10 @@ CREATE TABLE IF NOT EXISTS decisions (
     confidence REAL DEFAULT 1.0,           -- 0.0-1.0, how confident in this decision
     status TEXT DEFAULT 'active',          -- active, superseded, reversed
     superseded_by INTEGER REFERENCES decisions(id),
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT DEFAULT (datetime('now')),
+    contributor TEXT,                      -- Cortex: git identity (Name <email>)
+    shared_uuid TEXT,                      -- Cortex: UUID for import deduplication
+    is_private INTEGER DEFAULT 0          -- Cortex: 1 = excluded from sharing
 );
 
 CREATE INDEX IF NOT EXISTS idx_decisions_domain ON decisions(domain);
@@ -95,7 +98,8 @@ CREATE TABLE IF NOT EXISTS hotspots (
     description TEXT,                      -- why this is a hotspot
     times_touched INTEGER DEFAULT 1,
     last_incident_run INTEGER REFERENCES workflow_runs(id),
-    last_updated TEXT DEFAULT (datetime('now'))
+    last_updated TEXT DEFAULT (datetime('now')),
+    contributor TEXT                       -- Cortex: git identity (Name <email>)
 );
 
 CREATE INDEX IF NOT EXISTS idx_hotspots_risk ON hotspots(risk_level);
@@ -163,7 +167,10 @@ CREATE TABLE IF NOT EXISTS patterns (
     name TEXT NOT NULL,                    -- short pattern name
     description TEXT NOT NULL,             -- what the pattern is
     example_files TEXT,                    -- JSON array of files demonstrating it
-    created_at TEXT DEFAULT (datetime('now'))
+    created_at TEXT DEFAULT (datetime('now')),
+    contributor TEXT,                      -- Cortex: git identity (Name <email>)
+    shared_uuid TEXT,                      -- Cortex: UUID for import deduplication
+    is_private INTEGER DEFAULT 0          -- Cortex: 1 = excluded from sharing
 );
 
 -- ============================================================
@@ -197,6 +204,9 @@ CREATE TABLE IF NOT EXISTS lessons (
     status TEXT DEFAULT 'active',           -- active, archived, superseded
     created_at TEXT DEFAULT (datetime('now')),
     last_reinforced TEXT DEFAULT (datetime('now')),
+    contributor TEXT,                       -- Cortex: git identity (Name <email>)
+    shared_uuid TEXT,                       -- Cortex: UUID for import deduplication
+    is_private INTEGER DEFAULT 0,          -- Cortex: 1 = excluded from sharing
     UNIQUE(domain, content)                -- content-based deduplication
 );
 
@@ -219,6 +229,9 @@ CREATE TABLE IF NOT EXISTS behavioral_learnings (
     status TEXT DEFAULT 'active',          -- active, superseded, archived
     created_at TEXT DEFAULT (datetime('now')),
     last_reinforced TEXT DEFAULT (datetime('now')),
+    contributor TEXT,                      -- Cortex: git identity (Name <email>)
+    shared_uuid TEXT,                      -- Cortex: UUID for import deduplication
+    is_private INTEGER DEFAULT 0,         -- Cortex: 1 = excluded from sharing
     UNIQUE(rule)                           -- Content-based dedup
 );
 
@@ -246,7 +259,10 @@ CREATE TABLE IF NOT EXISTS incidents (
     tags TEXT,                             -- JSON array of searchable keywords
     run_id INTEGER REFERENCES workflow_runs(id),
     created_at TEXT DEFAULT (datetime('now')),
-    resolved_at TEXT
+    resolved_at TEXT,
+    contributor TEXT,                      -- Cortex: git identity (Name <email>)
+    shared_uuid TEXT,                      -- Cortex: UUID for import deduplication
+    is_private INTEGER DEFAULT 0          -- Cortex: 1 = excluded from sharing
 );
 
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
@@ -310,6 +326,19 @@ CREATE TABLE IF NOT EXISTS onboarding_state (
     started_at TEXT,
     completed_at TEXT
 );
+
+-- ============================================================
+-- SHARED IMPORTS — Cortex: tracks imported shared entries to prevent re-import
+-- ============================================================
+CREATE TABLE IF NOT EXISTS shared_imports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shared_uuid TEXT NOT NULL,
+    category TEXT NOT NULL,                -- behavioral_learning, incident, hotspot, lesson, pattern, decision
+    source_file TEXT,                      -- which JSONL/JSON file it came from
+    imported_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shared_imports_uuid ON shared_imports(shared_uuid);
 
 -- ============================================================
 -- VIEWS — pre-built queries agents use frequently
@@ -458,3 +487,14 @@ SELECT
 FROM incident_entries e
 JOIN incidents i ON i.incident_id = e.incident_id
 ORDER BY e.incident_id, e.id ASC;
+
+-- Cortex: shareable behavioral learnings (high-confidence, non-private, active)
+CREATE VIEW IF NOT EXISTS v_shared_briefing AS
+SELECT
+    id, rule, confidence, occurrences, context, source_project, contributor,
+    created_at, last_reinforced
+FROM behavioral_learnings
+WHERE confidence >= 0.8
+  AND status = 'active'
+  AND COALESCE(is_private, 0) = 0
+ORDER BY confidence DESC, occurrences DESC;

@@ -1,14 +1,28 @@
-# Milestone Progress: OMEGA Persona
+# Milestone Progress: OMEGA Cortex
 
-## Milestones
+## Phase 1: Foundation
+| ID | Name | Status | Timestamp |
+|----|------|--------|-----------|
+| M1 | Schema + Migration | PENDING | |
+| M2 | Shared Store + Protocol | PENDING | |
 
-| ID | Name | Status | Completed At |
-|----|------|--------|-------------|
-| M1 | OMEGA Persona | COMPLETE | 2026-03-17 |
+## Phase 2: Curation
+| ID | Name | Status | Timestamp |
+|----|------|--------|-----------|
+| M3 | Curator Agent + Share Command | PENDING | |
+| M4 | Session Close Curation Trigger | PENDING | |
 
-## Modules (M1)
-1. Schema (`core/db/schema.sql`) — PENDING
-2. Briefing Hook (`core/hooks/briefing.sh`) — PENDING
-3. CLAUDE.md Identity Protocol — PENDING
-4. Onboarding Command (`core/commands/omega-onboard.md`) — PENDING
-5. Documentation & Deployment Updates — PENDING
+## Phase 3: Consumption
+| ID | Name | Status | Timestamp |
+|----|------|--------|-----------|
+| M5 | Briefing Import + Shared Tracking | PENDING | |
+| M6 | Diagnostician + Team Status | PENDING | |
+| M7 | Documentation + CLAUDE.md | PENDING | |
+
+## Phase 4: Sync Adapters
+| ID | Name | Status | Timestamp |
+|----|------|--------|-----------|
+| M8 | Sync Adapter Abstraction + Git Adapter | PENDING | |
+| M9 | Cloud Adapter + Config Command | PENDING | |
+| M10 | Middleware + Offline Resilience | PENDING | |
+| M11 | Self-Hosted Bridge + Adapter | PENDING | |

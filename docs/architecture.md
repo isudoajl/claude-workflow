@@ -341,3 +341,67 @@ Memory without forgetting becomes noise. The `decay_log` table and `maintenance.
 - Orphaned hotspots (files that no longer exist) get flagged for cleanup
 
 This prevents the briefing from being polluted by ancient, irrelevant data.
+
+## Cortex: Collective Intelligence Layer
+
+> Added in v1.3.0. Full architecture: `specs/cortex-architecture.md`.
+
+### Problem
+
+OMEGA works as an isolated brain per developer. Every learning, incident resolution, behavioral correction, and hotspot stays locked in one developer's local `memory.db`. When a new developer joins (or the same developer sets up on a new machine), they start from zero.
+
+### Solution: Hybrid Local + Shared Architecture
+
+Cortex transforms OMEGA into a collective intelligence system while preserving the local-first design:
+
+- **`memory.db` stays local** — fast, safe, no merge conflicts, no shared filesystem issues.
+- **`.omega/shared/` is git-tracked** — curated high-value knowledge exported as JSONL files, distributed via git.
+- **Knowledge Curator agent** — evaluates local entries for team relevance, exports qualifying entries (confidence >= 0.8, not private), deduplicates, detects conflicts.
+- **Briefing hook imports shared knowledge** — at session start, new shared entries are imported into local memory.db and injected into context with `[TEAM]` labels.
+
+### Data Flow
+
+```
+Developer A works → memory.db accumulates knowledge
+  → Session close / /omega:share triggers Curator
+    → Curator evaluates entries (relevance, confidence, privacy)
+    → Curator exports to .omega/shared/ JSONL files
+    → Developer A commits and pushes
+
+Developer B pulls
+  → briefing.sh reads .omega/shared/ files
+  → Imports new entries into local memory.db
+  → Injects shared knowledge into session: "[TEAM 0.9] Never mock DB in integration tests (from Dev A)"
+  → Diagnostician queries shared incidents for pattern matching
+```
+
+### Sync Adapters (Phase 4)
+
+The default git JSONL backend requires zero infrastructure. Phase 4 adds optional real-time backends:
+
+| Backend | Sync | Infrastructure | Use Case |
+|---------|------|---------------|----------|
+| Git JSONL (default) | Manual (commit/push) | Zero | Solo/small teams, offline-first |
+| Cloudflare D1 | Real-time (HTTP) | Managed | Teams wanting instant sync |
+| Self-hosted bridge | Real-time (HTTP) | VPS + Docker | Teams wanting data sovereignty |
+
+All backends implement the same adapter interface. The curator and briefing hook are adapter-agnostic.
+
+### Key Design Decisions
+
+- **JSONL format**: One entry per line enables line-level git merges, minimizing conflicts.
+- **Confidence threshold (0.8)**: Conservative — better to under-share than over-share.
+- **Curation trigger via flag file**: Bash hooks cannot spawn Claude agents; the session-close hook writes a `.curation_pending` flag that the next briefing detects.
+- **python3 for JSONL parsing**: Already a dependency (briefing.sh uses it for session_id extraction); bash cannot parse JSON reliably.
+
+### New Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| `core/agents/curator.md` | Agent (Sonnet) | Evaluate and export shared knowledge |
+| `core/commands/omega-share.md` | Command | Manual curation trigger |
+| `core/commands/omega-team-status.md` | Command | Team knowledge dashboard |
+| `core/protocols/cortex-protocol.md` | Protocol | JSONL format, curation rules, import rules |
+| `core/protocols/sync-adapters.md` | Protocol | Adapter interface specification |
+| `core/commands/omega-cortex-config.md` | Command | Backend configuration |
+| `extensions/cortex-bridge/` | Extension | Self-hosted bridge server (Python/FastAPI) |
