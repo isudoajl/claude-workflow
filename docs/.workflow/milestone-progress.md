@@ -23,7 +23,7 @@
 | ID | Name | Status | Timestamp |
 |----|------|--------|-----------|
 | M12 | Import Hardening + Entry Signing | COMPLETE | 2026-03-20 |
-| M13 | Bridge + Network Hardening | PENDING | |
+| M13 | Bridge + Network Hardening | COMPLETE | 2026-03-20 |
 
 ## Phase 4: Sync Adapters
 | ID | Name | Status | Timestamp |
