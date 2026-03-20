@@ -3,4 +3,10 @@
 .claude/memory.db-wal
 .claude/memory.db-shm
 .claude/db-queries/
+.claude/agents/
+.claude/commands/
+.claude/hooks/
+.claude/protocols/
+.claude/settings.json
+.claude/.omg-version
 cli/target/
