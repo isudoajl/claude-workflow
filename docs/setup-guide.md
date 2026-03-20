@@ -139,12 +139,12 @@ your-project/
 │   │   ├── analyst.md
 │   │   ├── architect.md
 │   │   ├── developer.md
-│   │   ├── ... (14 core agents)
+│   │   ├── ... (16 core agents)
 │   │   └── blockchain-network.md  (if --ext=blockchain)
 │   ├── commands/              ← Workflow orchestrators
 │   │   ├── omega-new.md
 │   │   ├── omega-bugfix.md
-│   │   ├── ... (14 core commands)
+│   │   ├── ... (20 core commands)
 │   │   └── omega-blockchain-network.md  (if --ext=blockchain)
 │   ├── hooks/                 ← Automation hooks
 │   │   ├── briefing.sh        ← UserPromptSubmit: injects memory context on first prompt
