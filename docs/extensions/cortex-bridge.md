@@ -56,7 +56,7 @@ All via environment variables:
 
 ## Client Configuration
 
-In the target project's `.omega/cortex-config.json`, set backend to `self-hosted` and provide the endpoint URL and auth token env var. Use `/omega:cortex-config` to configure interactively.
+In the target project's `.omega/cortex-config.json`, set backend to `self-hosted` and provide the endpoint URL and auth token env var. Use `/omega-cortex-config` to configure interactively.
 
 ## Related
 

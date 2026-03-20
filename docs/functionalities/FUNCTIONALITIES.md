@@ -30,20 +30,20 @@
 ### Pipeline Chains (Command → Agent sequences)
 
 ```
-omega:new               → discovery → analyst → architect → test-writer → developer → QA → reviewer
-omega:new-feature       → (discovery) → feature-evaluator → analyst → architect → test-writer → developer → QA → reviewer
-omega:improve           → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
-omega:bugfix            → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
-omega:audit             → reviewer
-omega:docs              → architect
-omega:sync              → architect
-omega:functionalities   → functionality-analyst
-omega:understand        → codebase-expert
-omega:c2c               → c2c-writer ↔ c2c-auditor (multi-round loop, max 20 rounds)
-omega:proto-audit       → proto-auditor
-omega:proto-improve     → proto-architect
-omega:create-role       → role-creator → role-auditor → auto-remediation (max 2 cycles)
-omega:audit-role        → role-auditor
+omega-new               → discovery → analyst → architect → test-writer → developer → QA → reviewer
+omega-new-feature       → (discovery) → feature-evaluator → analyst → architect → test-writer → developer → QA → reviewer
+omega-improve           → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
+omega-bugfix            → analyst → [per milestone: test-writer → developer → compilation gate → QA → reviewer]
+omega-audit             → reviewer
+omega-docs              → architect
+omega-sync              → architect
+omega-functionalities   → functionality-analyst
+omega-understand        → codebase-expert
+omega-c2c               → c2c-writer ↔ c2c-auditor (multi-round loop, max 20 rounds)
+omega-proto-audit       → proto-auditor
+omega-proto-improve     → proto-architect
+omega-create-role       → role-creator → role-auditor → auto-remediation (max 2 cycles)
+omega-audit-role        → role-auditor
 ```
 
 ### Data Flow (File artifacts)

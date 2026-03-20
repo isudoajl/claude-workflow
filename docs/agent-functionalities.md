@@ -102,8 +102,8 @@ None. This is the first agent in the pipeline.
 
 ### Prerequisite Gates
 
-1. **If invoked after Discovery** (in `/omega:new` or `/omega:new-feature`): verifies `docs/.workflow/idea-brief.md` exists. Stops if missing.
-2. **If invoked directly** (in `/omega:improve-functionality`, `/omega:bugfix`): no idea brief needed — user's description is input.
+1. **If invoked after Discovery** (in `/omega-new` or `/omega-new-feature`): verifies `docs/.workflow/idea-brief.md` exists. Stops if missing.
+2. **If invoked directly** (in `/omega-improve-functionality`, `/omega-bugfix`): no idea brief needed — user's description is input.
 
 ### Inputs
 
@@ -193,7 +193,7 @@ None. This is the first agent in the pipeline.
 | 4 | Scope enforcement | Limits strictly to `--scope` if provided. |
 | 5 | Requirements-first reading | Reads analyst's requirements first (scope, priorities, affected files). |
 | 6 | Grep before Read | Locates relevant code before reading whole files. |
-| 7 | Large project milestone processing | For `/omega:docs` and `/omega:sync`: works one milestone at a time, saves progress between milestones. |
+| 7 | Large project milestone processing | For `/omega-docs` and `/omega-sync`: works one milestone at a time, saves progress between milestones. |
 | 8 | Context limit handling | Summarizes to `docs/.workflow/architect-summary.md`. |
 | 9 | Drift flagging | Flags drift between code and specs/docs. |
 | 10 | Module structure design | Designs modules, interfaces, and dependencies. |
@@ -214,8 +214,8 @@ None. This is the first agent in the pipeline.
 | 25 | External dependencies documentation | Lists crate/library dependencies with version and purpose. |
 | 26 | New feature process | Read requirements → read scoped codebase/specs → design → update specs/docs → update indexes → update traceability. |
 | 27 | Greenfield process | Read requirements → design full structure → define modules/interfaces/order → failure modes/security/performance → create specs/ and docs/ from scratch. |
-| 28 | Documentation mode (`/omega:docs`) | Per milestone: read code → compare against specs → update stale → create missing → save checkpoint → update indexes. |
-| 29 | Sync mode (`/omega:sync`) | Per milestone: read code → read specs/docs → log drift → fix drift → save checkpoint → generate drift report → update indexes. |
+| 28 | Documentation mode (`/omega-docs`) | Per milestone: read code → compare against specs → update stale → create missing → save checkpoint → update indexes. |
+| 29 | Sync mode (`/omega-sync`) | Per milestone: read code → read specs/docs → log drift → fix drift → save checkpoint → generate drift report → update indexes. |
 
 ### Outputs
 
@@ -481,7 +481,7 @@ None. This is the first agent in the pipeline.
 
 1. **Code must exist** — Globs for source files. Stops if missing.
 2. **For workflow reviews** (after QA): checks for QA report in `docs/qa/`. Notes gap if missing but proceeds.
-3. **For audit mode** (`/omega:audit`): code is the only prerequisite.
+3. **For audit mode** (`/omega-audit`): code is the only prerequisite.
 
 ### Inputs
 
@@ -524,7 +524,7 @@ None. This is the first agent in the pipeline.
 | File | Condition |
 |------|-----------|
 | Review report in `docs/reviews/` | After workflow chains |
-| Audit report in `docs/audits/` | For `/omega:audit` |
+| Audit report in `docs/audits/` | For `/omega-audit` |
 | `docs/.workflow/reviewer-findings.md` | Progressive findings |
 | `docs/.workflow/reviewer-partial.md` | If context limited |
 

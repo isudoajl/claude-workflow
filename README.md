@@ -90,7 +90,7 @@ claude
 
 Then inside Claude Code:
 ```
-/omega:new "build a REST API for user management"
+/omega-new "build a REST API for user management"
 ```
 
 ### Setup Options
@@ -269,38 +269,38 @@ Eight hooks enforce the memory protocol automatically:
 
 | Command | Description |
 |---------|-------------|
-| `/omega:new "idea"` | Full pipeline for greenfield projects |
-| `/omega:new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
-| `/omega:improve "desc" [--scope]` | Refactor/optimize (analyst comprehends architecture, no separate architect step) |
-| `/omega:bugfix "bug" [--scope]` | Bug fix with reproduction test |
-| `/omega:audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
-| `/omega:docs [--scope]` | Generate/update specs and docs |
-| `/omega:sync [--scope]` | Detect and fix specs/docs drift |
-| `/omega:functionalities [--scope]` | Map codebase functionalities |
-| `/omega:understand [--scope]` | Deep codebase comprehension |
-| `/omega:resume [--from]` | Resume stopped workflow |
-| `/omega:wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
-| `/omega:consult "request" [--critical]` | Intelligent specialist routing: find/create domain experts |
-| `/omega:create-role "desc"` | Design a new agent role |
-| `/omega:audit-role "path" [--scope]` | Adversarial audit of role definitions |
-| `/omega:diagnose "bug" [--scope] [--fix]` | Deep root cause diagnosis for hard bugs |
-| `/omega:learn "rule" [--list] [--remove]` | Manually teach OMEGA a behavioral learning |
-| `/omega:onboard [--update]` | Set up your OMEGA identity profile |
-| `/omega:share [--force] [--dry-run] [--scope]` | Export curated knowledge to shared team store |
-| `/omega:team-status` | Dashboard: shared knowledge stats, contributions, incidents, hotspots |
-| `/omega:cortex-config [--show] [--reset]` | Configure Cortex sync backend (git-jsonl, cloudflare-d1, turso, self-hosted) |
+| `/omega-new "idea"` | Full pipeline for greenfield projects |
+| `/omega-new-feature "feat" [--scope]` | Full pipeline for existing projects (with feature gate) |
+| `/omega-improve "desc" [--scope]` | Refactor/optimize (analyst comprehends architecture, no separate architect step) |
+| `/omega-bugfix "bug" [--scope]` | Bug fix with reproduction test |
+| `/omega-audit [--fix] [--scope]` | Code audit; `--fix` for auto-fix pipeline |
+| `/omega-docs [--scope]` | Generate/update specs and docs |
+| `/omega-sync [--scope]` | Detect and fix specs/docs drift |
+| `/omega-functionalities [--scope]` | Map codebase functionalities |
+| `/omega-understand [--scope]` | Deep codebase comprehension |
+| `/omega-resume [--from]` | Resume stopped workflow |
+| `/omega-wizard-ux "desc" [--scope]` | Design wizard/setup UX flows |
+| `/omega-consult "request" [--critical]` | Intelligent specialist routing: find/create domain experts |
+| `/omega-create-role "desc"` | Design a new agent role |
+| `/omega-audit-role "path" [--scope]` | Adversarial audit of role definitions |
+| `/omega-diagnose "bug" [--scope] [--fix]` | Deep root cause diagnosis for hard bugs |
+| `/omega-learn "rule" [--list] [--remove]` | Manually teach OMEGA a behavioral learning |
+| `/omega-onboard [--update]` | Set up your OMEGA identity profile |
+| `/omega-share [--force] [--dry-run] [--scope]` | Export curated knowledge to shared team store |
+| `/omega-team-status` | Dashboard: shared knowledge stats, contributions, incidents, hotspots |
+| `/omega-cortex-config [--show] [--reset]` | Configure Cortex sync backend (git-jsonl, cloudflare-d1, turso, self-hosted) |
 
 ## Intelligent Specialist Routing
 
 OMEGA ships with 16 core agents that cover software development. But real projects need expertise in hundreds of domains — marketing, compliance, database optimization, DevOps, security hardening, content writing, etc.
 
-`/omega:consult` is the catch-all for domain expertise that doesn't fit the structured development commands:
+`/omega-consult` is the catch-all for domain expertise that doesn't fit the structured development commands:
 
 ```bash
-/omega:consult "help me design a HIPAA-compliant data flow"
-/omega:consult "optimize my PostgreSQL queries for 10M rows"
-/omega:consult "write SEO-optimized copy for my landing page"
-/omega:consult --critical "should we migrate to microservices?"
+/omega-consult "help me design a HIPAA-compliant data flow"
+/omega-consult "optimize my PostgreSQL queries for 10M rows"
+/omega-consult "write SEO-optimized copy for my landing page"
+/omega-consult --critical "should we migrate to microservices?"
 ```
 
 ### How It Works
@@ -326,14 +326,14 @@ Over time, your project accumulates the exact specialists it needs. A fintech pr
 
 ### When to Use What
 
-| Your task | Use this, not /omega:consult |
+| Your task | Use this, not /omega-consult |
 |---|---|
-| Fix a bug | `/omega:bugfix` |
-| Add a feature | `/omega:new-feature` |
-| Refactor code | `/omega:improve` |
-| Code review | `/omega:audit` |
-| Hard bug, unknown cause | `/omega:diagnose` |
-| **Domain expertise outside development** | **`/omega:consult`** |
+| Fix a bug | `/omega-bugfix` |
+| Add a feature | `/omega-new-feature` |
+| Refactor code | `/omega-improve` |
+| Code review | `/omega-audit` |
+| Hard bug, unknown cause | `/omega-diagnose` |
+| **Domain expertise outside development** | **`/omega-consult`** |
 
 ## Extension Packs
 
@@ -358,7 +358,7 @@ Over time, your project accumulates the exact specialists it needs. A fintech pr
 - **Read-only agent boundaries**: Research agents (codebase-expert, functionality-analyst) never offer to implement — they report findings and suggest appropriate commands
 - **Iteration limits**: QA<->Developer max 3, Reviewer<->Developer max 2, Audit fix max 5 per finding
 - **Hydra detection**: Bugfix auto-escalates to diagnostician after 3+ distinct root causes on the same incident (prevents symptom-chasing loops)
-- **60% context budget**: Agents stop at 60% context usage, save state, continue via `/omega:resume`
+- **60% context budget**: Agents stop at 60% context usage, save state, continue via `/omega-resume`
 - **Inter-step validation**: Commands verify each agent produced output before invoking the next
 - **Error recovery**: Failed chains save state to `docs/.workflow/chain-state.md` + memory.db
 - **Developer max retry**: 5 attempts per test-fix cycle, then escalation

@@ -65,7 +65,7 @@ Evidence that the problem is current: the schema already has `source_project` on
 - The curator agent definition will need iteration as teams discover edge cases in relevance filtering
 - Schema migration must be maintained across all deployed projects (backward compatibility requires ALTER TABLE ADD COLUMN patterns that get complex over time)
 - The briefing hook's token budget grows with shared knowledge -- this requires ongoing tuning
-- Two new commands (`omega:share`, `omega:team-status`) and one new protocol file add to the surface area
+- Two new commands (`omega-share`, `omega-team-status`) and one new protocol file add to the surface area
 
 **Estimated effort:** Large. 9 sub-components, 14 files affected, novel architectural patterns. This is not a "feature" -- it is an architectural layer.
 
@@ -85,14 +85,14 @@ Evidence that the problem is current: the schema already has `source_project` on
 
 For CONDITIONAL verdict: the following conditions must be met before proceeding:
 
-- [ ] **Reduce scope to 3 phases**: Phase 1 = Schema additions + shared knowledge store structure + setup.sh initialization (pure plumbing, zero behavioral change). Phase 2 = Curator agent + `/omega:share` command (the novel intelligence layer). Phase 3 = Briefing import + diagnostician enhancement + `/omega:team-status` (where end-user value is delivered). Each phase is independently deployable and testable.
+- [ ] **Reduce scope to 3 phases**: Phase 1 = Schema additions + shared knowledge store structure + setup.sh initialization (pure plumbing, zero behavioral change). Phase 2 = Curator agent + `/omega-share` command (the novel intelligence layer). Phase 3 = Briefing import + diagnostician enhancement + `/omega-team-status` (where end-user value is delivered). Each phase is independently deployable and testable.
 - [ ] **Resolve the 4 blocking open questions before Phase 2**: (1) Shared directory naming (`.omega/shared/` vs alternatives), (2) Curator trigger mechanism (hook-based vs session close-out vs pre-commit), (3) Contributor identity source (`git user.name` vs `user.email` vs `user_profile.user_name`), (4) Privacy marking mechanism (whether a `private` flag on memory.db tables is needed to prevent curator from sharing certain entries).
 - [ ] **Define the briefing token budget cap**: Before Phase 3, specify the maximum number of shared items injected at session start (e.g., top 5 shared behavioral learnings, top 3 shared incidents by relevance). Without a hard cap, the briefing will grow unbounded and violate the 60% context budget.
 - [ ] **Accept that the Curator will start conservative**: First version should promote only entries with confidence >= 0.8 (not 0.7 as proposed in the brief). It is better to under-share than over-share in v1. Loosening the threshold later is easy; tightening after bad knowledge has propagated is hard.
 
 ## Alternatives Considered
 
-- **Manual export/import scripts (no curator)**: A simple `omega:export-learnings` and `omega:import-learnings` pair that dumps high-confidence behavioral learnings to a shared file and imports from it. Pros: 10x simpler, no new agent, no intelligence layer. Cons: no relevance filtering, no deduplication, no reinforcement merging. Delivers ~40% of the value at ~15% of the cost. This could be a useful stepping stone before the full Cortex.
+- **Manual export/import scripts (no curator)**: A simple `omega-export-learnings` and `omega-import-learnings` pair that dumps high-confidence behavioral learnings to a shared file and imports from it. Pros: 10x simpler, no new agent, no intelligence layer. Cons: no relevance filtering, no deduplication, no reinforcement merging. Delivers ~40% of the value at ~15% of the cost. This could be a useful stepping stone before the full Cortex.
 - **Shared markdown files with manual curation**: Developers write shared learnings to a team wiki or markdown file. Pros: zero infrastructure. Cons: no automation, no confidence scoring, no integration with briefing. Delivers ~10% of the value.
 - **External knowledge base (Notion, Confluence, etc.)**: Pros: existing tools with search and collaboration. Cons: not OMEGA-native, not injected at briefing, breaks zero-infrastructure philosophy. Not viable for this use case.
 - **Do nothing**: Teams continue with isolated memory.db instances. Cost of inaction: every developer independently rediscovers lessons, incidents, and hotspots. For a team of 4, this roughly 4x the debugging time for repeated patterns. Significant but not blocking -- OMEGA works fine for solo developers today.
@@ -105,9 +105,9 @@ Decompose into 3 independently deployable phases, each going through the full OM
 
 1. **Phase 1 (Foundation)**: Schema additions, `.omega/shared/` directory structure, setup.sh changes. Pure plumbing with zero behavioral change. Ship it, verify backward compatibility across all deployed target projects.
 
-2. **Phase 2 (Curation)**: Curator agent + `/omega:share` command. This is the novel intelligence layer. Ship it, iterate on curation quality with real team usage before building the import/consumption side.
+2. **Phase 2 (Curation)**: Curator agent + `/omega-share` command. This is the novel intelligence layer. Ship it, iterate on curation quality with real team usage before building the import/consumption side.
 
-3. **Phase 3 (Consumption)**: Briefing import, diagnostician enhancement, `/omega:team-status`. This is where the value is delivered to end users. Ship it only after Phase 2 has been validated with real usage data.
+3. **Phase 3 (Consumption)**: Briefing import, diagnostician enhancement, `/omega-team-status`. This is where the value is delivered to end users. Ship it only after Phase 2 has been validated with real usage data.
 
 Do not attempt all 9 sub-features in one pass through the pipeline.
 

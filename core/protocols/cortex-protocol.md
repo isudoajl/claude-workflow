@@ -1,10 +1,10 @@
 <!-- @INDEX
-SHARED-STORE-FORMAT                      15-61
-CURATION-RULES                           62-97
-IMPORT-RULES                             98-134
-PRIVACY                                  135-154
-CONTRIBUTOR-IDENTITY                     155-179
-CONFLICT-RESOLUTION                      180-207
+SHARED-STORE-FORMAT                      16-62
+CURATION-RULES                           63-98
+IMPORT-RULES                             99-135
+PRIVACY                                  136-155
+CONTRIBUTOR-IDENTITY                     156-180
+CONFLICT-RESOLUTION                      181-210
 SECURITY                                 211-325
 @/INDEX -->
 

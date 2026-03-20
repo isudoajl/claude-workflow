@@ -68,7 +68,7 @@ Hook scripts live in `.claude/hooks/` and are configured in `.claude/settings.js
 ### Tables
 
 #### `workflow_runs` — Pipeline execution traces
-Every `/omega:*` command that modifies code creates a row at start and closes it at end. Read-only commands (e.g., `audit` without `--fix`) skip tracking.
+Every `/omega-*` command that modifies code creates a row at start and closes it at end. Read-only commands (e.g., `audit` without `--fix`) skip tracking.
 
 | Column | Type | Purpose |
 |--------|------|---------|
@@ -276,7 +276,7 @@ Written by: maintenance queries. Read by: maintenance queries.
 | `reason` | TEXT | Why the decay happened |
 
 #### `user_profile` — Per-project identity (single row by convention)
-Written by: `/omega:onboard` command. Read by: `briefing.sh`.
+Written by: `/omega-onboard` command. Read by: `briefing.sh`.
 
 | Column | Type | Purpose |
 |--------|------|---------|
@@ -289,7 +289,7 @@ Written by: `/omega:onboard` command. Read by: `briefing.sh`.
 Single-row by convention, not by constraint. The onboarding command uses `INSERT OR REPLACE` to maintain one row. Experience level auto-upgrades during briefing: beginner to intermediate at 10 completed workflows, intermediate to advanced at 30.
 
 #### `onboarding_state` — Tracks onboarding flow progress
-Written by: `/omega:onboard` command. Read by: `/omega:onboard` (for resume).
+Written by: `/omega-onboard` command. Read by: `/omega-onboard` (for resume).
 
 | Column | Type | Purpose |
 |--------|------|---------|
@@ -546,13 +546,25 @@ SQLite binary files don't diff in git. Mitigations:
 
 Cortex extends institutional memory from per-developer to **team-wide**. Knowledge flows through a hybrid architecture: local memory.db for real-time speed, git-tracked `.omega/shared/` files for team distribution.
 
-### Schema Additions (v1.3.0)
+### Schema Additions (v1.3.0–v1.6.0)
 
-**New table: `shared_imports`** — Tracks which shared entries have been imported to prevent re-import:
+**New table: `shared_imports`** (v1.3.0) — Tracks which shared entries have been imported to prevent re-import:
 - `shared_uuid TEXT NOT NULL` (UNIQUE) — UUID of the shared entry
 - `category TEXT NOT NULL` — behavioral_learning, incident, hotspot, lesson, pattern, decision
 - `source_file TEXT` — which JSONL/JSON file it came from
 - `imported_at TEXT` — when imported
+
+**New table: `cortex_security_log`** (v1.5.0) — Security audit trail for Cortex operations:
+- `event_type TEXT` — sanitization_blocked, hmac_failure, suspicious_pattern, import_rejected, etc.
+- `details TEXT` — JSON context of the event
+- `severity TEXT` — info, warning, critical
+- `source TEXT` — which hook/script generated the event
+
+**New table: `cortex_sync_state`** (v1.6.0) — Middleware sync tracking for adapter backends:
+- `adapter TEXT` — git-jsonl, cloudflare-d1, self-hosted
+- `last_sync TEXT` — last successful sync timestamp
+- `sync_status TEXT` — idle, syncing, failed
+- `pending_count INTEGER` — entries awaiting sync
 
 **New columns on shareable tables** (behavioral_learnings, incidents, lessons, patterns, decisions):
 - `contributor TEXT` — git identity of who created the entry ("Name <email>")
@@ -566,12 +578,12 @@ Cortex extends institutional memory from per-developer to **team-wide**. Knowled
 - `SELECT ... FROM behavioral_learnings WHERE confidence >= 0.8 AND status = 'active' AND COALESCE(is_private, 0) = 0`
 
 ### Commands
-- `/omega:share` — Invokes the curator agent to export qualifying entries to `.omega/shared/`
-- `/omega:team-status` — Dashboard showing shared knowledge stats, contributions, incidents, hotspots
+- `/omega-share` — Invokes the curator agent to export qualifying entries to `.omega/shared/`
+- `/omega-team-status` — Dashboard showing shared knowledge stats, contributions, incidents, hotspots
 
 ### How It Works
 1. Developer works normally — memory.db accumulates learnings, incidents, hotspots
-2. At session close (or manually via `/omega:share`), the **curator agent** evaluates entries:
+2. At session close (or manually via `/omega-share`), the **curator agent** evaluates entries:
    - Confidence >= 0.8? Team-relevant (not personal)? Not private?
    - Deduplicates via content_hash, reinforces cross-contributor entries
 3. Qualifying entries exported to `.omega/shared/` (JSONL files + incident JSON files)
@@ -588,8 +600,11 @@ See `cortex-protocol.md` for full JSONL format specification and curation rules.
 - No automated decay beyond hotspot promotion (maintenance queries must be run manually or by a scheduled workflow)
 - `$RUN_ID` passing relies on orchestrator convention, not enforcement
 
+**Implemented (formerly future):**
+- **Sync Adapters (Phase 4)**: Cloudflare D1 and self-hosted bridge backends for real-time sync. Configured via `/omega-cortex-config`. See `core/protocols/sync-adapters.md`.
+- **Security Hardening (Phase 5)**: Input sanitization, HMAC-SHA256 entry signing, content validation, bridge authentication, rate limiting, security audit logging. See Cortex security section in `core/protocols/cortex-protocol.md`.
+
 **Potential future additions:**
-- **Sync Adapters (Phase 4)**: Cloudflare D1, Turso, and self-hosted backends for real-time sync without git push/pull
-- A `omega:memory-health` command that runs maintenance queries + self-learning health stats
+- A `omega-memory-health` command that runs maintenance queries + self-learning health stats
 - Automated decay via a post-workflow hook
-- A `omega:memory-query` command for ad-hoc DB queries
+- A `omega-memory-query` command for ad-hoc DB queries

@@ -86,8 +86,8 @@ All capabilities below are v1. Ordered by implementation dependency:
 - `ALTER TABLE ADD COLUMN` with `CREATE TABLE IF NOT EXISTS`-style checks for backward-compatible migration
 
 ### 5. Export/Import Commands (user interface)
-- `/omega:share` -- manually trigger the curator to evaluate and export. Also usable for force-sharing specific entries.
-- `/omega:team-status` -- dashboard showing: shared knowledge stats (counts by category), recent contributions (who shared what, when), active shared incidents, team hotspot map, any unresolved conflicts.
+- `/omega-share` -- manually trigger the curator to evaluate and export. Also usable for force-sharing specific entries.
+- `/omega-team-status` -- dashboard showing: shared knowledge stats (counts by category), recent contributions (who shared what, when), active shared incidents, team hotspot map, any unresolved conflicts.
 
 ### 6. Shared Incident Registry (high-value knowledge)
 - Curator exports resolved incidents with full timeline: title, domain, symptoms, root cause, resolution, all entries (hypotheses, attempts, discoveries), prevention rules
@@ -109,7 +109,7 @@ All capabilities below are v1. Ordered by implementation dependency:
 
 ### 9. Contributor Attribution (context, not blame)
 - Every shared entry tracks who contributed it and in what context
-- `/omega:team-status` shows contributor activity
+- `/omega-team-status` shows contributor activity
 - Surfaced during briefing for context: "Learned from Developer A during the payments refactor (INC-042)"
 
 ## Explicitly Out of Scope
@@ -118,7 +118,7 @@ All capabilities below are v1. Ordered by implementation dependency:
 - **Access control/permissions**: No fine-grained sharing permissions. If you have git access, you participate in shared knowledge.
 - **Cross-project knowledge sharing**: Cortex shares within a single repository. Cross-repo sharing is a future capability.
 - **Automatic conflict resolution**: Curator flags contradictions; humans resolve them.
-- **UI/dashboard**: No web interface. `/omega:team-status` is CLI output.
+- **UI/dashboard**: No web interface. `/omega-team-status` is CLI output.
 - **Shared user profiles**: The Persona system remains per-developer. Communication preferences are personal.
 
 ## Key Decisions Made
@@ -140,7 +140,7 @@ All capabilities below are v1. Ordered by implementation dependency:
 
 ## Open Questions
 - **Shared directory naming**: `.omega/shared/` vs `omega-shared/` vs `.claude/shared/`?
-- **Conflict resolution UX**: `conflicts.jsonl` file? `/omega:resolve-conflicts` command? Interactive prompt?
+- **Conflict resolution UX**: `conflicts.jsonl` file? `/omega-resolve-conflicts` command? Interactive prompt?
 - **Import performance at scale**: Incremental import (track last-import timestamp) as mitigation?
 - **Stale knowledge decay in shared store**: Should shared learnings that are never reinforced eventually decay?
 - **Curator trigger mechanism**: Hook-based (PostToolUse after sqlite3 writes)? Session close-out? Pre-commit hook?

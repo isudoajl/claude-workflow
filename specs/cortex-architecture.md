@@ -209,7 +209,7 @@ The migration script will be implemented in bash (called from `db-init.sh`) beca
    fi
    ```
 
-4. **Command listing update**: Add `/omega:share` and `/omega:team-status` to the summary.
+4. **Command listing update**: Add `/omega-share` and `/omega-team-status` to the summary.
 
 **db-init.sh additions:**
 
@@ -280,7 +280,7 @@ Total file: under 300 lines (per REQ-CTX-012).
 ### Module 4: Curator Agent
 
 - **Responsibility**: Evaluate local memory.db entries for team relevance, export qualifying entries to the shared store, deduplicate, reinforce cross-contributor entries, detect conflicts.
-- **Public interface**: Invoked by `/omega:share` command and referenced by `session-close.sh` curation trigger.
+- **Public interface**: Invoked by `/omega-share` command and referenced by `session-close.sh` curation trigger.
 - **Dependencies**: Module 1 (schema columns), Module 2 (`.omega/shared/` directory), Module 3 (protocol reference).
 - **Implementation order**: 4
 
@@ -349,12 +349,12 @@ For incident JSON files: read entire JSON, merge entries, write entire JSON.
 | JSONL file malformed | Bad git merge | python3 JSON parse exception | Skip malformed lines, log warning | Some existing entries not considered for dedup |
 | sqlite3 query fails | DB locked, corrupted | Non-zero exit code | Log error, skip that table | Partial export (entries from failed table not shared) |
 | Content hash collision | SHA-256 collision (astronomically unlikely) | Two different entries with same hash | Append as new entry (hash collision treated as dedup) | Negligible risk |
-| Curator over-shares | Threshold too low | Review via `/omega:share --dry-run` | Adjust threshold, mark entries `is_private = 1` | Noise in shared store |
+| Curator over-shares | Threshold too low | Review via `/omega-share --dry-run` | Adjust threshold, mark entries `is_private = 1` | Noise in shared store |
 
 #### Security Considerations
 - **Trust boundary**: Curator reads local memory.db (trusted) and writes to `.omega/shared/` (team-visible). The confidence threshold (0.8) acts as a quality gate.
 - **Sensitive data**: `is_private` column prevents sensitive entries from being exported. Curator MUST check `is_private = 0` before exporting.
-- **Attack surface**: A compromised memory.db could export malicious learnings. Mitigation: contributor attribution, confidence thresholds, and `/omega:team-status` for visibility.
+- **Attack surface**: A compromised memory.db could export malicious learnings. Mitigation: contributor attribution, confidence thresholds, and `/omega-team-status` for visibility.
 
 #### Performance Budget
 - **Curation evaluation**: < 30 seconds total (Sonnet model, structured evaluation).
@@ -367,7 +367,7 @@ For incident JSON files: read entire JSON, merge entries, write entire JSON.
 ### Module 5: Share Command
 
 - **Responsibility**: Provide manual trigger for curator evaluation and export. Show what was shared, skipped, reinforced, and conflicts detected.
-- **Public interface**: `/omega:share` slash command. Flags: `--force`, `--dry-run`.
+- **Public interface**: `/omega-share` slash command. Flags: `--force`, `--dry-run`.
 - **Dependencies**: Module 4 (curator agent).
 - **Implementation order**: 5
 
@@ -389,7 +389,7 @@ Flags:
 | Failure | Cause | Detection | Recovery | Impact |
 |---------|-------|-----------|----------|--------|
 | Curator agent invocation fails | Model unavailable | Non-zero exit | Retry or report error | Nothing shared |
-| Partial export | Some tables fail, others succeed | Curator reports per-table status | Re-run `/omega:share` | Incomplete sharing (safe -- idempotent) |
+| Partial export | Some tables fail, others succeed | Curator reports per-table status | Re-run `/omega-share` | Incomplete sharing (safe -- idempotent) |
 
 ---
 
@@ -430,12 +430,12 @@ if [ -d "$SHARED_DIR" ]; then
 fi
 ```
 
-The briefing hook (Module 8) detects this flag and recommends `/omega:share`.
+The briefing hook (Module 8) detects this flag and recommends `/omega-share`.
 
 #### Failure Modes
 | Failure | Cause | Detection | Recovery | Impact |
 |---------|-------|-----------|----------|--------|
-| sqlite3 query fails | DB locked | Error suppressed by `|| echo "0"` | Flag not written | No curation reminder -- developer can still manually run `/omega:share` |
+| sqlite3 query fails | DB locked | Error suppressed by `|| echo "0"` | Flag not written | No curation reminder -- developer can still manually run `/omega-share` |
 | Flag file write fails | Permissions | Error on echo redirect | Silent -- no curation reminder | No impact on session close |
 
 ---
@@ -461,7 +461,7 @@ if [ -d "$SHARED_DIR" ]; then
     # Check for curation pending flag
     if [ -f "$PROJECT_DIR/.claude/hooks/.curation_pending" ]; then
         PENDING_COUNT=$(cat "$PROJECT_DIR/.claude/hooks/.curation_pending" 2>/dev/null || echo "0")
-        echo "NOTE: $PENDING_COUNT entries pending curation. Run /omega:share to share with team."
+        echo "NOTE: $PENDING_COUNT entries pending curation. Run /omega-share to share with team."
         echo ""
         rm -f "$PROJECT_DIR/.claude/hooks/.curation_pending"
     fi
@@ -568,7 +568,7 @@ This is additive -- a new step after existing evidence sources. It does not repl
 ### Module 9: Team Status Command
 
 - **Responsibility**: Dashboard showing shared knowledge statistics, recent contributions, active incidents, team hotspot map, unresolved conflicts.
-- **Public interface**: `/omega:team-status` slash command.
+- **Public interface**: `/omega-team-status` slash command.
 - **Dependencies**: Module 2 (`.omega/shared/` directory), Module 7 (shared data available).
 - **Implementation order**: 9
 
@@ -651,7 +651,7 @@ health() -> bool
 ### Module 12: Cortex Config Command
 
 - **Responsibility**: Interactive configuration for sync backend selection with health check validation.
-- **Public interface**: `/omega:cortex-config` slash command.
+- **Public interface**: `/omega-cortex-config` slash command.
 - **Dependencies**: Module 11 (sync adapter abstraction).
 - **Implementation order**: 12
 
@@ -730,7 +730,7 @@ The middleware is implemented as logic within the curator agent (not a separate 
 
 **HTTP calls via `curl`** -- no additional runtime dependencies.
 
-**D1 schema provisioning** (REQ-CTX-049): `/omega:cortex-config` for D1 auto-provisions tables via D1 API.
+**D1 schema provisioning** (REQ-CTX-049): `/omega-cortex-config` for D1 auto-provisions tables via D1 API.
 
 ---
 
@@ -856,7 +856,7 @@ conn.close()
 | Sanitization regex too aggressive (false positive) | Normal text matches injection pattern | User reports missing content | Tune regex; add whitelist for known-safe patterns | Entry content partially redacted |
 | Sanitization regex too permissive (false negative) | Novel injection pattern bypasses regex | Security audit or incident | Update pattern list; HMAC is backup defense | Injection reaches Claude's context |
 | python3 sqlite3 module unavailable | Unusual python3 installation | ImportError in python3 block | Fall back to no-import (skip shared entries entirely) | Shared knowledge not imported |
-| Entry rejected (3+ redactions) | Heavily suspicious entry | Logged to cortex_security_log | Human reviews entry; `/omega:share --force-entry` if legitimate | Entry not imported |
+| Entry rejected (3+ redactions) | Heavily suspicious entry | Logged to cortex_security_log | Human reviews entry; `/omega-share --force-entry` if legitimate | Entry not imported |
 
 #### Security Considerations
 - **This module is the last line of defense.** Even if the curator is bypassed (direct JSONL edit + git push), import sanitization catches injection patterns.
@@ -900,7 +900,7 @@ def verify_entry(entry, key_hex):
     return hmac.compare_digest(sig, expected)
 ```
 
-**Key generation (on first `/omega:share`):**
+**Key generation (on first `/omega-share`):**
 ```bash
 if [ ! -f ".omega/.cortex-key" ]; then
     openssl rand -hex 32 > .omega/.cortex-key
@@ -939,7 +939,7 @@ fi
 **Behavior on flag:**
 - Entry NOT exported
 - Warning logged to `outcomes` table with context "security-flag"
-- Human override: `/omega:share --force-entry=UUID`
+- Human override: `/omega-share --force-entry=UUID`
 
 ---
 
@@ -1003,7 +1003,7 @@ CREATE TABLE IF NOT EXISTS cortex_security_log (
 
 **Surfacing in briefing:** If there are critical events since last briefing:
 ```
-[SECURITY] 2 entries rejected due to invalid signature (run /omega:team-status for details)
+[SECURITY] 2 entries rejected due to invalid signature (run /omega-team-status for details)
 ```
 
 ---
@@ -1165,8 +1165,8 @@ Full JSON object (NOT JSONL -- one file per incident):
 | Cloud backend unreachable | Curator (export), Briefing (import) | HTTP timeout (5s) or connection refused | Export: cache in `.pending-exports.jsonl`; Import: fall back to `.omega/shared/` files, then local-only | Delayed sync; local knowledge still functional |
 | Migration fails on existing DB | Schema, Curator, Briefing | ALTER TABLE error (suppressed) | Re-run `db-init.sh`; columns missing but existing features work | Cortex columns absent; curator cannot export; briefing skips import |
 | Two developers share simultaneously (JSONL merge conflict) | Curator | Git merge conflict on same JSONL line | Manual resolution (each line is self-contained JSON); append-only design minimizes conflicts | Resolved as standard git merge conflict |
-| Curator over-shares (noise) | Team via Briefing | Review via `/omega:share --dry-run` | Adjust threshold; mark entries `is_private = 1`; archive bad entries | Team receives low-quality learnings (mitigated by contributor attribution) |
-| Curator under-shares (value locked) | Team via Briefing | Check via `/omega:team-status` | Lower threshold; use `/omega:share --force` | Team misses valuable knowledge (manual sharing as fallback) |
+| Curator over-shares (noise) | Team via Briefing | Review via `/omega-share --dry-run` | Adjust threshold; mark entries `is_private = 1`; archive bad entries | Team receives low-quality learnings (mitigated by contributor attribution) |
+| Curator under-shares (value locked) | Team via Briefing | Check via `/omega-team-status` | Lower threshold; use `/omega-share --force` | Team misses valuable knowledge (manual sharing as fallback) |
 | briefing.sh exceeds 30s timeout | Briefing | Hook timeout (Claude Code kills hook) | Reduce JSONL file size; briefing continues without shared section | Session starts without shared knowledge -- local knowledge still injected |
 | Pending exports file grows unbounded | Middleware (offline) | File size check | Flush on next successful connection; warn user | Exports accumulate locally until backend available |
 
@@ -1300,10 +1300,10 @@ Local memory.db (safe) -> Claude's context (safe)
 | Location | `.omega/.cortex-key` (project root) |
 | Permissions | `chmod 600` (owner read/write only) |
 | Git status | **gitignored** (added to `.gitignore` by `setup.sh`) |
-| Generation | `openssl rand -hex 32 > .omega/.cortex-key` (on first `/omega:share` if not present) |
+| Generation | `openssl rand -hex 32 > .omega/.cortex-key` (on first `/omega-share` if not present) |
 | Distribution | Out-of-band (team members manually share the file). Intentionally not automated. |
-| Rotation | `openssl rand -hex 32 > .omega/.cortex-key` then `/omega:share --resign` to re-sign all existing entries |
-| Loss recovery | If key lost, generate new key. Existing signed entries become unverifiable -- briefing will reject them. Re-export all shared knowledge via `/omega:share --force-all --resign`. |
+| Rotation | `openssl rand -hex 32 > .omega/.cortex-key` then `/omega-share --resign` to re-sign all existing entries |
+| Loss recovery | If key lost, generate new key. Existing signed entries become unverifiable -- briefing will reject them. Re-export all shared knowledge via `/omega-share --force-all --resign`. |
 | Backward compatibility | If `.omega/.cortex-key` does not exist at import time, signature verification is SKIPPED (pre-security project). Log info message. |
 
 **Bridge server shared secret (`CORTEX_BRIDGE_SECRET`):**
@@ -1439,7 +1439,7 @@ CLIENT                                           BRIDGE SERVER
 6. **Denial of service on briefing**: Risk: MEDIUM. Mitigation: hard caps (500 lines, 5MB file limit, 2000 char field limit, REQ-CTX-058).
 7. **Contributor spoofing**: Risk: MEDIUM. Mitigation: HMAC is the real trust mechanism (REQ-CTX-052), not contributor identity. Git identity is for attribution only (REQ-CTX-059).
 8. **Replay attack on bridge**: Risk: MEDIUM. Mitigation: timestamp in signed payload, 5-min validity window (REQ-CTX-057).
-9. **HMAC key compromise**: Risk: HIGH (but low probability). Mitigation: key is local-only (gitignored), shared out-of-band. Rotation: generate new key + `/omega:share --resign`.
+9. **HMAC key compromise**: Risk: HIGH (but low probability). Mitigation: key is local-only (gitignored), shared out-of-band. Rotation: generate new key + `/omega-share --resign`.
 10. **Path traversal via hotspot file_path**: Risk: MEDIUM. Mitigation: reject `..`, absolute paths, glob characters (REQ-CTX-055).
 
 ---
@@ -1567,10 +1567,10 @@ session-close.sh (check for pending entries)
 .curation_pending flag file
     |
     v
-Next session briefing.sh (detect flag, recommend /omega:share)
+Next session briefing.sh (detect flag, recommend /omega-share)
     |
     v
-User runs /omega:share (or ignores)
+User runs /omega-share (or ignores)
     |
     v
 Curator Agent evaluates and exports
@@ -1657,7 +1657,7 @@ Phase 5:  M12 ◄──┤ (depends on M3, M5 -- hardens import + export)
 ### Phase Boundaries
 
 - **Phase 1 complete**: M1 + M2. Schema ready, shared store initialized, protocol documented. Zero behavioral change.
-- **Phase 2 complete**: M3 + M4. Curator agent operational, `/omega:share` command available, session-close trigger active. `.omega/shared/` files start appearing.
+- **Phase 2 complete**: M3 + M4. Curator agent operational, `/omega-share` command available, session-close trigger active. `.omega/shared/` files start appearing.
 - **Phase 3 complete**: M5 + M6 + M7. Briefing imports shared knowledge, diagnostician queries shared incidents, team status dashboard available, all docs updated. **End-user value delivered.**
 - **Phase 4 complete**: M8 + M9 + M10 + M11. Multi-backend sync operational, cloud and self-hosted options available, offline resilience, migration command.
 - **Phase 5 complete**: M12 + M13. Security hardening across all Cortex pathways. Import sanitization, HMAC signing, parameterized queries, shell escaping, TLS enforcement, bridge authentication, rate limiting, audit logging. **System is production-grade secure.**
@@ -1668,7 +1668,7 @@ Phase 5:  M12 ◄──┤ (depends on M3, M5 -- hardens import + export)
 |-------------|--------|------|
 | REQ-CTX-036 | Won't | Shared knowledge decay -- deferred to v2 |
 | REQ-CTX-037 | Won't | Cross-project sharing -- out of scope |
-| REQ-CTX-038 | Won't | `/omega:resolve-conflicts` -- deferred to v2 |
+| REQ-CTX-038 | Won't | `/omega-resolve-conflicts` -- deferred to v2 |
 
 ---
 

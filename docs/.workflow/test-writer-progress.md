@@ -68,7 +68,7 @@
 - 2 simulation tests (M3-117, M3-118): cross-contributor +0.2, 3+ contributors = 1.0
 - All acceptance criteria covered
 
-### REQ-CTX-023: /omega:share Command (Must) -- DONE
+### REQ-CTX-023: /omega-share Command (Must) -- DONE
 - 19 tests (M3-080 to M3-098): file existence, YAML frontmatter, name/description, curator invocation, workflow_runs entry, type='share', --force flag, --dry-run flag, summary output (shared/skipped/reinforced/conflicts), memory protocol, substantial content, workflow_runs close
 - 3 deployment tests (M3-124, M3-126, M3-130): deployed to .claude/commands/, content integrity, re-deployment safe
 - All acceptance criteria covered

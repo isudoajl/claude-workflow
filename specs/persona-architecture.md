@@ -157,7 +157,7 @@ if [ -n "$PROFILE_TABLE_EXISTS" ]; then
         echo ""
     else
         # Table exists but no profile row -- show onboarding prompt
-        echo "Welcome to OMEGA. Personalize your experience: /omega:onboard"
+        echo "Welcome to OMEGA. Personalize your experience: /omega-onboard"
         echo "  Or set manually: sqlite3 .claude/memory.db \"INSERT INTO user_profile (user_name, experience_level, communication_style) VALUES ('Your Name', 'beginner', 'balanced');\""
         echo ""
     fi
@@ -240,14 +240,14 @@ Severity classification, TDD enforcement, read-only constraints, iteration limit
 
 ### Module 4: Onboarding Command (`core/commands/omega-onboard.md`)
 - **Responsibility**: Conversational 3-question flow to create or update user profile
-- **Public interface**: `/omega:onboard` and `/omega:onboard --update` commands
+- **Public interface**: `/omega-onboard` and `/omega-onboard --update` commands
 - **Dependencies**: `user_profile` table, `onboarding_state` table, `workflow_runs` table (Module 1)
 - **Implementation order**: 4 (depends on schema and understanding of identity block format)
 
 #### Command Structure
 
 ```markdown
-# /omega:onboard
+# /omega-onboard
 
 ## Purpose
 Set up your OMEGA identity. Three questions: name, experience level, communication style.
@@ -291,7 +291,7 @@ Set up your OMEGA identity. Three questions: name, experience level, communicati
 
 ### Step 6: Confirmation
 - Show the identity block that will appear in future sessions
-- Remind user they can update anytime with `/omega:onboard --update`
+- Remind user they can update anytime with `/omega-onboard --update`
 - Remind user about `/output-style` for tone customization beyond what OMEGA identity provides
 
 ## No Agent Required
@@ -300,7 +300,7 @@ This command operates directly without a dedicated agent. Claude executes the co
 ## Resumability (Could priority)
 If the user quits mid-onboard:
 - `onboarding_state.data` contains partial answers as JSON: `{"name": "Ivan", "experience_level": "intermediate"}`
-- Next invocation of `/omega:onboard` reads `onboarding_state.data` and resumes from the last incomplete question
+- Next invocation of `/omega-onboard` reads `onboarding_state.data` and resumes from the last incomplete question
 - If `onboarding_state.status = 'in_progress'`: ask "You started onboarding earlier. Want to continue from where you left off?"
 
 ## Memory Protocol
@@ -327,7 +327,7 @@ If the user quits mid-onboard:
 
 **`scripts/setup.sh`** (line ~629, after the diagnose command):
 ```bash
-echo "    /omega:onboard                     Personalize your profile"
+echo "    /omega-onboard                     Personalize your profile"
 ```
 
 **`docs/institutional-memory.md`**:
@@ -337,7 +337,7 @@ echo "    /omega:onboard                     Personalize your profile"
 - Update table/view counts: "12 tables" to "14 tables", "7 views" to "8 views"
 
 **`README.md`**:
-- Add `/omega:onboard` to the commands table
+- Add `/omega-onboard` to the commands table
 - Update command count from 14 to 15
 - Add brief mention of the persona/identity feature in the features section
 
@@ -404,7 +404,7 @@ echo "    /omega:onboard                     Personalize your profile"
 ## Data Flow
 
 ```
-/omega:onboard          briefing.sh (every session)
+/omega-onboard          briefing.sh (every session)
        |                          |
        v                          v
   user_profile  <---- READ ---- user_profile

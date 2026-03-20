@@ -30,7 +30,7 @@
 ### New Files (Phase 5: Security)
 | File | Purpose |
 |------|---------|
-| `.omega/.cortex-key` | HMAC-SHA256 shared secret for entry signing (gitignored, generated on first `/omega:share`) |
+| `.omega/.cortex-key` | HMAC-SHA256 shared secret for entry signing (gitignored, generated on first `/omega-share`) |
 
 ### Modified Files (Phase 5: Security)
 | File | What Changes |
@@ -65,7 +65,7 @@ The #1 use case: when a new team member runs `setup.sh`, they inherit the entire
 
 ### Q2: Curator trigger mechanism
 **Decision:** Session close-out (via `session-close.sh` Notification hook)
-**Rationale:** This is the most natural trigger point. Work is complete, knowledge has been logged to memory.db, and the developer is about to leave. The Notification hook already fires on session lifecycle events. The curator evaluation runs as a lightweight check -- if nothing qualifies for sharing, it exits silently. Manual trigger via `/omega:share` remains as a supplement for force-sharing or reviewing what would be shared.
+**Rationale:** This is the most natural trigger point. Work is complete, knowledge has been logged to memory.db, and the developer is about to leave. The Notification hook already fires on session lifecycle events. The curator evaluation runs as a lightweight check -- if nothing qualifies for sharing, it exits silently. Manual trigger via `/omega-share` remains as a supplement for force-sharing or reviewing what would be shared.
 
 ### Q3: Contributor identity
 **Decision:** `git config user.name` + `git config user.email`
@@ -94,10 +94,10 @@ The feature is organized into 3 independently deployable phases. Each phase goes
 Schema additions, shared knowledge store directory structure, setup.sh initialization, export/import plumbing. **Zero behavioral change** -- existing OMEGA behavior is identical. This phase establishes the infrastructure that Phases 2 and 3 build on.
 
 ### Phase 2: Curation
-Curator agent definition, `/omega:share` command, session-close.sh curator trigger. This phase adds the **intelligence layer** that evaluates and exports knowledge. After this phase, `.omega/shared/` files start appearing in the repository.
+Curator agent definition, `/omega-share` command, session-close.sh curator trigger. This phase adds the **intelligence layer** that evaluates and exports knowledge. After this phase, `.omega/shared/` files start appearing in the repository.
 
 ### Phase 3: Consumption
-Briefing hook shared knowledge import, diagnostician enhancement for shared incidents, `/omega:team-status` dashboard command. This phase delivers **end-user value** -- developers see shared knowledge in their sessions.
+Briefing hook shared knowledge import, diagnostician enhancement for shared incidents, `/omega-team-status` dashboard command. This phase delivers **end-user value** -- developers see shared knowledge in their sessions.
 
 ### Phase 4: Sync Adapters (Real-Time Backends)
 Multi-backend sync architecture. The curator's output flows through a **Sync Adapter** abstraction that can target different backends: git JSONL (default, from Phases 1-3), cloud database (Cloudflare D1, Turso), or self-hosted database (VPS SQLite/PostgreSQL over HTTP). This phase transforms Cortex from "git-based sharing" into a **multi-backend collective intelligence platform** with real-time sync capability.
@@ -145,7 +145,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 | REQ-CTX-020 | Curator: redundancy check (deduplication) | Must | - [ ] Checks if entry UUID or content_hash already exists in shared store<br>- [ ] If exists: reinforce (bump occurrences, update confidence) rather than duplicate<br>- [ ] If new: append to JSONL file |
 | REQ-CTX-021 | Curator: conflict detection | Should | - [ ] Detects contradictory learnings (same domain, opposing rules)<br>- [ ] Writes conflicts to `.omega/shared/conflicts.jsonl`<br>- [ ] Does NOT auto-resolve -- flags for human review |
 | REQ-CTX-022 | Curator: cross-contributor reinforcement | Must | - [ ] Same learning from 2+ contributors independently = confidence boost of +0.2 (double normal reinforcement)<br>- [ ] Contributor list tracked in JSONL entry |
-| REQ-CTX-023 | `/omega:share` command | Must | - [ ] Manually triggers curator evaluation and export<br>- [ ] Shows what was shared, what was skipped and why<br>- [ ] Supports `--force` flag for sharing below-threshold entries<br>- [ ] Creates `workflow_runs` entry with type='share' |
+| REQ-CTX-023 | `/omega-share` command | Must | - [ ] Manually triggers curator evaluation and export<br>- [ ] Shows what was shared, what was skipped and why<br>- [ ] Supports `--force` flag for sharing below-threshold entries<br>- [ ] Creates `workflow_runs` entry with type='share' |
 | REQ-CTX-024 | Session-close.sh curator trigger | Should | - [ ] `session-close.sh` enhanced to invoke curator evaluation<br>- [ ] Lightweight: only checks if new shareable entries exist since last share<br>- [ ] Silent if nothing qualifies<br>- [ ] Does not block session close on failure |
 
 ### Phase 3: Consumption
@@ -158,14 +158,14 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 | REQ-CTX-028 | `shared_imports` tracking (prevent re-import) | Must | - [ ] Every imported shared UUID recorded in `shared_imports` table<br>- [ ] On subsequent briefings, only new entries (not in `shared_imports`) are processed<br>- [ ] Incremental import: O(new entries), not O(all entries) |
 | REQ-CTX-029 | Briefing token budget enforcement | Must | - [ ] Shared knowledge injection capped: 10 behavioral learnings + 3 incidents + 5 hotspots<br>- [ ] Total shared section under 400 tokens<br>- [ ] Labels clearly distinguish shared vs local entries |
 | REQ-CTX-030 | Diagnostician: shared incident query | Must | - [ ] During Phase 2 (Evidence Assembly), diagnostician queries `.omega/shared/incidents/`<br>- [ ] Pattern matching: symptom/domain/tag similarity to current investigation<br>- [ ] Surfaces relevant shared incidents: "This resembles INC-042 -- see resolution"<br>- [ ] Adds shared incident evidence to constraint table |
-| REQ-CTX-031 | `/omega:team-status` command | Should | - [ ] Dashboard showing: shared knowledge stats (counts by category), recent contributions (who, what, when), active shared incidents, team hotspot map, unresolved conflicts<br>- [ ] Creates `workflow_runs` entry with type='team-status'<br>- [ ] Read-only: does not modify any data |
-| REQ-CTX-032 | Contributor attribution in shared entries | Must | - [ ] Every shared entry tracks contributor (git user.name + email)<br>- [ ] Attribution surfaced in briefing: "Learned from Developer A (INC-042)"<br>- [ ] Attribution visible in `/omega:team-status` |
+| REQ-CTX-031 | `/omega-team-status` command | Should | - [ ] Dashboard showing: shared knowledge stats (counts by category), recent contributions (who, what, when), active shared incidents, team hotspot map, unresolved conflicts<br>- [ ] Creates `workflow_runs` entry with type='team-status'<br>- [ ] Read-only: does not modify any data |
+| REQ-CTX-032 | Contributor attribution in shared entries | Must | - [ ] Every shared entry tracks contributor (git user.name + email)<br>- [ ] Attribution surfaced in briefing: "Learned from Developer A (INC-042)"<br>- [ ] Attribution visible in `/omega-team-status` |
 | REQ-CTX-033 | Cortex protocol pointer in CLAUDE.md | Should | - [ ] One-line pointer in "Institutional Memory" section<br>- [ ] References `.claude/protocols/cortex-protocol.md`<br>- [ ] Under 50 characters added to CLAUDE.md |
 | REQ-CTX-034 | Documentation updates | Should | - [ ] `docs/architecture.md` -- Cortex architecture section<br>- [ ] `docs/agent-inventory.md` -- curator agent entry<br>- [ ] `README.md` -- feature description, new commands<br>- [ ] `core/protocols/memory-protocol.md` -- shared knowledge section |
-| REQ-CTX-035 | setup.sh command listing update | Could | - [ ] `/omega:share` and `/omega:team-status` in summary output |
+| REQ-CTX-035 | setup.sh command listing update | Could | - [ ] `/omega-share` and `/omega-team-status` in summary output |
 | REQ-CTX-036 | Shared knowledge decay in shared store | Won't | - [ ] Deferred to v2 -- shared entries do not decay in v1<br>- [ ] Local imports respect local decay mechanics |
 | REQ-CTX-037 | Cross-project knowledge sharing | Won't | - [ ] Explicitly out of scope -- Cortex shares within a single repository only |
-| REQ-CTX-038 | `/omega:resolve-conflicts` command | Won't | - [ ] Conflicts flagged in `conflicts.jsonl` are resolved manually for v1<br>- [ ] Dedicated command deferred to v2 |
+| REQ-CTX-038 | `/omega-resolve-conflicts` command | Won't | - [ ] Conflicts flagged in `conflicts.jsonl` are resolved manually for v1<br>- [ ] Dedicated command deferred to v2 |
 
 ### Phase 4: Sync Adapters (Real-Time Backends)
 
@@ -176,12 +176,12 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 | REQ-CTX-041 | Cloud DB adapter: Cloudflare D1 | Should | - [ ] Adapter connects to Cloudflare D1 via REST API<br>- [ ] Configuration: `cortex-config.json` with `api_token`, `account_id`, `database_id`<br>- [ ] Export: curator pushes entries via D1 HTTP API<br>- [ ] Import: briefing hook pulls new entries via D1 HTTP API<br>- [ ] Real-time: no git commit/push needed -- changes propagate immediately<br>- [ ] Schema: D1 tables mirror the JSONL structure (behavioral_learnings, incidents, hotspots, etc.)<br>- [ ] Authentication: API token stored in env var `OMEGA_CORTEX_API_TOKEN` (never in files) |
 | REQ-CTX-042 | Cloud DB adapter: Turso (libSQL) | Could | - [ ] Adapter connects to Turso via HTTP API<br>- [ ] Configuration: `cortex-config.json` with `url`, `auth_token`<br>- [ ] Same export/import interface as D1 adapter<br>- [ ] Turso-native features: embedded replicas for offline-first with automatic sync |
 | REQ-CTX-043 | Self-hosted adapter: VPS SQLite/PostgreSQL | Should | - [ ] Adapter connects to a user-managed database via HTTP bridge<br>- [ ] Configuration: `cortex-config.json` with `endpoint_url`, `auth_token`<br>- [ ] HTTP bridge: lightweight script (Python/Node) user deploys on their VPS<br>- [ ] Bridge script provided in `extensions/cortex-bridge/` with setup instructions<br>- [ ] Supports SQLite (via HTTP) and PostgreSQL backends<br>- [ ] Self-sovereignty: user owns their data, no third-party dependencies |
-| REQ-CTX-044 | `/omega:cortex-config` command | Must | - [ ] Interactive configuration for sync backend selection<br>- [ ] Options: `git` (default), `cloudflare-d1`, `turso`, `self-hosted`<br>- [ ] Validates connectivity on selection (health check)<br>- [ ] Stores config in `.omega/cortex-config.json`<br>- [ ] `.omega/cortex-config.json` is gitignored (contains credentials reference) |
+| REQ-CTX-044 | `/omega-cortex-config` command | Must | - [ ] Interactive configuration for sync backend selection<br>- [ ] Options: `git` (default), `cloudflare-d1`, `turso`, `self-hosted`<br>- [ ] Validates connectivity on selection (health check)<br>- [ ] Stores config in `.omega/cortex-config.json`<br>- [ ] `.omega/cortex-config.json` is gitignored (contains credentials reference) |
 | REQ-CTX-045 | Sync middleware pipeline | Must | - [ ] Curator output flows through: Curator -> Middleware -> Adapter -> Backend<br>- [ ] Middleware handles: format transformation, batching, retry on failure, conflict pre-check<br>- [ ] Middleware is adapter-agnostic (same pipeline for all backends)<br>- [ ] Error handling: if backend is unavailable, cache locally and retry next session |
 | REQ-CTX-046 | Real-time import for cloud/self-hosted backends | Should | - [ ] Briefing hook detects backend type from `cortex-config.json`<br>- [ ] For cloud/self-hosted: pull latest entries via HTTP instead of reading `.omega/shared/` files<br>- [ ] Incremental pull: use `last_sync_timestamp` to fetch only new entries<br>- [ ] Fallback: if HTTP fails, fall back to `.omega/shared/` files if they exist |
 | REQ-CTX-047 | Offline-first resilience | Must | - [ ] All backends degrade gracefully when offline<br>- [ ] Cloud/self-hosted: queue exports locally, sync when connectivity returns<br>- [ ] Git JSONL: already offline-first by design<br>- [ ] Local memory.db always functional regardless of backend availability |
-| REQ-CTX-048 | Backend migration command | Could | - [ ] `/omega:cortex-migrate --from=git --to=cloudflare-d1`<br>- [ ] Exports all shared knowledge from source backend, imports into target<br>- [ ] Non-destructive: source data preserved<br>- [ ] Validates completeness after migration |
-| REQ-CTX-049 | D1 schema provisioning | Should | - [ ] `/omega:cortex-config` for D1 backend auto-provisions the D1 database schema<br>- [ ] SQL migration script for D1 tables matching JSONL entry structure<br>- [ ] Idempotent: safe to re-run |
+| REQ-CTX-048 | Backend migration command | Could | - [ ] `/omega-cortex-migrate --from=git --to=cloudflare-d1`<br>- [ ] Exports all shared knowledge from source backend, imports into target<br>- [ ] Non-destructive: source data preserved<br>- [ ] Validates completeness after migration |
+| REQ-CTX-049 | D1 schema provisioning | Should | - [ ] `/omega-cortex-config` for D1 backend auto-provisions the D1 database schema<br>- [ ] SQL migration script for D1 tables matching JSONL entry structure<br>- [ ] Idempotent: safe to re-run |
 | REQ-CTX-050 | Cortex bridge server (self-hosted) | Should | - [ ] Lightweight HTTP server in `extensions/cortex-bridge/`<br>- [ ] Receives export requests from OMEGA curator, stores in local DB<br>- [ ] Serves import requests from OMEGA briefing hook<br>- [ ] Languages: Python (Flask/FastAPI) or Node.js -- minimal dependencies<br>- [ ] Docker support: `Dockerfile` + `docker-compose.yml` for easy VPS deployment<br>- [ ] Authentication: shared secret token<br>- [ ] API: `POST /export`, `GET /import?since=TIMESTAMP`, `GET /health`, `GET /status` |
 
 ## Acceptance Criteria (detailed)
@@ -341,7 +341,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] When 3+ unique contributors reinforce the same entry: confidence set to 1.0 (maximum -- strong team consensus)
 - [ ] Reinforcement is tracked: each contributor's reinforcement timestamp logged in the entry
 
-### REQ-CTX-023: `/omega:share` command
+### REQ-CTX-023: `/omega-share` command
 - [ ] New file: `core/commands/omega-share.md`
 - [ ] Invokes curator agent with explicit share directive
 - [ ] Creates `workflow_runs` entry with `type='share'`
@@ -355,7 +355,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Check: `SELECT COUNT(*) FROM behavioral_learnings WHERE confidence >= 0.8 AND status = 'active' AND is_private = 0 AND shared_uuid IS NULL`
 - [ ] Check: `SELECT COUNT(*) FROM incidents WHERE status = 'resolved' AND is_private = 0 AND shared_uuid IS NULL`
 - [ ] If count > 0: invoke curator evaluation (lightweight -- the bash hook spawns a background process or logs a reminder)
-- [ ] Note: the actual curation may need to be done by a Claude agent, which cannot be spawned from a bash hook. Alternative implementation: write a `.claude/hooks/.curation_pending` flag file that the next session's briefing detects and recommends running `/omega:share`
+- [ ] Note: the actual curation may need to be done by a Claude agent, which cannot be spawned from a bash hook. Alternative implementation: write a `.claude/hooks/.curation_pending` flag file that the next session's briefing detects and recommends running `/omega-share`
 - [ ] Must not block session close. Must not error if `.omega/shared/` does not exist. Must be silent if nothing qualifies.
 
 ### REQ-CTX-025: Shared behavioral learnings import in briefing
@@ -410,7 +410,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] If strong match: surface in hypothesis generation -- "This resembles INC-042 -- race condition pattern in auth module. See resolution."
 - [ ] Does NOT auto-apply the resolution -- the diagnostician evaluates whether the shared resolution is relevant to the current bug
 
-### REQ-CTX-031: `/omega:team-status` command
+### REQ-CTX-031: `/omega-team-status` command
 - [ ] New file: `core/commands/omega-team-status.md`
 - [ ] Dashboard sections: (1) Shared Knowledge Stats (counts by category: N behavioral learnings, N incidents, N hotspots, N lessons, N patterns, N decisions), (2) Recent Contributions (last 10 shared entries with contributor, category, date), (3) Active Shared Incidents (resolved incidents available to team), (4) Team Hotspot Map (top 10 shared hotspots with contributor counts), (5) Unresolved Conflicts (from conflicts.jsonl)
 - [ ] Read-only: does NOT modify any data (no INSERT/UPDATE/DELETE)
@@ -424,7 +424,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Stored in every shared JSONL/JSON entry's `contributor` field
 - [ ] Stored in local memory.db `contributor` column when entries are created
 - [ ] Surfaced in briefing: `(from Ivan Lozada)` appended to shared entries
-- [ ] Surfaced in `/omega:team-status`: contributor activity listing
+- [ ] Surfaced in `/omega-team-status`: contributor activity listing
 - [ ] NOT used for access control -- all contributors are equal
 
 ### REQ-CTX-033: CLAUDE.md Cortex pointer
@@ -436,7 +436,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 ### REQ-CTX-034: Documentation updates
 - [ ] `docs/architecture.md`: new "Cortex: Collective Intelligence Layer" section explaining the hybrid architecture, shared store format, curator role, and import mechanism
 - [ ] `docs/agent-inventory.md`: curator agent entry with description, tools, trigger mechanism
-- [ ] `README.md`: Cortex feature paragraph, `/omega:share` and `/omega:team-status` in command listing
+- [ ] `README.md`: Cortex feature paragraph, `/omega-share` and `/omega-team-status` in command listing
 - [ ] `core/protocols/memory-protocol.md`: new "Shared Knowledge" section after "Incident Tracking" section, documenting export/import rules, privacy marking, contributor identity
 
 ### REQ-CTX-039: Sync Adapter abstraction layer
@@ -486,7 +486,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Bridge stores data in SQLite (default) or PostgreSQL (configurable)
 - [ ] **Security**: All bridge API requests MUST include HMAC-SHA256 signature of request body + timestamp. See REQ-CTX-057. Endpoint URL MUST use `https://`. See REQ-CTX-056.
 
-### REQ-CTX-044: `/omega:cortex-config` command
+### REQ-CTX-044: `/omega-cortex-config` command
 - [ ] New file: `core/commands/omega-cortex-config.md`
 - [ ] Interactive flow: (1) Select backend type, (2) Enter backend-specific config, (3) Run health check, (4) Save config
 - [ ] Backend options presented with descriptions: `git (default, zero infra)`, `cloudflare-d1 (real-time, managed)`, `turso (real-time, edge)`, `self-hosted (real-time, self-sovereign)`
@@ -520,7 +520,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Never error, never block, never degrade local OMEGA functionality
 
 ### REQ-CTX-048: Backend migration command
-- [ ] `/omega:cortex-migrate --from=git --to=cloudflare-d1` (or any backend combination)
+- [ ] `/omega-cortex-migrate --from=git --to=cloudflare-d1` (or any backend combination)
 - [ ] Reads all entries from source backend via `import(since=epoch)`
 - [ ] Writes all entries to target backend via `export(entries)`
 - [ ] Validates: count comparison between source and target
@@ -528,7 +528,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Handles deduplication if target already has some entries
 
 ### REQ-CTX-049: D1 schema provisioning
-- [ ] `/omega:cortex-config` for D1 backend includes "Provision database schema?" step
+- [ ] `/omega-cortex-config` for D1 backend includes "Provision database schema?" step
 - [ ] Runs SQL migration via D1 API to create Cortex tables
 - [ ] Schema matches JSONL entry structure: common fields (uuid, contributor, source_project, created_at, confidence, occurrences, content_hash) + category-specific fields
 - [ ] Idempotent: `CREATE TABLE IF NOT EXISTS` for all tables
@@ -574,10 +574,10 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] HMAC key: a project-level shared secret stored at `.omega/.cortex-key` (a 64-character hex string)
 - [ ] `.omega/.cortex-key` MUST be gitignored (added to `.gitignore` by `setup.sh`)
 - [ ] Signature computation: `HMAC-SHA256(key, canonical_content)` where `canonical_content` is the JSON-serialized entry with `signature` field removed, keys sorted alphabetically, no whitespace (`json.dumps(entry, sort_keys=True, separators=(',', ':'))`)
-- [ ] On export (`/omega:share`): curator computes and attaches `signature` field to every entry before writing to shared store
+- [ ] On export (`/omega-share`): curator computes and attaches `signature` field to every entry before writing to shared store
 - [ ] On import (`briefing.sh`): verify `signature` before accepting the entry. If signature is missing, invalid, or does not match, REJECT the entry
 - [ ] Rejected entries: log to `cortex_security_log` with event_type `'signature_failure'`, include entry UUID and contributor
-- [ ] Key generation: if `.omega/.cortex-key` does not exist when `/omega:share` is first run, generate it: `openssl rand -hex 32 > .omega/.cortex-key && chmod 600 .omega/.cortex-key`
+- [ ] Key generation: if `.omega/.cortex-key` does not exist when `/omega-share` is first run, generate it: `openssl rand -hex 32 > .omega/.cortex-key && chmod 600 .omega/.cortex-key`
 - [ ] Key distribution: out-of-band (team members manually share the key file). This is intentional -- automated key distribution is a larger problem
 - [ ] Backward compatibility: if `.omega/.cortex-key` does not exist at import time, skip signature verification (pre-security project). Log info "Cortex key not found -- signature verification disabled"
 - [ ] Entries without a `signature` field are treated as unsigned. If key exists, unsigned entries are REJECTED
@@ -592,7 +592,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
   - Shell injection patterns: same list as REQ-CTX-051
   - SQL injection patterns: same list as REQ-CTX-051
 - [ ] Flagged entries: do NOT export. Log warning with entry UUID, contributor, pattern matched
-- [ ] Human override: `/omega:share --force-entry=UUID` to export a flagged entry after human review
+- [ ] Human override: `/omega-share --force-entry=UUID` to export a flagged entry after human review
 - [ ] Curator logs all flag decisions to memory.db `outcomes` table with context "security-flag"
 
 ### REQ-CTX-054: SQL parameterization on import (Must)
@@ -658,7 +658,7 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 - [ ] Event types: `signature_failure`, `content_sanitized`, `content_rejected`, `suspicious_pattern`, `auth_failure`, `rate_limited`, `size_exceeded`, `path_traversal_blocked`, `unsigned_entry_rejected`
 - [ ] Logging happens at import time (briefing.sh) and export time (curator)
 - [ ] `cortex_security_log` table creation: added to `schema.sql` and migration script. `CREATE TABLE IF NOT EXISTS` for idempotency
-- [ ] Security events surfaced in `/omega:team-status` as a new "Security Events" section (last 10 events)
+- [ ] Security events surfaced in `/omega-team-status` as a new "Security Events" section (last 10 events)
 - [ ] Critical events (signature failures, auth failures): also output in briefing as `[SECURITY] N entries rejected due to invalid signature` warning line
 - [ ] Table is local-only (in `memory.db`, never shared) -- it records what happened on THIS developer's machine
 
@@ -672,12 +672,12 @@ Local memory.db --> Curator Agent --> Sync Adapter --> Backend
 | `scripts/setup.sh` | Full deployment to target projects | `db-init.sh`, all `core/` files | End users (manual invocation) |
 | `core/hooks/briefing.sh` | Session-start context injection | `memory.db`, (new) `.omega/shared/` | All agents (receives injected context) |
 | `core/hooks/session-close.sh` | Session-end cleanup | `memory.db` | None (terminal hook) |
-| `core/agents/diagnostician.md` | Deep diagnostic reasoning for hard bugs | `memory.db` incident_entries, (new) shared incidents | Invoked by `/omega:diagnose` |
+| `core/agents/diagnostician.md` | Deep diagnostic reasoning for hard bugs | `memory.db` incident_entries, (new) shared incidents | Invoked by `/omega-diagnose` |
 | `core/protocols/memory-protocol.md` | Institutional memory rules reference | None (documentation) | All agents (lazy-load reference) |
-| `.omega/shared/` | (NEW) Git-tracked shared knowledge store | Created by `setup.sh`, written by curator, read by `briefing.sh` | `briefing.sh`, diagnostician, `/omega:team-status` |
-| `core/agents/curator.md` | (NEW) Knowledge curation and export | `memory.db`, `.omega/shared/`, sync adapter | `/omega:share`, `session-close.sh` |
+| `.omega/shared/` | (NEW) Git-tracked shared knowledge store | Created by `setup.sh`, written by curator, read by `briefing.sh` | `briefing.sh`, diagnostician, `/omega-team-status` |
+| `core/agents/curator.md` | (NEW) Knowledge curation and export | `memory.db`, `.omega/shared/`, sync adapter | `/omega-share`, `session-close.sh` |
 | `core/protocols/sync-adapters.md` | (NEW, Phase 4) Sync adapter interface spec | None (documentation) | Curator, briefing.sh, all adapters |
-| `.omega/cortex-config.json` | (NEW, Phase 4) Backend configuration | Created by `/omega:cortex-config` | Curator, briefing.sh (determines adapter) |
+| `.omega/cortex-config.json` | (NEW, Phase 4) Backend configuration | Created by `/omega-cortex-config` | Curator, briefing.sh (determines adapter) |
 | `extensions/cortex-bridge/` | (NEW, Phase 4) Self-hosted bridge server | Python/FastAPI | Self-hosted adapter |
 | `core/commands/omega-cortex-config.md` | (NEW, Phase 4) Backend config command | sync-adapters protocol | End users |
 
@@ -691,7 +691,7 @@ Agent work → INSERT into memory.db → briefing.sh reads memory.db → injects
 **New Cortex flow (Phases 1-3, git JSONL backend):**
 ```
 Agent work -> INSERT into memory.db (with contributor field)
-  -> Session close / manual /omega:share
+  -> Session close / manual /omega-share
     -> Curator reads memory.db (qualifying entries)
     -> Curator reads .omega/shared/ (existing entries)
     -> Curator deduplicates, reinforces, or appends
@@ -708,7 +708,7 @@ Other developer pulls
 **Cortex flow with Sync Adapters (Phase 4, cloud/self-hosted backend):**
 ```
 Agent work -> INSERT into memory.db (with contributor field)
-  -> Session close / manual /omega:share
+  -> Session close / manual /omega-share
     -> Curator reads memory.db (qualifying entries)
     -> Middleware: format, batch, conflict pre-check
     -> Sync Adapter: route to configured backend
@@ -860,7 +860,7 @@ Other developer starts session
 - `docs/architecture.md` line 17 -- states "17 tables + 10 views". After Phase 1: 18 tables + 11 views. Must be updated.
 - `core/db/schema.sql` line 2 -- version "1.2.0". Must update to "1.3.0".
 - `CLAUDE.md` -- references "15 core agents" (implied). After Phase 2: 16 core agents (curator added). Agent count references must be updated in CLAUDE.md, README.md, and docs/architecture.md.
-- `scripts/setup.sh` line 697 -- command listing shows 16 commands. After Cortex: 18 commands (/omega:share, /omega:team-status added).
+- `scripts/setup.sh` line 697 -- command listing shows 16 commands. After Cortex: 18 commands (/omega-share, /omega-team-status added).
 - `docs/architecture.md` line 16 -- states "Core (15) always". After Cortex: Core (16).
 
 ## Assumptions
@@ -888,20 +888,20 @@ Other developer starts session
 | # | Risk | Severity | Probability | Mitigation |
 |---|------|----------|------------|------------|
 | 1 | briefing.sh error in shared import crashes session start | High | Low | Every new code path uses `2>/dev/null \|\| true`. Existence checks before every file read. Python3 parsing wrapped in try/except. |
-| 2 | Curator over-shares (noise in shared store) | Medium | Medium | Conservative confidence threshold (0.8). Privacy marking (is_private). Manual review via `/omega:share --dry-run`. |
-| 3 | Curator under-shares (value never reaches team) | Medium | Medium | Start with 0.8 threshold, lower to 0.7 based on real usage feedback. Manual `/omega:share --force` for important entries. |
+| 2 | Curator over-shares (noise in shared store) | Medium | Medium | Conservative confidence threshold (0.8). Privacy marking (is_private). Manual review via `/omega-share --dry-run`. |
+| 3 | Curator under-shares (value never reaches team) | Medium | Medium | Start with 0.8 threshold, lower to 0.7 based on real usage feedback. Manual `/omega-share --force` for important entries. |
 | 4 | JSONL files grow unbounded over time | Medium | Low | v1 does not include shared knowledge decay (REQ-CTX-036 deferred). For v1, JSONL files are small enough for typical teams. Future: decay mechanism or archival. |
 | 5 | Git merge conflicts on JSONL files | Low | Low | Line-level granularity minimizes conflicts. When they occur, they are simple to resolve (each line is self-contained JSON). |
 | 6 | Schema migration breaks existing memory.db | High | Low | Idempotent migration with existence checks. No ALTER on existing columns. No DROP operations. |
 | 7 | briefing.sh timeout (30s) exceeded by JSONL parsing | Medium | Low | Hard caps on entries processed. Python3 parsing is fast for hundreds of lines. If timeout approaches: skip shared import gracefully. |
-| 8 | Bad behavioral learning propagates to entire team | High | Low | Confidence threshold (0.8) filters unproven learnings. Contributor attribution enables accountability. `/omega:team-status` shows what was shared. Manual override to archive bad entries. |
+| 8 | Bad behavioral learning propagates to entire team | High | Low | Confidence threshold (0.8) filters unproven learnings. Contributor attribution enables accountability. `/omega-team-status` shows what was shared. Manual override to archive bad entries. |
 | 9 | Diagnostician false-matches shared incidents | Medium | Medium | Match is suggestive, not prescriptive. Diagnostician evaluates relevance -- does NOT auto-apply shared resolutions. Attribution shows source for human judgment. |
-| 10 | Curator trigger from session-close.sh cannot invoke Claude agent | Medium | High | Bash hooks cannot spawn Claude agent subprocesses. Mitigation: write `.curation_pending` flag file; next session's briefing detects it and recommends `/omega:share`. |
+| 10 | Curator trigger from session-close.sh cannot invoke Claude agent | Medium | High | Bash hooks cannot spawn Claude agent subprocesses. Mitigation: write `.curation_pending` flag file; next session's briefing detects it and recommends `/omega-share`. |
 | 11 | **Prompt injection via malicious shared behavioral learning** | **Critical** | Medium | REQ-CTX-051 (sanitize on import), REQ-CTX-053 (curator content validation), REQ-CTX-052 (HMAC signing rejects tampered entries). Defense in depth: even if curator is bypassed, import sanitizes; even if sanitization fails, HMAC rejects unsigned entries. |
 | 12 | **SQL injection via JSONL fields interpolated into sqlite3** | High | Medium | REQ-CTX-054 (parameterized queries). Replace all string-interpolated `sqlite3` subprocess calls with python3 `sqlite3.connect()` + `cursor.execute()` with `?` placeholders. |
 | 13 | **Shell injection via unescaped JSONL fields in bash** | High | Low | REQ-CTX-055 (shell escaping). Python3 `print()` output stored in bash variable is safe when double-quoted in `echo "$VAR"`. Additional escaping for edge cases. |
 | 14 | **Contributor spoofing via fake git config** | Medium | Medium | REQ-CTX-052 (HMAC signing is the real trust mechanism, not contributor identity). REQ-CTX-059 (commit hash provides weak provenance). Contributor identity is for attribution, not authentication. |
-| 15 | **HMAC key compromise** | High | Low | Key is local-only (gitignored), shared out-of-band. If compromised: rotate key (`openssl rand -hex 32 > .omega/.cortex-key`), re-sign all shared entries via `/omega:share --resign`. |
+| 15 | **HMAC key compromise** | High | Low | Key is local-only (gitignored), shared out-of-band. If compromised: rotate key (`openssl rand -hex 32 > .omega/.cortex-key`), re-sign all shared entries via `/omega-share --resign`. |
 | 16 | **MITM attack on bridge server** | High | Low | REQ-CTX-056 (mandatory TLS). REQ-CTX-057 (HMAC authentication prevents tampering even if TLS is stripped). |
 | 17 | **API token accidentally committed to git** | High | Low | `cortex-config.json` is gitignored. Tokens stored as env var references (`api_token_env`), not values. `setup.sh` adds `.omega/cortex-config.json` and `.omega/.cortex-key` to `.gitignore`. |
 
@@ -911,9 +911,9 @@ Other developer starts session
 |------|-------------|
 | **Shared knowledge decay** (REQ-CTX-036) | v1 focuses on accumulation. Decay requires usage metrics (which entries are consumed) that v1 does not track. Deferred to v2 when consumption data is available. |
 | **Cross-project knowledge sharing** (REQ-CTX-037) | Cortex shares within a single git repository. Cross-repo sharing requires a registry or central index -- fundamentally different architecture. Future capability. |
-| **`/omega:resolve-conflicts` command** (REQ-CTX-038) | v1 flags conflicts in `conflicts.jsonl`. Manual resolution is sufficient for early adoption. Dedicated command deferred to v2 when conflict patterns are understood from real usage. |
+| **`/omega-resolve-conflicts` command** (REQ-CTX-038) | v1 flags conflicts in `conflicts.jsonl`. Manual resolution is sufficient for early adoption. Dedicated command deferred to v2 when conflict patterns are understood from real usage. |
 | **Access control/permissions** | If you have git access, you participate. No fine-grained sharing permissions. |
-| **UI/dashboard** | No web interface. `/omega:team-status` is CLI output. |
+| **UI/dashboard** | No web interface. `/omega-team-status` is CLI output. |
 | **Shared user profiles** | Persona system remains per-developer. Communication preferences are personal. |
 | **Automatic conflict resolution** | Curator flags; humans resolve. |
 

@@ -37,7 +37,7 @@ Every agent follows a consistent structure:
 - **Context Management**: strategy for protecting context window
 - **Process**: step-by-step methodology with named phases
 - **Output**: template and save location
-- **Strict Boundaries** (read-only agents): never offer to implement, fix, or modify; actionable findings reference `/omega:*` commands
+- **Strict Boundaries** (read-only agents): never offer to implement, fix, or modify; actionable findings reference `/omega-*` commands
 - **Rules**: hard constraints
 - **Anti-Patterns**: explicit "don't do this" list
 - **Failure Handling**: scenario-response table

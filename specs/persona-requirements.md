@@ -31,12 +31,12 @@ OMEGA currently starts every session cold — it does not know who the user is, 
 | REQ-PERSONA-005 | No-profile backward compatibility | Must | No errors when user_profile table is missing or empty; existing agents unaffected |
 | REQ-PERSONA-006 | Experience auto-upgrade logic | Must | beginner→intermediate at 10 completed workflows; intermediate→advanced at 30; checked during briefing |
 | REQ-PERSONA-007 | OMEGA Identity protocol in CLAUDE.md | Must | New section with agent instructions; explicit override: protocol > identity; under 40 lines |
-| REQ-PERSONA-008 | `/omega:onboard` command | Should | Conversational 3-question flow; writes to user_profile and onboarding_state; supports --update flag; no new agent |
+| REQ-PERSONA-008 | `/omega-onboard` command | Should | Conversational 3-question flow; writes to user_profile and onboarding_state; supports --update flag; no new agent |
 | REQ-PERSONA-009 | `last_seen` auto-update | Should | Updated in briefing.sh once per session; fire-and-forget |
 | REQ-PERSONA-010 | Onboarding prompt in briefing.sh | Should | Shown when user_profile is empty; informational only; includes manual SQL alternative |
-| REQ-PERSONA-011 | Profile update capability | Should | Via /omega:onboard --update; via manual sqlite3; both documented |
+| REQ-PERSONA-011 | Profile update capability | Should | Via /omega-onboard --update; via manual sqlite3; both documented |
 | REQ-PERSONA-012 | Documentation updates | Should | institutional-memory.md, README.md, DOCS.md updated |
-| REQ-PERSONA-013 | setup.sh command listing | Could | /omega:onboard in summary output |
+| REQ-PERSONA-013 | setup.sh command listing | Could | /omega-onboard in summary output |
 | REQ-PERSONA-014 | Onboarding state resumability | Could | Partial answers stored in JSON; resumes on next invocation |
 | REQ-PERSONA-015 | Personality archetypes | Won't | Use /output-style instead |
 | REQ-PERSONA-016 | Full onboarding agent | Won't | Stays at 14 agents |
@@ -96,7 +96,7 @@ OMEGA currently starts every session cold — it does not know who the user is, 
 - [ ] Explicit carve-outs: severity classification, TDD enforcement, read-only constraints, iteration limits, prerequisite gates, acceptance criteria completeness
 - [ ] Total section length under 40 lines of markdown
 
-### REQ-PERSONA-008: `/omega:onboard` command
+### REQ-PERSONA-008: `/omega-onboard` command
 - [ ] New command file at `core/commands/omega-onboard.md`
 - [ ] Conversational flow: (1) user's name, (2) experience level with descriptions, (3) communication style with descriptions
 - [ ] Maximum 3 questions
@@ -118,13 +118,13 @@ OMEGA currently starts every session cold — it does not know who the user is, 
 - [ ] Informational only — does NOT block usage
 
 ### REQ-PERSONA-011: Profile update capability
-- [ ] Via `/omega:onboard --update`
+- [ ] Via `/omega-onboard --update`
 - [ ] Via manual `sqlite3` command
 - [ ] Both methods documented
 
 ### REQ-PERSONA-012: Documentation updates
 - [ ] `docs/institutional-memory.md` — add user_profile, onboarding_state, v_workflow_usage sections
-- [ ] `README.md` — add /omega:onboard, update counts, mention persona feature
+- [ ] `README.md` — add /omega-onboard, update counts, mention persona feature
 - [ ] `CLAUDE.md` — update command count and table if new command added
 
 ## Impact Analysis

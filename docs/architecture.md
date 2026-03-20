@@ -28,11 +28,12 @@ omega/
 │   ├── agents/                        # 16 agents every project needs
 │   ├── commands/                      # 20 workflow orchestrators
 │   ├── db/                            # Institutional memory layer
-│   │   ├── schema.sql                 # SQLite schema (tables, views, indexes)
-│   │   └── queries/                   # Named query templates
-│   │       ├── briefing.sql           # What agents run BEFORE work
-│   │       ├── debrief.sql            # What agents run AFTER work
-│   │       └── maintenance.sql        # Periodic cleanup & health
+│   │   ├── schema.sql                 # SQLite schema (21 tables, 12 views)
+│   │   ├── queries/                   # Named query templates
+│   │   │   ├── briefing.sql           # What agents run BEFORE work
+│   │   │   ├── debrief.sql            # What agents run AFTER work
+│   │   │   └── maintenance.sql        # Periodic cleanup & health
+│   │   └── migrate-*.sh              # Schema migration scripts (1.3.0–1.6.0)
 │   ├── protocols/                     # On-demand protocol reference files
 │   │   ├── PROTOCOLS-INDEX.md        # Master section index (auto-generated)
 │   │   ├── memory-protocol.md        # Full institutional memory protocol
@@ -40,7 +41,7 @@ omega/
 │   │   ├── fail-safes.md             # Iteration limits, prerequisite gates
 │   │   ├── context-budget.md         # 60% budget, scoping strategy
 │   │   ├── identity.md               # Experience levels, communication styles
-│   │   ├── cortex-protocol.md        # JSONL format, curation rules, import rules
+│   │   ├── cortex-protocol.md        # JSONL format, curation, import, security (HMAC, sanitization)
 │   │   └── sync-adapters.md          # Adapter interface specification
 │   └── hooks/                         # Claude Code automation hooks
 │       ├── briefing.sh                # UserPromptSubmit: auto-injects memory context (once per session)
@@ -57,11 +58,19 @@ omega/
 │   ├── c2c-protocol/                  # 2 agents, 3 commands
 │   └── cortex-bridge/                 # Self-hosted Cortex sync bridge (Rust/axum)
 │
+├── cli/                               # Rust binary (omg) — recommended installer
+│   ├── src/                           # 11 modules (~2900 lines)
+│   ├── Cargo.toml
+│   └── install.sh                     # curl-pipe-bash installer
+│
 ├── scripts/
-│   ├── setup.sh                       # Deploy to target projects
+│   ├── setup.sh                       # Legacy shell installer
 │   ├── db-init.sh                     # Initialize/migrate SQLite
 │   └── build-protocol-index.sh        # Regenerate @INDEX blocks in protocol files
 │
+├── tests/                             # Integration & feature tests (bash)
+├── specs/                             # Technical specifications
+├── docs/                              # Documentation
 ├── poc/                               # Experimental standalone agents
 ├── c2c-protocol/                      # C2C protocol spec research
 ├── h2a-protocol/                      # H2A protocol spec research
@@ -93,7 +102,7 @@ Claude Code reads agents from `.claude/agents/` (OMEGA flattens them there) and 
 All modification commands (`new-feature`, `improve`, `bugfix`) use the same milestone loop pattern. The Analyst assesses scope and defines milestones for large changes (4+ modules). Each milestone gets its own independent agent invocations (test-writer → developer → compilation gate → QA → reviewer) and commits independently.
 
 ```
-User invokes /omega:new-feature "add retry logic" --scope="scheduler"
+User invokes /omega-new-feature "add retry logic" --scope="scheduler"
     │
     ├─ Orchestrator creates workflow_run in memory.db → gets $RUN_ID
     │
@@ -174,7 +183,7 @@ Bugs are tracked as **incidents** (INC-NNN). Each incident has a structured time
 ### Specialist Routing Flow
 
 ```
-User invokes /omega:consult "help me with HIPAA compliance"
+User invokes /omega-consult "help me with HIPAA compliance"
     │
     ├─ Orchestrator creates workflow_run (type='consult') in memory.db
     │
@@ -202,7 +211,7 @@ User invokes /omega:consult "help me with HIPAA compliance"
 For **Tier 3 (critical)**, the router assembles a pipeline of existing core agents + specialist:
 
 ```
-/omega:consult --critical "should we migrate to microservices?"
+/omega-consult --critical "should we migrate to microservices?"
     │
     ├─ Router classifies: Tier 3 (high-stakes architectural decision)
     │
@@ -219,11 +228,11 @@ Specialists accumulate per project — the first request creates them, subsequen
 ### Cross-Session Memory Accumulation
 
 ```
-Session 1: /omega:new-feature "add scheduler"
+Session 1: /omega-new-feature "add scheduler"
   → memory.db accumulates: decisions about scheduler design, patterns used,
     files touched, dependencies discovered
 
-Session 2: /omega:bugfix "scheduler crash on empty queue"
+Session 2: /omega-bugfix "scheduler crash on empty queue"
   → Session briefing: behavioral learnings + any related open incidents
   → Agent briefing: "scheduler.rs is a hotspot (touched 3x),
     approach X failed before because of race condition"
@@ -247,7 +256,7 @@ An agent is core if it is useful in **any** software project regardless of domai
 - **Dispatch agent**: omega-router (intelligent specialist routing)
 - **Meta agents**: role-creator, role-auditor
 
-Read-only agents (codebase-expert, functionality-analyst) enforce **strict boundaries**: they never offer to implement, fix, or modify anything. Their output is a document, not a conversation. Actionable findings reference the appropriate `/omega:*` command instead.
+Read-only agents (codebase-expert, functionality-analyst) enforce **strict boundaries**: they never offer to implement, fix, or modify anything. Their output is a document, not a conversation. Actionable findings reference the appropriate `/omega-*` command instead.
 
 ### What Makes an Agent an "Extension"
 
@@ -370,7 +379,7 @@ Cortex transforms OMEGA into a collective intelligence system while preserving t
 
 ```
 Developer A works → memory.db accumulates knowledge
-  → Session close / /omega:share triggers Curator
+  → Session close / /omega-share triggers Curator
     → Curator evaluates entries (relevance, confidence, privacy)
     → Curator exports to .omega/shared/ JSONL files
     → Developer A commits and pushes

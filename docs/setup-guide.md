@@ -185,7 +185,7 @@ Runs on the first user prompt of each session (uses session_id to fire only once
 Runs on every user prompt. It:
 - Detects when the user corrects Claude's behavior (e.g., "don't do X", "instead do Y")
 - Tracks corrections as pending behavioral learnings in a flag file
-- Nags until the correction is saved as a behavioral learning via `/omega:learn`
+- Nags until the correction is saved as a behavioral learning via `/omega-learn`
 
 ### `learning-gate.sh` (PreToolUse — Bash)
 Runs before Bash tool calls. When it detects `git commit`:
@@ -284,8 +284,8 @@ claude
 
 Verify agents are available:
 ```
-/omega:new "test"        # Should invoke the discovery agent
-/omega:audit             # Should invoke the reviewer agent
+/omega-new "test"        # Should invoke the discovery agent
+/omega-audit             # Should invoke the reviewer agent
 ```
 
 Check the memory DB:

@@ -26,6 +26,6 @@
 3. `CLAUDE.md` -- Added OMEGA Identity section (30 lines)
 4. `core/commands/omega-onboard.md` -- Created onboarding command
 5. `docs/institutional-memory.md` -- Added user_profile, onboarding_state, v_workflow_usage docs
-6. `README.md` -- Added /omega:onboard, updated counts to 15 commands
+6. `README.md` -- Added /omega-onboard, updated counts to 15 commands
 7. `scripts/setup.sh` -- Added onboard line to summary output
 8. `specs/SPECS.md` -- Already had persona entries (added by upstream agents)
