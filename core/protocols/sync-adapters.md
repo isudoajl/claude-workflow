@@ -5,6 +5,7 @@ CLOUD-ADAPTER                            131-165
 SELF-HOSTED-ADAPTER                      166-185
 CONFIGURATION                            186-252
 ERROR-HANDLING                           253-297
+MIDDLEWARE                               301-480
 @/INDEX -->
 
 # Sync Adapter Abstraction
@@ -295,3 +296,185 @@ All adapter errors are logged to memory.db `outcomes` table:
 INSERT INTO outcomes (action, result, context, agent, score)
 VALUES ('cortex_sync', 'error', '{error_details}', 'curator', -1);
 ```
+
+---
+## MIDDLEWARE
+
+The middleware pipeline sits between the curator's output and the adapter's transport layer. It handles format transformation, batching, retry logic, conflict pre-checking, and offline caching. The middleware is adapter-agnostic -- the same pipeline runs for all backends.
+
+### Pipeline Flow
+
+```
+Curator Output -> Format Transform -> Batch -> Conflict Pre-check -> Adapter.export()
+                                                                          |
+                                                                    If fails: Cache
+                                                                          |
+                                                                          v
+                                                              .omega/.pending-exports.jsonl
+```
+
+### Format Transformation
+
+Converts memory.db rows into adapter entry format. Each entry is a JSON object with:
+
+- **Common fields**: `uuid`, `contributor`, `source_project`, `created_at`, `confidence`, `content_hash`, `signature`
+- **Category-specific fields**: Varies by entry type (e.g., `rule` + `context` for behavioral learnings, `lesson` + `domain` for lessons, `pattern` + `context` for patterns, `decision` + `rationale` for decisions)
+
+The Format Transform step normalizes memory.db column names to the shared entry schema, ensures all required fields are present, and generates `content_hash` if not already set. Output is a list of JSON objects ready for batching.
+
+### Batching
+
+Groups entries for efficient API calls:
+
+- **Cloud backends** (cloudflare-d1, turso): max 50 per batch to respect rate limits
+- **Self-hosted backends**: max 50 per batch for consistency
+- **Git JSONL**: unlimited (local filesystem, no API rate limits)
+
+Entries are grouped by category first, then split into batches of the configured size. Each batch is a single API call (cloud/self-hosted) or a single file append (git-jsonl).
+
+### Retry on Failure
+
+When an adapter's `export()` call fails, the middleware retries with exponential backoff:
+
+- **Max 3 retries** per batch
+- **Backoff schedule**: 1s, 2s, 4s (exponential)
+- **Retryable errors**: network timeout, HTTP 429 (rate limited), HTTP 5xx (server error)
+- **Non-retryable errors**: HTTP 400 (bad request), HTTP 401/403 (auth failure) -- fail immediately
+
+If all 3 retries are exhausted, the failed batch is cached locally (see Offline Cache below).
+
+### Conflict Pre-check
+
+Before exporting, the middleware verifies no `content_hash` collision exists in the target backend:
+
+1. For each entry, check if an entry with the same `content_hash` already exists in the backend
+2. If a match is found: reinforce the existing entry (bump occurrences, update confidence) instead of creating a duplicate
+3. If no match: proceed with export as a new entry
+
+This prevents duplicate entries across team members who independently discover the same knowledge. The pre-check uses the adapter's `import()` method with a narrow scope or a dedicated hash-check query.
+
+### Offline Cache
+
+If the backend is unavailable after all retries are exhausted, entries are cached locally:
+
+- **Cache file**: `.omega/.pending-exports.jsonl` (gitignored -- local-only, transient)
+- **Format**: One JSON object per line: `{"category": "...", "entry": {...}, "backend": "...", "queued_at": "...", "error": "..."}`
+- **Max entries**: 500 pending entries. Oldest are dropped if exceeded.
+
+### Pending Flush
+
+On the next successful connection to the backend, pending exports are flushed before any new exports:
+
+1. Read `.omega/.pending-exports.jsonl`
+2. Attempt to export each pending entry through the full middleware pipeline (format, batch, conflict check)
+3. On success: remove the entry from the pending file
+4. On failure: leave the entry in the pending file for the next attempt
+5. After flushing (or if no pending entries), proceed with new exports
+
+This ensures entries are never lost and are delivered in order of original creation.
+
+---
+
+### Real-Time Import
+
+For cloud and self-hosted backends, the briefing hook performs a real-time HTTP pull instead of reading `.omega/shared/` files.
+
+#### Backend Detection
+
+`briefing.sh` reads `cortex-config.json` to determine the active backend:
+
+- If `git-jsonl` (or no config): use existing file-based import from `.omega/shared/` (unchanged)
+- If `cloudflare-d1`, `turso`, or `self-hosted`: use HTTP pull via `curl`
+
+#### HTTP Pull
+
+For cloud/self-hosted backends, import uses HTTP:
+
+```
+curl -s --max-time 5 \
+  -H "Authorization: Bearer $TOKEN" \
+  "$ENDPOINT/import?since=$LAST_SYNC_TIMESTAMP"
+```
+
+- **Incremental**: Uses `last_sync_timestamp` from `cortex_sync_state` table to fetch only new entries
+- **Timeout**: 5 seconds max for HTTP calls (briefing must not block)
+- **Response**: JSON array of entries matching the shared entry schema
+
+#### Sync State Tracking
+
+The `cortex_sync_state` table in memory.db tracks sync progress:
+
+- `backend`: active backend name
+- `last_sync_at`: timestamp of last successful import
+- `last_export_at`: timestamp of last successful export
+- `pending_count`: number of entries in `.omega/.pending-exports.jsonl`
+
+Updated after every successful import or export operation.
+
+#### Fallback Chain
+
+If the primary import method fails, the system falls back gracefully:
+
+1. **HTTP pull** (cloud/self-hosted) -- primary for non-git backends
+2. **`.omega/shared/` files** -- fallback if HTTP fails and files exist
+3. **Skip import** -- if both fail, proceed with local data only
+4. **Local only** -- memory.db is always available regardless
+
+The fallback chain ensures briefing never blocks or errors. Log: `"Cortex backend unavailable -- using local knowledge only"`
+
+---
+
+### Offline-First Resilience
+
+Core invariant: local memory.db is always functional regardless of backend status. OMEGA never degrades local functionality due to backend availability.
+
+#### Per-Backend Offline Behavior
+
+- **Git JSONL**: inherently offline-first. Files are local; sync happens via git push/pull. No network dependency for local operations.
+- **Cloud backends** (cloudflare-d1, turso): exports queued in `.omega/.pending-exports.jsonl` when offline. On next session with connectivity, pending exports are flushed to the backend.
+- **Self-hosted bridge**: same as cloud -- queue exports locally, flush when connectivity returns.
+
+#### Offline Guarantees
+
+The cardinal rules: never error, never block, never degrade local OMEGA functionality.
+
+1. **Never error** -- adapter errors are caught and logged, never propagated
+2. **Never block** -- HTTP timeouts are capped at 5 seconds; all operations have bounded execution time
+3. **Never degrade local OMEGA** -- all local features (memory.db queries, behavioral learnings, incident tracking, lessons, patterns) work identically whether online or offline
+4. **Queue, don't drop** -- failed exports are cached for retry, not discarded
+
+#### Import Offline Behavior
+
+When the backend is unreachable during import:
+- Use last-known local data from memory.db
+- Skip shared import section in briefing output
+- Log info: `"Cortex backend unavailable -- using local knowledge only"`
+- Do NOT retry during the same session -- wait for next session
+
+---
+
+### Backend Migration
+
+The `/omega:cortex-migrate` command enables migration between backend types.
+
+#### Usage
+
+```
+/omega:cortex-migrate --from=git --to=cloudflare-d1
+/omega:cortex-migrate --from=cloudflare-d1 --to=turso
+/omega:cortex-migrate --from=turso --to=self-hosted
+```
+
+#### Migration Flow
+
+1. Read all entries from the source backend via `import(since=epoch)` (i.e., `since=1970-01-01T00:00:00Z`)
+2. Write all entries to the target backend via `export(entries)` through the full middleware pipeline
+3. Validate completeness: count comparison between source and target entry counts
+4. Report results: entries migrated, entries skipped (already in target), errors
+
+#### Guarantees
+
+- **Non-destructive**: source data is always preserved after migration
+- **Deduplication-aware**: uses content_hash to skip entries already present in the target
+- **Resumable**: if migration fails partway, re-running picks up where it left off (dedup prevents duplicates)
+- **Any-to-any**: supports migration between any two backends (git-jsonl, cloudflare-d1, turso, self-hosted)

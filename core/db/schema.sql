@@ -1,5 +1,5 @@
 -- Claude Workflow Institutional Memory Schema
--- Version: 1.5.0 — Added Cortex security hardening (import sanitization, entry signing, audit logging)
+-- Version: 1.6.0 — Added cortex_sync_state table for middleware sync tracking
 -- Every workflow execution writes to this DB. Every agent reads from it before acting.
 
 PRAGMA journal_mode = WAL;
@@ -354,6 +354,18 @@ CREATE TABLE IF NOT EXISTS cortex_security_log (
     entry_uuid TEXT,
     contributor TEXT,
     timestamp TEXT DEFAULT (datetime('now'))
+);
+
+-- ============================================================
+-- CORTEX SYNC STATE — tracks sync progress per backend for middleware
+-- ============================================================
+CREATE TABLE IF NOT EXISTS cortex_sync_state (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    backend TEXT NOT NULL,
+    last_sync_at TEXT,
+    last_export_at TEXT,
+    pending_count INTEGER DEFAULT 0,
+    updated_at TEXT DEFAULT (datetime('now'))
 );
 
 -- ============================================================

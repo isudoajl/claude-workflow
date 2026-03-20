@@ -839,10 +839,10 @@ Other developer starts session
 | REQ-CTX-042 | 4 | Could | (filled by test-writer) | Module 14: Cloudflare D1 Adapter | Turso adapter logic | M9 |
 | REQ-CTX-043 | 4 | Should | (filled by test-writer) | Module 15: Self-Hosted Bridge | Self-hosted adapter + bridge server | M11 |
 | REQ-CTX-044 | 4 | Must | (filled by test-writer) | Module 12: Cortex Config Command | `core/commands/omega-cortex-config.md` | M9 |
-| REQ-CTX-045 | 4 | Must | (filled by test-writer) | Module 13: Sync Middleware | Middleware pipeline in curator | M10 |
-| REQ-CTX-046 | 4 | Should | (filled by test-writer) | Module 13: Sync Middleware | `core/hooks/briefing.sh` (cloud pull) | M10 |
-| REQ-CTX-047 | 4 | Must | (filled by test-writer) | Module 13: Sync Middleware | All adapters | M10 |
-| REQ-CTX-048 | 4 | Could | (filled by test-writer) | Module 12: Cortex Config Command | Backend migration logic | M10 |
+| REQ-CTX-045 | 4 | Must | TEST-CTX-M10-001 to M10-011 | Module 13: Sync Middleware | `core/protocols/sync-adapters.md` MIDDLEWARE section | M10 |
+| REQ-CTX-046 | 4 | Should | TEST-CTX-M10-012 to M10-017 | Module 13: Sync Middleware | `core/protocols/sync-adapters.md` MIDDLEWARE section | M10 |
+| REQ-CTX-047 | 4 | Must | TEST-CTX-M10-018 to M10-023 | Module 13: Sync Middleware | `core/protocols/sync-adapters.md` MIDDLEWARE section | M10 |
+| REQ-CTX-048 | 4 | Could | TEST-CTX-M10-024 to M10-028 | Module 13: Sync Middleware | `core/protocols/sync-adapters.md` MIDDLEWARE section | M10 |
 | REQ-CTX-049 | 4 | Should | (filled by test-writer) | Module 14: Cloudflare D1 Adapter | D1 schema provisioning | M9 |
 | REQ-CTX-050 | 4 | Should | (filled by test-writer) | Module 15: Self-Hosted Bridge | `extensions/cortex-bridge/` | M11 |
 | REQ-CTX-051 | 5 | Must | (filled by test-writer) | Module 16: Import Sanitization | `core/hooks/briefing.sh` | M12 |

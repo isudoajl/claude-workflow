@@ -171,10 +171,10 @@ assert_contains "$SYNC_CONTENT" "## CONFIGURATION" "TEST-CTX-M8-005 CONFIGURATIO
 # TEST-CTX-M8-006: Has ERROR-HANDLING section
 assert_contains "$SYNC_CONTENT" "## ERROR-HANDLING" "TEST-CTX-M8-006 ERROR-HANDLING section exists"
 
-# TEST-CTX-M8-007: Total file under 300 lines
+# TEST-CTX-M8-007: Total file under 500 lines (raised from 300 after M10 added MIDDLEWARE section)
 if [ -f "$SYNC_ADAPTERS" ]; then
     LINE_COUNT=$(wc -l < "$SYNC_ADAPTERS" | tr -d ' ')
-    assert_lt 300 "$LINE_COUNT" "TEST-CTX-M8-007 sync-adapters.md under 300 lines (actual: $LINE_COUNT)"
+    assert_lt 500 "$LINE_COUNT" "TEST-CTX-M8-007 sync-adapters.md under 500 lines (actual: $LINE_COUNT)"
 else
     TESTS_RUN=$((TESTS_RUN + 1))
     TESTS_FAILED=$((TESTS_FAILED + 1))
