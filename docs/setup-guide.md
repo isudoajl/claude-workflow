@@ -42,13 +42,14 @@ Either method deploys everything:
 
 | What | Where | Notes |
 |------|-------|-------|
-| 15 agents | `.claude/agents/` | Core pipeline + dispatch agents |
-| 17 commands | `.claude/commands/` | Workflow orchestrators |
-| 5 protocols + index | `.claude/protocols/` | On-demand reference files with @INDEX lazy-load blocks |
+| 16 agents | `.claude/agents/` | Core pipeline + dispatch + curator agents |
+| 19 commands | `.claude/commands/` | Workflow orchestrators (incl. Cortex: share, team-status) |
+| 7 protocols + index | `.claude/protocols/` | On-demand reference files with @INDEX lazy-load blocks |
 | Workflow rules | `CLAUDE.md` | **Appended** to existing CLAUDE.md (never overwrites) |
 | Automation hooks | `.claude/hooks/` | 7 hooks: auto-briefing, learning detector + gate, commit gate, incremental gate, debrief nudge, session close |
 | Hook config | `.claude/settings.json` | Registers hooks with Claude Code |
-| Memory DB | `.claude/memory.db` | SQLite with 14 tables, 7 views (incl. self-learning) |
+| Memory DB | `.claude/memory.db` | SQLite with 20 tables, 12 views (incl. self-learning + Cortex) |
+| Shared store | `.omega/shared/` | Git-tracked team knowledge (Cortex collective intelligence) |
 | Query references | `.claude/db-queries/` | Briefing, debrief, maintenance SQL templates |
 | Scaffolding | `specs/SPECS.md`, `docs/DOCS.md` | Only created if they don't exist |
 
@@ -166,7 +167,7 @@ your-project/
 
 ## How Hooks Work (Automated Briefing/Incremental Logging Enforcement)
 
-OMEGA deploys five Claude Code hooks that automate and enforce the institutional memory protocol:
+OMEGA deploys seven Claude Code hooks that automate and enforce the institutional memory protocol:
 
 ### `briefing.sh` (UserPromptSubmit)
 Runs on the first user prompt of each session (uses session_id to fire only once). It:
@@ -177,9 +178,22 @@ Runs on the first user prompt of each session (uses session_id to fire only once
 
 **This is what makes the system work without relying on AI memory.** Claude sees the institutional context automatically — no "remember to run briefing" needed.
 
+### `learning-detector.sh` (UserPromptSubmit)
+Runs on every user prompt. It:
+- Detects when the user corrects Claude's behavior (e.g., "don't do X", "instead do Y")
+- Tracks corrections as pending behavioral learnings in a flag file
+- Nags until the correction is saved as a behavioral learning via `/omega:learn`
+
+### `learning-gate.sh` (PreToolUse — Bash)
+Runs before Bash tool calls. When it detects `git commit`:
+- Checks if there are pending (unsaved) corrections from `learning-detector.sh`
+- If pending corrections exist → **blocks the commit** until they are saved as behavioral learnings
+- This prevents knowledge loss — corrections must be formalized before committing
+
 ### `session-close.sh` (Notification)
 Runs on notifications. It:
 - Promotes hotspot risk levels based on touch counts
+- **Cortex**: Checks for unshared high-confidence entries and writes `.curation_pending` flag for next session's briefing to detect
 
 ### `debrief-gate.sh` (PreToolUse — Bash)
 Runs before every Bash tool call. For non-commit commands, exits instantly (no overhead). When it detects `git commit`:

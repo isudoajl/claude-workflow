@@ -13,8 +13,8 @@ OMEGA is **not** an application. It is a set of agent definitions, command orche
 | v1 | v2 |
 |----|-----|
 | Flat `.claude/agents/` and `.claude/commands/` | `core/` + `extensions/` source organization |
-| All 20 agents copied to every project | Core (15) always; extensions opt-in via `--ext=` |
-| No cross-session memory | SQLite `.claude/memory.db` with 17 tables + 10 views |
+| All 20 agents copied to every project | Core (16) always; extensions opt-in via `--ext=` |
+| No cross-session memory | SQLite `.claude/memory.db` with 20 tables + 12 views |
 | Agents act independently | Mandatory briefing/incremental logging/close-out + self-learning — agents log as they work and distill patterns |
 | `omega-feature.md` + `omega-new-feature.md` (duplicate) | Consolidated: only `omega-new-feature.md` |
 | `omega-improve.md` + `omega-improve-functionality.md` (duplicate) | Consolidated: only `omega-improve.md` |
@@ -25,8 +25,8 @@ OMEGA is **not** an application. It is a set of agent definitions, command orche
 ```
 omega/
 ├── core/                              # Universal foundation
-│   ├── agents/                        # 15 agents every project needs
-│   ├── commands/                      # 16 workflow orchestrators
+│   ├── agents/                        # 16 agents every project needs
+│   ├── commands/                      # 19 workflow orchestrators
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema (tables, views, indexes)
 │   │   └── queries/                   # Named query templates

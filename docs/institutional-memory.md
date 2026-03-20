@@ -540,18 +540,54 @@ SQLite binary files don't diff in git. Mitigations:
 - The schema itself (`core/db/schema.sql`) is versioned in the toolkit repo
 - `db-init.sh` uses `CREATE TABLE IF NOT EXISTS` — safe to re-run for schema migrations
 
+## Cortex: Collective Intelligence Layer
+
+Cortex extends institutional memory from per-developer to **team-wide**. Knowledge flows through a hybrid architecture: local memory.db for real-time speed, git-tracked `.omega/shared/` files for team distribution.
+
+### Schema Additions (v1.3.0)
+
+**New table: `shared_imports`** — Tracks which shared entries have been imported to prevent re-import:
+- `shared_uuid TEXT NOT NULL` (UNIQUE) — UUID of the shared entry
+- `category TEXT NOT NULL` — behavioral_learning, incident, hotspot, lesson, pattern, decision
+- `source_file TEXT` — which JSONL/JSON file it came from
+- `imported_at TEXT` — when imported
+
+**New columns on shareable tables** (behavioral_learnings, incidents, lessons, patterns, decisions):
+- `contributor TEXT` — git identity of who created the entry ("Name <email>")
+- `shared_uuid TEXT` — UUID assigned when exported to shared store (NULL = local only)
+- `is_private INTEGER DEFAULT 0` — set to 1 to prevent sharing (opt-out)
+
+**New column on hotspots:**
+- `contributor TEXT` — (hotspots don't have shared_uuid or is_private; they use file_path as natural key)
+
+**New view: `v_shared_briefing`** — Pre-filtered view of shareable behavioral learnings:
+- `SELECT ... FROM behavioral_learnings WHERE confidence >= 0.8 AND status = 'active' AND COALESCE(is_private, 0) = 0`
+
+### Commands
+- `/omega:share` — Invokes the curator agent to export qualifying entries to `.omega/shared/`
+- `/omega:team-status` — Dashboard showing shared knowledge stats, contributions, incidents, hotspots
+
+### How It Works
+1. Developer works normally — memory.db accumulates learnings, incidents, hotspots
+2. At session close (or manually via `/omega:share`), the **curator agent** evaluates entries:
+   - Confidence >= 0.8? Team-relevant (not personal)? Not private?
+   - Deduplicates via content_hash, reinforces cross-contributor entries
+3. Qualifying entries exported to `.omega/shared/` (JSONL files + incident JSON files)
+4. Developer commits and pushes — git distributes the knowledge
+5. Other developers pull and start a session — briefing.sh imports `[TEAM]` entries automatically
+
+See `cortex-protocol.md` for full JSONL format specification and curation rules.
+
 ## Limitations and Future Work
 
 **Current limitations:**
 - Incremental logging requires AI cooperation, but git commits are blocked without at least one outcome (enforced via PreToolUse hook)
 - Agents must manually construct SQL queries — no abstraction layer
 - No automated decay beyond hotspot promotion (maintenance queries must be run manually or by a scheduled workflow)
-- No cross-project memory (each project has its own DB)
 - `$RUN_ID` passing relies on orchestrator convention, not enforcement
 
 **Potential future additions:**
+- **Sync Adapters (Phase 4)**: Cloudflare D1, Turso, and self-hosted backends for real-time sync without git push/pull
 - A `omega:memory-health` command that runs maintenance queries + self-learning health stats
-- Cross-project pattern sharing (export patterns and lessons from one project, import to another)
 - Automated decay via a post-workflow hook
 - A `omega:memory-query` command for ad-hoc DB queries
-- A `/learning` command to inspect outcomes and lessons (similar to OMEGA's /learning)

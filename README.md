@@ -17,7 +17,7 @@ OMEGA solves all of that.
 
 ## How It Works
 
-Fifteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
+Sixteen core agents execute in chain or standalone, each with a single responsibility. Every agent has **mandatory briefing/incremental logging/close-out** phases — querying institutional memory before starting, writing to memory.db continuously during work, and verifying completeness after finishing.
 
 ```
 Your Idea
@@ -97,7 +97,7 @@ Then inside Claude Code:
 
 #### Using `omg` CLI
 ```bash
-omg init                              # Core only (16 agents, 18 commands, 7 hooks, SQLite memory)
+omg init                              # Core only (16 agents, 19 commands, 7 hooks, SQLite memory)
 omg init --ext=blockchain             # Core + specific extension
 omg init --ext=blockchain,c2c-protocol # Core + multiple extensions
 omg init --ext=all                    # Core + all extensions
@@ -128,7 +128,7 @@ When you run setup.sh, the following is created/updated in your target project:
 your-project/
 ├── .claude/
 │   ├── agents/           <- 16 core agent definitions (+ extension agents)
-│   ├── commands/         <- 18 core commands (+ extension commands)
+│   ├── commands/         <- 19 core commands (+ extension commands)
 │   ├── protocols/        <- 5 on-demand protocol reference files
 │   ├── hooks/            <- 7 automation hooks
 │   ├── settings.json     <- Hook configuration (merged, not overwritten)
@@ -163,8 +163,8 @@ The setup script is fully idempotent with change detection:
 ```
 omega/
 ├── core/                              # Every project gets this
-│   ├── agents/                        # 15 universal agents
-│   ├── commands/                      # 16 universal commands
+│   ├── agents/                        # 16 universal agents
+│   ├── commands/                      # 19 universal commands
 │   ├── protocols/                     # 5 on-demand reference files (with @INDEX lazy-load)
 │   ├── db/                            # Institutional memory layer
 │   │   ├── schema.sql                 # SQLite schema
@@ -227,7 +227,7 @@ Bugs are tracked as **incidents** (INC-001, INC-002, ...). Each incident has a s
 
 ### Automation Hooks
 
-Six hooks enforce the memory protocol automatically:
+Seven hooks enforce the memory protocol automatically:
 
 | Hook | Event | Purpose |
 |------|-------|---------|
@@ -239,7 +239,7 @@ Six hooks enforce the memory protocol automatically:
 | `debrief-nudge.sh` | PostToolUse | Periodic reminder to log incrementally |
 | `session-close.sh` | Notification | Promotes hotspot risk levels at session end |
 
-## Core Agents (15)
+## Core Agents (16)
 
 | Agent | Role |
 |-------|------|
@@ -257,9 +257,10 @@ Six hooks enforce the memory protocol automatically:
 | **diagnostician** | Deep diagnostic reasoning: hypothesis-driven root cause analysis |
 | **omega-router** | Intelligent dispatch: classifies requests, finds/creates specialists, assembles pipelines |
 | **role-creator** | Meta-agent: designs new agent role definitions |
+| **curator** | Knowledge curation: evaluates memory.db entries for team sharing, exports to `.omega/shared/` |
 | **role-auditor** | Meta-agent: adversarial audit of role definitions (read-only) |
 
-## Core Commands (17)
+## Core Commands (19)
 
 | Command | Description |
 |---------|-------------|
@@ -285,7 +286,7 @@ Six hooks enforce the memory protocol automatically:
 
 ## Intelligent Specialist Routing
 
-OMEGA ships with 16 agents that cover software development. But real projects need expertise in hundreds of domains — marketing, compliance, database optimization, DevOps, security hardening, content writing, etc.
+OMEGA ships with 16 core agents that cover software development. But real projects need expertise in hundreds of domains — marketing, compliance, database optimization, DevOps, security hardening, content writing, etc.
 
 `/omega:consult` is the catch-all for domain expertise that doesn't fit the structured development commands:
 
