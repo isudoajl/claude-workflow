@@ -10,3 +10,6 @@
 .claude/settings.json
 .claude/.omg-version
 cli/target/
+.omega/cortex-config.json
+.omega/.cortex-key
+extensions/cortex-bridge/target/
