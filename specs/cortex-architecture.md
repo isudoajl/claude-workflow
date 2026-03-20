@@ -1714,8 +1714,8 @@ Phase 5:  M12 ◄──┤ (depends on M3, M5 -- hardens import + export)
 | REQ-CTX-036 | -- | N/A (Won't) | N/A | -- | |
 | REQ-CTX-037 | -- | N/A (Won't) | N/A | -- | |
 | REQ-CTX-038 | -- | N/A (Won't) | N/A | -- | |
-| REQ-CTX-039 | 4 | Module 11: Sync Adapter Abstraction | `core/protocols/sync-adapters.md` | M8 | |
-| REQ-CTX-040 | 4 | Module 11: Sync Adapter Abstraction | Git JSONL adapter (refactored) | M8 | |
+| REQ-CTX-039 | 4 | Module 11: Sync Adapter Abstraction | `core/protocols/sync-adapters.md` | M8 | TEST-CTX-M8-001 to M8-039 |
+| REQ-CTX-040 | 4 | Module 11: Sync Adapter Abstraction | Git JSONL adapter @ `core/protocols/sync-adapters.md`, `core/agents/curator.md` | M8 | TEST-CTX-M8-023 to M8-028, M8-040 to M8-042 |
 | REQ-CTX-041 | 4 | Module 14: Cloudflare D1 Adapter | D1 adapter logic in curator/briefing | M9 | |
 | REQ-CTX-042 | 4 | Module 14: Cloudflare D1 Adapter | Turso adapter logic | M9 | |
 | REQ-CTX-043 | 4 | Module 15: Self-Hosted Bridge | Self-hosted adapter + bridge server | M11 | |

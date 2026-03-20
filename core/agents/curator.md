@@ -385,3 +385,24 @@ The curator is safe to re-run multiple times. Because of the content_hash dedupl
 - Duplicate content_hash entries are reinforced rather than duplicated
 - Re-running the curator on the same data produces the same result (idempotent)
 - Signatures are recomputed on each export (deterministic for same content + key)
+
+## Sync Adapter Awareness
+
+The curator's curation logic (evaluate, deduplicate, sign, detect conflicts) is **adapter-agnostic**. It produces a list of ready-to-export entries, then delegates transport to the configured sync adapter.
+
+### Backend Selection
+
+The curator reads `.omega/cortex-config.json` to determine which backend to use:
+
+1. Read `.omega/cortex-config.json`
+2. If the file does not exist or cannot be parsed: default to `git-jsonl`
+3. Read the `backend` field
+4. If the `backend` field is missing or unrecognized: default to `git-jsonl`
+
+### Adapter Routing
+
+- **`git-jsonl`** (default): Use the current behavior -- write to `.omega/shared/` JSONL/JSON files. This is the Phase 1-3 behavior, unchanged. No additional configuration needed.
+- **`cloudflare-d1`** / **`turso`**: Future cloud adapters (Phase 4, M9). When configured, the curator will export entries via HTTP API instead of local file writes.
+- **`self-hosted`**: Future self-hosted bridge adapter (Phase 4, M11). When configured, the curator will export entries to a team-managed HTTP bridge server.
+
+For the full adapter interface specification, see `sync-adapters.md` in `.claude/protocols/`. For configuration format details, see the CONFIGURATION section of that protocol file.

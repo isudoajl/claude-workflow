@@ -28,7 +28,7 @@
 ## Phase 4: Sync Adapters
 | ID | Name | Status | Timestamp |
 |----|------|--------|-----------|
-| M8 | Sync Adapter Abstraction + Git Adapter | PENDING | |
+| M8 | Sync Adapter Abstraction + Git Adapter | COMPLETE | 2026-03-20 |
 | M9 | Cloud Adapter + Config Command | PENDING | |
 | M10 | Middleware + Offline Resilience | PENDING | |
 | M11 | Self-Hosted Bridge + Adapter | PENDING | |

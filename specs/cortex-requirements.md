@@ -833,8 +833,8 @@ Other developer starts session
 | REQ-CTX-036 | -- | Won't | N/A | N/A | Deferred to v2 | -- |
 | REQ-CTX-037 | -- | Won't | N/A | N/A | Deferred | -- |
 | REQ-CTX-038 | -- | Won't | N/A | N/A | Deferred to v2 | -- |
-| REQ-CTX-039 | 4 | Must | (filled by test-writer) | Module 11: Sync Adapter Abstraction | `core/protocols/sync-adapters.md` | M8 |
-| REQ-CTX-040 | 4 | Must | (filled by test-writer) | Module 11: Sync Adapter Abstraction | Git JSONL adapter (refactored) | M8 |
+| REQ-CTX-039 | 4 | Must | TEST-CTX-M8-001 to TEST-CTX-M8-039 | Module 11: Sync Adapter Abstraction | `core/protocols/sync-adapters.md` @ `core/protocols/sync-adapters.md` | M8 |
+| REQ-CTX-040 | 4 | Must | TEST-CTX-M8-023 to TEST-CTX-M8-028, TEST-CTX-M8-040 to TEST-CTX-M8-042 | Module 11: Sync Adapter Abstraction | Git JSONL adapter @ `core/protocols/sync-adapters.md` (GIT-JSONL-ADAPTER section), `core/agents/curator.md` (Sync Adapter Awareness section) | M8 |
 | REQ-CTX-041 | 4 | Should | (filled by test-writer) | Module 14: Cloudflare D1 Adapter | D1 adapter logic in curator/briefing | M9 |
 | REQ-CTX-042 | 4 | Could | (filled by test-writer) | Module 14: Cloudflare D1 Adapter | Turso adapter logic | M9 |
 | REQ-CTX-043 | 4 | Should | (filled by test-writer) | Module 15: Self-Hosted Bridge | Self-hosted adapter + bridge server | M11 |
