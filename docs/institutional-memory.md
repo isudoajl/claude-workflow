@@ -238,6 +238,7 @@ Written by: developer, diagnostician, qa. Read by: all agents (on-demand).
 | `incident_id` | TEXT UNIQUE | INC-001 format |
 | `title` | TEXT | Short description |
 | `domain` | TEXT | Area/module affected |
+| `severity` | TEXT | critical, high, medium, low (default: medium) |
 | `status` | TEXT | open → investigating → resolved → closed |
 | `description` | TEXT | Full description |
 | `symptoms` | TEXT | How it manifests |

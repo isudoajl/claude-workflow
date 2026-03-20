@@ -1,16 +1,17 @@
 <!-- @INDEX
-DB-DETECTION                             19-28
-PIPELINE-START                           29-38
-BRIEFING                                 39-68
-INCREMENTAL-LOGGING                      69-123
-CLOSE-OUT                                124-135
-PIPELINE-END                             136-149
-NON-PIPELINE-SESSIONS                    150-163
-SELF-LEARNING                            164-256
-BEHAVIORAL-LEARNINGS                     257-309
-INCIDENT-TRACKING                        310-338
-SHARED-KNOWLEDGE-CORTEX                  339-350
-ERROR-HANDLING                           351-354
+DB-DETECTION                             21-30
+COLUMN-LIFECYCLE-GUIDES                  31-106
+PIPELINE-START                           107-116
+BRIEFING                                 117-146
+INCREMENTAL-LOGGING                      147-201
+CLOSE-OUT                                202-213
+PIPELINE-END                             214-227
+NON-PIPELINE-SESSIONS                    228-241
+SELF-LEARNING                            242-334
+BEHAVIORAL-LEARNINGS                     335-387
+INCIDENT-TRACKING                        388-416
+SHARED-KNOWLEDGE                         417-427
+ERROR-HANDLING                           428-431
 @/INDEX -->
 
 # Institutional Memory Protocol
@@ -26,6 +27,82 @@ test -f .claude/memory.db && echo "DB_EXISTS" || echo "NO_DB"
 
 - If `DB_EXISTS` → follow the full protocol below
 - If `NO_DB` → skip memory operations gracefully, work without institutional memory
+
+## Column Lifecycle Guides
+
+Which columns to set at each stage for tables with lifecycle states. Incidents have their own guide in `incident-protocol.md`.
+
+### workflow_runs
+
+| Column | Start | Complete | Fail | Partial |
+|--------|-------|----------|------|---------|
+| `type` | **required** | — | — | — |
+| `description` | **required** | — | — | — |
+| `scope` | set if `--scope` provided | — | — | — |
+| `status` | auto: `running` | set: `completed` | set: `failed` | set: `partial` |
+| `completed_at` | — | set: `datetime('now')` | set: `datetime('now')` | set: `datetime('now')` |
+| `git_commits` | — | set: JSON array of hashes | — | — |
+| `error_message` | — | — | **required** | recommended |
+
+### decisions
+
+| Column | Create | Supersede | Reverse |
+|--------|--------|-----------|---------|
+| `domain` | **required** | — | — |
+| `decision` | **required** | — | — |
+| `rationale` | **required** | — | — |
+| `alternatives` | recommended (JSON) | — | — |
+| `confidence` | set (0.0-1.0) | — | — |
+| `status` | auto: `active` | set: `superseded` | set: `reversed` |
+| `superseded_by` | — | set: new decision ID | — |
+
+### findings
+
+| Column | Discover | Fix | Defer | Escalate |
+|--------|----------|-----|-------|----------|
+| `finding_id` | **required** (AUDIT-P0-001) | — | — | — |
+| `severity` | **required** (P0-P3) | — | — | — |
+| `category` | **required** | — | — | — |
+| `description` | **required** | — | — | — |
+| `file_path` | **required** | — | — | — |
+| `line_range` | recommended | — | — | — |
+| `status` | auto: `open` | set: `fixed` | set: `deferred`/`wontfix` | set: `escalated` |
+| `fixed_in_run` | — | set: run_id of fix | — | — |
+
+### requirements
+
+| Column | Define | Test | Implement | Verify |
+|--------|--------|------|-----------|--------|
+| `req_id` | **required** (REQ-XXX-001) | — | — | — |
+| `domain` | **required** | — | — | — |
+| `description` | **required** | — | — | — |
+| `priority` | **required** (Must/Should/Could/Won't) | — | — | — |
+| `status` | auto: `defined` | set: `tested` | set: `implemented` | set: `verified` |
+| `test_ids` | — | set: JSON array of TEST IDs | — | — |
+| `implementation_module` | — | — | set: file path | — |
+
+### lessons
+
+| Column | Distill | Reinforce | Archive |
+|--------|---------|-----------|---------|
+| `domain` | **required** | — | — |
+| `content` | **required** | — | — |
+| `source_agent` | **required** | — | — |
+| `confidence` | auto: `0.5` | increment (+0.1, max 1.0) | — |
+| `occurrences` | auto: `1` | increment +1 | — |
+| `status` | auto: `active` | — | set: `archived`/`superseded` |
+| `last_reinforced` | auto: now | set: `datetime('now')` | — |
+
+### behavioral_learnings
+
+| Column | Extract | Reinforce | Deprecate |
+|--------|---------|-----------|-----------|
+| `rule` | **required** | — | — |
+| `context` | **required** | — | — |
+| `confidence` | auto: `0.5` | increment (+0.1, max 1.0) | — |
+| `occurrences` | auto: `1` | increment +1 | — |
+| `status` | auto: `active` | — | set: `deprecated` |
+| `last_reinforced` | auto: now | set: `datetime('now')` | — |
 
 ## Pipeline Start (orchestrator responsibility)
 Every `/omega:*` command creates a run entry at the **very beginning**, before invoking any agent:
@@ -328,7 +405,7 @@ Incidents replace scattered `bugs` table entries with a structured ticket system
 NEXT_ID=$(sqlite3 .claude/memory.db "SELECT 'INC-' || printf('%03d', COALESCE(MAX(CAST(SUBSTR(incident_id, 5) AS INTEGER)), 0) + 1) FROM incidents;")
 
 # Create incident
-sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, description, symptoms, run_id) VALUES ('$NEXT_ID', 'title', 'domain', 'description', 'symptoms', $RUN_ID);"
+sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, severity, description, symptoms, run_id) VALUES ('$NEXT_ID', 'title', 'domain', 'medium', 'description', 'symptoms', $RUN_ID);"
 
 # Log an attempt
 sqlite3 .claude/memory.db "INSERT INTO incident_entries (incident_id, entry_type, content, result, agent, run_id) VALUES ('INC-001', 'attempt', 'What was tried', 'failed', 'developer', $RUN_ID);"

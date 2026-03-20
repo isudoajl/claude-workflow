@@ -1,18 +1,39 @@
 <!-- @INDEX
-WHEN-TO-CREATE-AN-INCIDENT               17-25
-CREATING-AN-INCIDENT                     26-36
-ADDING-ENTRIES-TO-AN-INCIDENT            37-77
-RESOLVING-AN-INCIDENT                    78-93
-CLOSING-AN-INCIDENT                      94-101
-QUERYING-INCIDENTS                       102-123
-LINKING-RELATED-INCIDENTS                124-130
-EXTRACTING-BEHAVIORAL-LEARNINGS-FROM-INCIDENTS 131-154
-TAGGING-INCIDENTS                        155-161
+COLUMN-LIFECYCLE-GUIDE                   18-37
+WHEN-TO-CREATE-AN-INCIDENT               38-46
+CREATING-AN-INCIDENT                     47-57
+ADDING-ENTRIES-TO-AN-INCIDENT            58-98
+RESOLVING-AN-INCIDENT                    99-114
+CLOSING-AN-INCIDENT                      115-122
+QUERYING-INCIDENTS                       123-144
+LINKING-RELATED-INCIDENTS                145-151
+EXTRACTING-BEHAVIORAL-LEARNINGS-FROM-INCIDENTS 152-175
+TAGGING-INCIDENTS                        176-182
 @/INDEX -->
 
 # Incident Tracking Protocol
 
 Incidents are the structured way to track bugs in OMEGA. Each bug gets a ticket number (INC-NNN) and all related knowledge — attempts, discoveries, clues, resolution — lives under it. This replaces scattered `bugs` and `failed_approaches` entries for bug tracking.
+
+## Column Lifecycle Guide
+
+Which columns to set at each stage:
+
+| Column | Create | Investigate | Resolve | Close |
+|--------|--------|-------------|---------|-------|
+| `incident_id` | **required** | — | — | — |
+| `title` | **required** | — | — | — |
+| `domain` | **required** | update if refined | — | — |
+| `severity` | **required** (critical/high/medium/low) | update if reassessed | — | — |
+| `status` | auto: `open` | set: `investigating` | set: `resolved` | set: `closed` |
+| `description` | **required** | — | — | — |
+| `symptoms` | recommended | update if new symptoms found | — | — |
+| `root_cause` | — | — | **required** | — |
+| `resolution` | — | — | **required** | — |
+| `affected_files` | optional | update as discovered | finalize | — |
+| `related_incidents` | optional | link as found | — | — |
+| `tags` | optional | add as relevant | — | — |
+| `resolved_at` | — | — | set: `datetime('now')` | — |
 
 ## When to Create an Incident
 
@@ -30,8 +51,8 @@ Incidents are the structured way to track bugs in OMEGA. Each bug gets a ticket 
 NEXT_ID=$(sqlite3 .claude/memory.db "SELECT 'INC-' || printf('%03d', COALESCE(MAX(CAST(SUBSTR(incident_id, 5) AS INTEGER)), 0) + 1) FROM incidents;")
 
 # 2. Create the incident
-sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, description, symptoms, run_id)
-VALUES ('$NEXT_ID', 'Short title', 'domain/module', 'Full description of the bug', 'Error messages, unexpected behavior seen', $RUN_ID);"
+sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, severity, description, symptoms, run_id)
+VALUES ('$NEXT_ID', 'Short title', 'domain/module', 'medium', 'Full description of the bug', 'Error messages, unexpected behavior seen', $RUN_ID);"
 ```
 
 ## Adding Entries to an Incident

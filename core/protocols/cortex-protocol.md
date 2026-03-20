@@ -1,9 +1,9 @@
 <!-- @INDEX
-SHARED-STORE-FORMAT                      15-60
-CURATION-RULES                           62-96
-IMPORT-RULES                             98-133
-PRIVACY                                  135-153
-CONTRIBUTOR-IDENTITY                     155-178
+SHARED-STORE-FORMAT                      15-61
+CURATION-RULES                           62-97
+IMPORT-RULES                             98-134
+PRIVACY                                  135-154
+CONTRIBUTOR-IDENTITY                     155-179
 CONFLICT-RESOLUTION                      180-207
 @/INDEX -->
 

@@ -249,6 +249,7 @@ CREATE TABLE IF NOT EXISTS incidents (
     incident_id TEXT UNIQUE NOT NULL,      -- INC-001 format
     title TEXT NOT NULL,                   -- Short description
     domain TEXT,                           -- Area/module affected
+    severity TEXT DEFAULT 'medium',        -- critical, high, medium, low
     status TEXT DEFAULT 'open',            -- open, investigating, resolved, closed
     description TEXT,                      -- Full description of the issue
     symptoms TEXT,                         -- How it manifests (error messages, behavior)
@@ -266,6 +267,7 @@ CREATE TABLE IF NOT EXISTS incidents (
 );
 
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
+CREATE INDEX IF NOT EXISTS idx_incidents_severity ON incidents(severity);
 CREATE INDEX IF NOT EXISTS idx_incidents_domain ON incidents(domain);
 
 -- ============================================================
@@ -464,7 +466,7 @@ LIMIT 20;
 -- Incident search: search across title, description, symptoms, entries
 CREATE VIEW IF NOT EXISTS v_incident_search AS
 SELECT
-    i.incident_id, i.title, i.domain, i.status,
+    i.incident_id, i.title, i.domain, i.severity, i.status,
     i.description, i.symptoms, i.root_cause, i.resolution,
     i.tags,
     (SELECT COUNT(*) FROM incident_entries e WHERE e.incident_id = i.incident_id) as entry_count,

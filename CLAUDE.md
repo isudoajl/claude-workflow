@@ -90,7 +90,7 @@ The briefing hook may inject an identity block. **Full reference:** Read @INDEX 
 4. **Understand architecture before ANY modification** — every change requires comprehending module boundaries, data flows, dependencies, and blast radius. No exceptions for "small" fixes
 5. **Every assumption must be explicit** — technical + human-readable summary
 6. **Codebase is king** — when in doubt, read the actual code
-7. **Keep specs/ and docs/ in sync** — every code change must update relevant specs and docs
+7. **Keep specs/, docs/, and protocols in sync** — every code change must update relevant specs, docs, and protocol files (schema changes require updating lifecycle guides, INSERT templates, views, and @INDEX ranges)
 8. **Every requirement has acceptance criteria** — "it should work" is not acceptable
 9. **Every requirement has a priority** — Must/Should/Could/Won't (MoSCoW)
 10. **Every requirement is traceable** — from ID through tests to implementation

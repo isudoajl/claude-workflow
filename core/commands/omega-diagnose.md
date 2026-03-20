@@ -47,7 +47,7 @@ sqlite3 -header -column .claude/memory.db "SELECT title, description, symptoms, 
 1. Auto-create an incident:
 ```bash
 INC_ID=$(sqlite3 .claude/memory.db "SELECT 'INC-' || printf('%03d', COALESCE(MAX(CAST(SUBSTR(incident_id, 5) AS INTEGER)), 0) + 1) FROM incidents;")
-sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, description, symptoms, run_id) VALUES ('$INC_ID', 'SHORT_TITLE', 'SCOPE_OR_DOMAIN', 'USER_DESCRIPTION', 'SYMPTOMS_IF_ANY', $RUN_ID);"
+sqlite3 .claude/memory.db "INSERT INTO incidents (incident_id, title, domain, severity, description, symptoms, run_id) VALUES ('$INC_ID', 'SHORT_TITLE', 'SCOPE_OR_DOMAIN', 'SEVERITY', 'USER_DESCRIPTION', 'SYMPTOMS_IF_ANY', $RUN_ID);"
 ```
 2. Tell the user: "Tracking as **$INC_ID**. Resume in future sessions with `/omega:diagnose --incident=$INC_ID`"
 

@@ -411,7 +411,7 @@ fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "SESSION OBLIGATIONS:"
 echo "  1. Log outcomes incrementally (INSERT INTO outcomes). Git commits blocked without them."
-echo "  2. Track bugs as incidents: INSERT INTO incidents (incident_id, title, domain) VALUES ('INC-NNN', ...);"
+echo "  2. Track bugs as incidents: INSERT INTO incidents (incident_id, title, domain, severity) VALUES ('INC-NNN', ..., 'critical|high|medium|low');"
 echo "  3. Extract behavioral learnings from corrections: INSERT INTO behavioral_learnings (rule, context) VALUES (...);"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

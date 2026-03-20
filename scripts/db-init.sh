@@ -32,11 +32,12 @@ else
     echo "   Schema initialized"
 fi
 
-# Run Cortex migration (adds columns to existing tables, idempotent)
-MIGRATE_SCRIPT="$SCRIPT_DIR/core/db/migrate-1.3.0.sh"
-if [ -f "$MIGRATE_SCRIPT" ]; then
-    bash "$MIGRATE_SCRIPT" "$DB_PATH" || echo "  WARNING: Cortex migration had errors (non-blocking)"
-fi
+# Run migrations (idempotent, order matters — glob sorts alphabetically)
+for MIGRATE_SCRIPT in "$SCRIPT_DIR/core/db/migrate-"*.sh; do
+    if [ -f "$MIGRATE_SCRIPT" ]; then
+        bash "$MIGRATE_SCRIPT" "$DB_PATH" || echo "  WARNING: $(basename "$MIGRATE_SCRIPT") had errors (non-blocking)"
+    fi
+done
 
 # Copy query reference files for agents
 mkdir -p "$TARGET_DIR/.claude/db-queries"
