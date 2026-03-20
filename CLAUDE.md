@@ -59,6 +59,8 @@ When specs or docs conflict with the codebase, the codebase wins. Agents must fl
 
 Every workflow reads from and writes to `.claude/memory.db`. **This protocol is not optional.**
 
+**Cortex (team sharing):** Read @INDEX of `.claude/protocols/cortex-protocol.md` for shared knowledge rules.
+
 **Full protocol reference:** Read the **@INDEX** (first 13 lines) of `.claude/protocols/memory-protocol.md` to find section line ranges, then Read ONLY needed sections with offset/limit. For cross-file lookup: `.claude/protocols/PROTOCOLS-INDEX.md`.
 
 **Core rules (always in effect):**

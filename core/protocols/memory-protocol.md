@@ -9,7 +9,8 @@ NON-PIPELINE-SESSIONS                    150-163
 SELF-LEARNING                            164-256
 BEHAVIORAL-LEARNINGS                     257-309
 INCIDENT-TRACKING                        310-338
-ERROR-HANDLING                           339-342
+SHARED-KNOWLEDGE-CORTEX                  339-350
+ERROR-HANDLING                           351-354
 @/INDEX -->
 
 # Institutional Memory Protocol
@@ -335,6 +336,17 @@ sqlite3 .claude/memory.db "INSERT INTO incident_entries (incident_id, entry_type
 # Resolve incident
 sqlite3 .claude/memory.db "UPDATE incidents SET status='resolved', root_cause='...', resolution='...', resolved_at=datetime('now') WHERE incident_id='INC-001';"
 ```
+
+## Shared Knowledge (Cortex)
+
+When `.omega/shared/` exists, OMEGA operates in **collective intelligence mode**:
+
+- **Export**: The curator agent evaluates local memory.db entries (confidence >= 0.8, not private) and exports qualifying entries to `.omega/shared/` JSONL/JSON files. Triggered via `/omega:share` or session-close flag.
+- **Import**: At session start, `briefing.sh` reads `.omega/shared/` files and imports new entries (tracked via `shared_imports` table to prevent re-import).
+- **Privacy**: Entries with `is_private = 1` are never exported. Default is 0 (sharing is opt-out).
+- **Contributor**: Every shared entry tracks who contributed it via `git config user.name` + `user.email`.
+- **Deduplication**: Content-hash based. Same learning from multiple contributors boosts confidence.
+- **Format**: See `cortex-protocol.md` for JSONL format specification and curation rules.
 
 ## Error Handling
 - If `sqlite3` command fails → **log the error but continue working**. Never block work because the DB is inaccessible.

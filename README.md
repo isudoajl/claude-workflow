@@ -281,6 +281,7 @@ Six hooks enforce the memory protocol automatically:
 | `/omega:learn "rule" [--list] [--remove]` | Manually teach OMEGA a behavioral learning |
 | `/omega:onboard [--update]` | Set up your OMEGA identity profile |
 | `/omega:share [--force] [--dry-run] [--scope]` | Export curated knowledge to shared team store |
+| `/omega:team-status` | Dashboard: shared knowledge stats, contributions, incidents, hotspots |
 
 ## Intelligent Specialist Routing
 
