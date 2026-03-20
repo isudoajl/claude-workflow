@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  cortex-bridge:
+    build: .
+    ports:
+      - "8443:8443"
+    environment:
+      - CORTEX_BRIDGE_TOKEN=${CORTEX_BRIDGE_TOKEN}
+      - CORTEX_BRIDGE_HMAC_KEY=${CORTEX_BRIDGE_HMAC_KEY}
+      - CORTEX_BRIDGE_HOST=0.0.0.0
+      - CORTEX_BRIDGE_PORT=8443
+      - CORTEX_BRIDGE_DB_PATH=/data/cortex-bridge.db
+      # Optional TLS (mount certs via volumes)
+      # - CORTEX_BRIDGE_TLS_CERT=/certs/fullchain.pem
+      # - CORTEX_BRIDGE_TLS_KEY=/certs/privkey.pem
+    volumes:
+      - bridge-data:/data
+      # Optional TLS certs
+      # - ./certs:/certs:ro
+    restart: unless-stopped
+
+volumes:
+  bridge-data:

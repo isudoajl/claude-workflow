@@ -31,4 +31,4 @@
 | M8 | Sync Adapter Abstraction + Git Adapter | COMPLETE | 2026-03-20 |
 | M9 | Cloud Adapter + Config Command | COMPLETE | 2026-03-20 |
 | M10 | Middleware + Offline Resilience | COMPLETE | 2026-03-20 |
-| M11 | Self-Hosted Bridge + Adapter | PENDING | |
+| M11 | Self-Hosted Bridge + Adapter | COMPLETE | 2026-03-20 |

@@ -2,10 +2,10 @@
 INTERFACE                                15-81
 GIT-JSONL-ADAPTER                        82-130
 CLOUD-ADAPTER                            131-165
-SELF-HOSTED-ADAPTER                      166-185
-CONFIGURATION                            186-252
-ERROR-HANDLING                           253-297
-MIDDLEWARE                               301-480
+SELF-HOSTED-ADAPTER                      166-254
+CONFIGURATION                            255-321
+ERROR-HANDLING                           322-366
+MIDDLEWARE                               370-549
 @/INDEX -->
 
 # Sync Adapter Abstraction
@@ -166,22 +166,91 @@ See CONFIGURATION section below for `cloudflare-d1` and `turso` config fields.
 ---
 ## SELF-HOSTED-ADAPTER
 
-**Status: Planned for Phase 4, Milestone M11 (REQ-CTX-043, REQ-CTX-050)**
+**Status: Implemented -- Phase 4, Milestone M11 (REQ-CTX-043, REQ-CTX-050)**
 
-The Self-Hosted Adapter will connect to a Rust-based HTTP bridge server (`extensions/cortex-bridge/`) for teams wanting full data sovereignty.
+The Self-Hosted Adapter connects to a Rust-based HTTP bridge server (`extensions/cortex-bridge/`) for teams wanting full data sovereignty. The bridge is built with axum + tokio + rusqlite, using ring for HMAC and rustls for TLS. No OpenSSL dependency.
 
-### Planned Interface Mapping
+### Interface Mapping
 
-- `export()` -- HTTP POST entries to bridge server `/api/v1/entries`
-- `import()` -- HTTP GET entries from bridge server `/api/v1/entries?since=...`
-- `status()` -- GET `/api/v1/status` for backend statistics
-- `health()` -- GET `/api/v1/health` for availability check
+#### `export(entries) -> ExportResult`
+
+HTTP POST to the bridge server's `/api/export` endpoint.
+
+```
+POST /api/export
+Authorization: Bearer <token>
+X-Cortex-Signature: hmac-sha256=<hex_digest>
+X-Cortex-Timestamp: <unix_epoch_seconds>
+Content-Type: application/json
+
+{"entries": [<SharedEntry>, ...]}
+```
+
+The HMAC signature is computed as `HMAC-SHA256(key, "<timestamp>.<body>")`. The bridge server verifies the signature, checks the timestamp is within 5 minutes (replay protection), then inserts entries with content_hash-based deduplication. Duplicate entries are reinforced (occurrences bumped, confidence boosted).
+
+**Response:** `{"exported": 3, "reinforced": 1, "errors": []}`
+
+#### `import(since?) -> Entry[]`
+
+HTTP GET from the bridge server's `/api/import` endpoint.
+
+```
+GET /api/import?since=2026-03-20T15:00:00Z
+Authorization: Bearer <token>
+```
+
+Returns entries created after the `since` timestamp. If `since` is omitted, returns all entries. Results are ordered by `created_at` ASC for deterministic import.
+
+**Response:** `{"entries": [...], "count": 15}`
+
+#### `status() -> BackendStats`
+
+HTTP GET from the bridge server's `/api/status` endpoint.
+
+```
+GET /api/status
+Authorization: Bearer <token>
+```
+
+Returns entry counts grouped by category and the last sync timestamp.
+
+**Response:** `{"backend": "self-hosted", "counts": {"behavioral_learnings": 42}, "last_sync": "2026-03-20T15:00:00Z"}`
+
+#### `health() -> HealthResult`
+
+HTTP GET from the bridge server's `/api/health` endpoint. No authentication required.
+
+```
+GET /api/health
+```
+
+**Response:** `{"healthy": true, "version": "0.1.0", "uptime_seconds": 3600}`
+
+### Authentication
+
+Dual authentication is required for write operations:
+
+1. **Bearer token** -- `Authorization: Bearer <token>` header, constant-time comparison via HMAC-based equality check (prevents timing side-channels)
+2. **HMAC-SHA256** (export only) -- `X-Cortex-Signature: hmac-sha256=<hex>` + `X-Cortex-Timestamp: <unix_seconds>`, computed over `<timestamp>.<body>`, verified using shared HMAC key
+3. **Replay protection** -- requests with timestamps older than 5 minutes are rejected
+4. **Rate limiting** -- 100 requests per minute globally, returns HTTP 429 when exceeded
+5. **Body size limit** -- 1MB maximum request body
+
+Read-only endpoints (`/api/health`, `/api/status`, `/api/import`) require only Bearer token authentication. `/api/health` requires no authentication.
+
+### Deployment
+
+The bridge server is packaged in `extensions/cortex-bridge/` with three deployment options:
+
+1. **Docker** (recommended) -- `docker compose up -d` with env vars in `.env`
+2. **Bare metal** -- `cargo build --release` + systemd service unit
+3. **TLS** -- set `CORTEX_BRIDGE_TLS_CERT` and `CORTEX_BRIDGE_TLS_KEY` for rustls
+
+See `extensions/cortex-bridge/README.md` for full deployment guide.
 
 ### Configuration
 
 See CONFIGURATION section below for `self-hosted` config fields.
-
-This section will be expanded when M11 is implemented.
 
 ---
 ## CONFIGURATION
