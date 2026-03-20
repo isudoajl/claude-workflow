@@ -1,10 +1,10 @@
 <!-- @INDEX
 INTERFACE                                15-81
 GIT-JSONL-ADAPTER                        82-130
-CLOUD-ADAPTER                            131-150
-SELF-HOSTED-ADAPTER                      151-170
-CONFIGURATION                            171-237
-ERROR-HANDLING                           238-282
+CLOUD-ADAPTER                            131-165
+SELF-HOSTED-ADAPTER                      166-185
+CONFIGURATION                            186-252
+ERROR-HANDLING                           253-297
 @/INDEX -->
 
 # Sync Adapter Abstraction
@@ -130,22 +130,37 @@ No additional sync mechanism is needed. Git handles distribution.
 ---
 ## CLOUD-ADAPTER
 
-**Status: Planned for Phase 4, Milestone M9 (REQ-CTX-041, REQ-CTX-042)**
+Implemented in M9 (REQ-CTX-041, REQ-CTX-042). The Cloud Adapter connects to Cloudflare D1 (primary) or Turso/libSQL (alternative) via REST API for real-time sync without git dependencies. Authentication uses Bearer token from env var `OMEGA_CORTEX_CF_TOKEN` (D1) or `OMEGA_CORTEX_TURSO_TOKEN` (Turso). All API calls require HTTPS.
 
-The Cloud Adapter will connect to Cloudflare D1 (and optionally Turso/libSQL) via REST API for real-time sync without git dependencies.
+### Cloudflare D1 -- Interface Mapping
 
-### Planned Interface Mapping
+**API endpoint**: `https://api.cloudflare.com/client/v4/accounts/{account_id}/d1/database/{database_id}/query`
 
-- `export()` -- HTTP POST entries to D1/Turso API
-- `import()` -- HTTP GET entries from D1/Turso API with `since` filter
-- `status()` -- Query entry counts via SQL over HTTP
-- `health()` -- Ping the API endpoint, measure latency
+- `export(entries)` -- POST SQL INSERT statements to D1 via REST API. Batch INSERTs (max 50 per API call) to respect Cloudflare rate limits.
+- `import(since?)` -- POST SQL SELECT queries to D1. Filter with `WHERE created_at > ?` for incremental import.
+- `status()` -- POST `SELECT COUNT(*) ... GROUP BY category` to D1 to retrieve entry counts per category.
+- `health()` -- GET database metadata endpoint to verify 200 OK response and measure latency.
+
+**Error handling**: HTTP 429 (rate limited) triggers exponential backoff. HTTP 5xx triggers retry (max 3 attempts), then fail gracefully to pending-exports cache. See ERROR-HANDLING section.
+
+### D1 Table Schema
+
+Tables mirror the JSONL shared store structure. All tables use `CREATE TABLE IF NOT EXISTS` for idempotent provisioning (REQ-CTX-049).
+
+- `shared_behavioral_learnings(uuid, contributor, source_project, created_at, confidence, occurrences, content_hash, signature, rule, context, status)`
+- `shared_incidents(incident_id, title, domain, status, contributor, created_at, resolved_at, root_cause, resolution, entries_json, signature)`
+- `shared_hotspots(uuid, file_path, risk_level, times_touched, contributors_json, contributor_count, description)`
+- `shared_lessons(uuid, contributor, source_project, created_at, confidence, occurrences, content_hash, signature, lesson, context, domain)`
+- `shared_patterns(uuid, contributor, source_project, created_at, confidence, occurrences, content_hash, signature, pattern, context, domain)`
+- `shared_decisions(uuid, contributor, source_project, created_at, confidence, occurrences, content_hash, signature, decision, rationale, context)`
+
+### Turso Adapter
+
+Same SQL interface as D1 but via Turso HTTP API. URL format: `libsql://{database}.turso.io`. Auth: Bearer token from `OMEGA_CORTEX_TURSO_TOKEN`. Same table schema as D1. Turso-specific: embedded replicas for offline-first usage (future enhancement).
 
 ### Configuration
 
 See CONFIGURATION section below for `cloudflare-d1` and `turso` config fields.
-
-This section will be expanded when M9 is implemented.
 
 ---
 ## SELF-HOSTED-ADAPTER
