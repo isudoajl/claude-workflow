@@ -15,7 +15,7 @@
 ## Phase 3: Consumption
 | ID | Name | Status | Timestamp |
 |----|------|--------|-----------|
-| M5 | Briefing Import + Shared Tracking | PENDING | |
+| M5 | Briefing Import + Shared Tracking | COMPLETE | 2026-03-20 |
 | M6 | Diagnostician + Team Status | PENDING | |
 | M7 | Documentation + CLAUDE.md | PENDING | |
 

@@ -685,14 +685,14 @@ Other developer starts session
 | REQ-CTX-022 | 2 | Must | TEST-CTX-M3-074 to M3-079, M3-117, M3-118 | Module 4: Curator Agent | `core/agents/curator.md` | M3 |
 | REQ-CTX-023 | 2 | Must | TEST-CTX-M3-080 to M3-098, M3-124, M3-126, M3-130 | Module 5: Share Command | `core/commands/omega-share.md` | M3 |
 | REQ-CTX-024 | 2 | Should | (filled by test-writer) | Module 6: Session Close Trigger | `core/hooks/session-close.sh` | M4 |
-| REQ-CTX-025 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
-| REQ-CTX-026 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
-| REQ-CTX-027 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
-| REQ-CTX-028 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
-| REQ-CTX-029 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
+| REQ-CTX-025 | 3 | Must | TEST-CTX-M5-001, M5-002, M5-008, M5-012 to M5-023, M5-051 to M5-053, M5-064 to M5-072 | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
+| REQ-CTX-026 | 3 | Must | TEST-CTX-M5-003, M5-024 to M5-032 | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
+| REQ-CTX-027 | 3 | Must | TEST-CTX-M5-004, M5-033 to M5-039 | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
+| REQ-CTX-028 | 3 | Must | TEST-CTX-M5-005, M5-018, M5-029, M5-040 to M5-046, M5-069, M5-070, M5-073, M5-076 | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
+| REQ-CTX-029 | 3 | Must | TEST-CTX-M5-006, M5-007, M5-017, M5-027, M5-036, M5-047 to M5-050, M5-077 | Module 7: Briefing Import | `core/hooks/briefing.sh` | M5 |
 | REQ-CTX-030 | 3 | Must | (filled by test-writer) | Module 8: Diagnostician Enhancement | `core/agents/diagnostician.md` | M6 |
 | REQ-CTX-031 | 3 | Should | (filled by test-writer) | Module 9: Team Status Command | `core/commands/omega-team-status.md` | M6 |
-| REQ-CTX-032 | 3 | Must | (filled by test-writer) | Module 7: Briefing Import | All shared entry producers/consumers | M5 |
+| REQ-CTX-032 | 3 | Must | TEST-CTX-M5-011, M5-014, M5-022, M5-026, M5-061 to M5-063, M5-065 | Module 7: Briefing Import | All shared entry producers/consumers | M5 |
 | REQ-CTX-033 | 3 | Should | (filled by test-writer) | Module 10: Documentation | `CLAUDE.md` | M7 |
 | REQ-CTX-034 | 3 | Should | Not tested (documentation) | Module 10: Documentation | `docs/*.md`, `README.md`, `core/protocols/memory-protocol.md` | M7 |
 | REQ-CTX-035 | 3 | Could | Not tested (documentation) | Module 10: Documentation | `scripts/setup.sh` | M7 |
